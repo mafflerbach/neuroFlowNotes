@@ -35,6 +35,7 @@ fn main() {
             commands::delete_note,
             // Folders
             commands::create_folder,
+            commands::rename_folder,
             commands::delete_folder,
             // Todos
             commands::get_todos_for_note,

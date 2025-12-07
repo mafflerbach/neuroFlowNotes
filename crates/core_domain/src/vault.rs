@@ -382,6 +382,68 @@ impl Vault {
         Ok(())
     }
 
+    /// Rename/move a folder and update all note paths within it.
+    #[instrument(skip(self))]
+    pub async fn rename_folder(&self, old_path: &str, new_path: &str) -> Result<Vec<i64>> {
+        let old_absolute = self.fs.to_absolute(Path::new(old_path));
+        let new_absolute = self.fs.to_absolute(Path::new(new_path));
+
+        // Check if target already exists
+        if new_absolute.exists() {
+            return Err(VaultError::FileAlreadyExists(new_path.to_string()));
+        }
+
+        // Ensure target parent directory exists
+        if let Some(parent) = new_absolute.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(core_fs::FsError::from)?;
+        }
+
+        // Find all notes in this folder and update their paths
+        let notes = self.repo.list_notes().await?;
+        let old_prefix = if old_path.is_empty() {
+            String::new()
+        } else {
+            format!("{}/", old_path)
+        };
+
+        let mut updated_ids = Vec::new();
+        for note in notes {
+            if note.path.starts_with(&old_prefix) {
+                // Calculate new path for this note
+                let relative_path = note.path.strip_prefix(&old_prefix).unwrap_or(&note.path);
+                let note_new_path = if new_path.is_empty() {
+                    relative_path.to_string()
+                } else {
+                    format!("{}/{}", new_path, relative_path)
+                };
+
+                // Update database path
+                let note_id = self.repo.rename_note(&note.path, &note_new_path).await?;
+                updated_ids.push(note_id);
+            }
+        }
+
+        // Move the folder on disk
+        tokio::fs::rename(&old_absolute, &new_absolute)
+            .await
+            .map_err(core_fs::FsError::from)?;
+
+        // Emit event for updated notes
+        if !updated_ids.is_empty() {
+            let _ = self.event_tx.send(VaultEvent::NotesUpdated(updated_ids.clone()));
+        }
+
+        info!(
+            "Renamed folder {} -> {} ({} notes updated)",
+            old_path,
+            new_path,
+            updated_ids.len()
+        );
+        Ok(updated_ids)
+    }
+
     /// Delete a folder and all its contents.
     #[instrument(skip(self))]
     pub async fn delete_folder(&self, path: &str) -> Result<Vec<i64>> {

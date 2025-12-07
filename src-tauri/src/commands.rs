@@ -235,6 +235,23 @@ pub async fn create_folder(state: State<'_, AppState>, path: String) -> Result<(
         .map_err(|e| CommandError::Vault(e.to_string()))
 }
 
+/// Rename/move a folder and update all note paths within it.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn rename_folder(
+    state: State<'_, AppState>,
+    old_path: String,
+    new_path: String,
+) -> Result<Vec<i64>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .rename_folder(&old_path, &new_path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
 /// Delete a folder and all its contents.
 #[tauri::command]
 #[instrument(skip(state))]

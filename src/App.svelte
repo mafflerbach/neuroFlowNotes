@@ -256,6 +256,41 @@
     blockModalOpen = true;
   }
 
+  async function handleBlockMove(
+    block: ScheduleBlockDto,
+    newDate: string,
+    newStartTime: string,
+    newEndTime: string
+  ) {
+    try {
+      console.log(
+        "[App] Moving block",
+        block.id,
+        "to",
+        newDate,
+        newStartTime,
+        "-",
+        newEndTime
+      );
+
+      await updateScheduleBlock({
+        id: block.id,
+        note_id: block.note_id, // Keep existing
+        date: newDate,
+        start_time: newStartTime,
+        end_time: newEndTime,
+        label: block.label, // Keep existing
+        color: block.color, // Keep existing
+        context: block.context, // Keep existing
+      });
+
+      // Refresh calendar data
+      await fetchCalendarData();
+    } catch (e) {
+      console.error("[App] Failed to move block:", e);
+    }
+  }
+
   function handleNoteClick(note: NoteListItem) {
     workspaceStore.openDoc({
       path: note.path,
@@ -500,6 +535,7 @@
                 {notesForWeek}
                 onBlockClick={handleBlockClick}
                 onBlockEdit={handleBlockEdit}
+                onBlockMove={handleBlockMove}
                 onNoteClick={handleNoteClick}
                 onEmptySlotClick={handleWeeklyEmptySlotClick}
               />
@@ -508,6 +544,7 @@
                 {scheduleBlocks}
                 onBlockClick={handleBlockClick}
                 onBlockEdit={handleBlockEdit}
+                onBlockMove={handleBlockMove}
                 onEmptySlotClick={handleEmptySlotClick}
               />
             {/if}
@@ -535,6 +572,7 @@
                   {notesForWeek}
                   onBlockClick={handleBlockClick}
                   onBlockEdit={handleBlockEdit}
+                  onBlockMove={handleBlockMove}
                   onNoteClick={handleNoteClick}
                   onEmptySlotClick={handleWeeklyEmptySlotClick}
                 />
@@ -543,6 +581,7 @@
                   {scheduleBlocks}
                   onBlockClick={handleBlockClick}
                   onBlockEdit={handleBlockEdit}
+                  onBlockMove={handleBlockMove}
                   onEmptySlotClick={handleEmptySlotClick}
                 />
               {/if}

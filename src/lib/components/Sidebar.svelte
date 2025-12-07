@@ -1,9 +1,9 @@
 <script lang="ts">
   import { FilePlus, FolderPlus, Folder, File } from "lucide-svelte";
-  import { vaultStore } from "../stores";
+  import { vaultStore, dragStore } from "../stores";
   import FolderTree from "./FolderTree.svelte";
   import { open } from "@tauri-apps/plugin-dialog";
-  import { saveNote, createFolder } from "../services/api";
+  import { saveNote, createFolder, renameNote, renameFolder } from "../services/api";
 
   // Force reactivity by deriving from the store
   const folderTree = $derived(vaultStore.folderTree);
@@ -84,6 +84,69 @@
       cancelCreate();
     }
   }
+
+  // Root drop zone for moving items to vault root
+  let isRootDropTarget = $state(false);
+
+  function isValidRootDrop(): boolean {
+    if (!dragStore.draggedNode) return false;
+    // Can't drop if already at root
+    const parentPath = dragStore.getParentPath(dragStore.draggedNode.path);
+    return parentPath !== "";
+  }
+
+  function handleRootDragOver(e: DragEvent) {
+    if (!dragStore.draggedNode) return;
+    if (!isValidRootDrop()) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "move";
+    }
+
+    isRootDropTarget = true;
+    dragStore.setDropTarget("");
+  }
+
+  function handleRootDragLeave(e: DragEvent) {
+    const relatedTarget = e.relatedTarget as HTMLElement | null;
+    if (relatedTarget && (e.currentTarget as HTMLElement).contains(relatedTarget)) {
+      return;
+    }
+    isRootDropTarget = false;
+    if (dragStore.dropTargetPath === "") {
+      dragStore.setDropTarget(null);
+    }
+  }
+
+  async function handleRootDrop(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const draggedNode = dragStore.draggedNode;
+    if (!draggedNode) return;
+    if (!isValidRootDrop()) return;
+
+    const newPath = draggedNode.name;
+
+    try {
+
+      if (draggedNode.is_dir) {
+        await renameFolder(draggedNode.path, newPath);
+      } else {
+        await renameNote(draggedNode.path, newPath);
+      }
+
+      await vaultStore.refreshFolderTree();
+    } catch (err) {
+      console.error("[Sidebar] Move to root failed:", err);
+    }
+
+    isRootDropTarget = false;
+    dragStore.endDrag();
+  }
 </script>
 
 <aside class="sidebar">
@@ -112,7 +175,15 @@
     {:else if vaultStore.error}
       <div class="error">{vaultStore.error}</div>
     {:else if folderTree}
-      <div class="folder-tree">
+      <!-- svelte-ignore a11y_interactive_supports_focus -->
+      <div
+        class="folder-tree"
+        class:is-root-drop-target={isRootDropTarget}
+        ondragover={handleRootDragOver}
+        ondragleave={handleRootDragLeave}
+        ondrop={handleRootDrop}
+        role="tree"
+      >
         <!-- New item input for root -->
         {#if isCreatingNew}
           <div class="new-item-wrapper">
@@ -302,5 +373,17 @@
 
   .action-btn:hover {
     background: var(--bg-hover);
+  }
+
+  .folder-tree {
+    min-height: 100px;
+    border-radius: var(--radius-md);
+    transition: background var(--transition-normal), outline var(--transition-normal);
+  }
+
+  .folder-tree.is-root-drop-target {
+    background: var(--color-primary-light);
+    outline: 2px dashed var(--color-primary);
+    outline-offset: -2px;
   }
 </style>

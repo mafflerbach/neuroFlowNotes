@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ChevronRight, Folder, File } from "lucide-svelte";
   import type { FolderNode } from "../types";
-  import { editorStore, workspaceStore, vaultStore } from "../stores";
-  import { listNotes, renameNote, deleteNote, deleteFolder, createFolder, saveNote, getNoteContent } from "../services/api";
+  import { editorStore, workspaceStore, vaultStore, dragStore } from "../stores";
+  import { listNotes, renameNote, deleteNote, deleteFolder, renameFolder, createFolder, saveNote, getNoteContent } from "../services/api";
   import { replaceH1Title } from "../utils/docListUtils";
   import { ask } from "@tauri-apps/plugin-dialog";
   import FolderTree from "./FolderTree.svelte";
@@ -262,7 +262,86 @@
     }
   }
 
+  // Drag & Drop handlers
+  function handleDragStart(e: DragEvent) {
+    if (!e.dataTransfer) return;
+
+    dragStore.startDrag(node);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", node.path);
+  }
+
+  function handleDragOver(e: DragEvent) {
+    if (!dragStore.draggedNode) return;
+    if (!dragStore.isValidDropTarget(node)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "move";
+    }
+
+    dragStore.setDropTarget(node.path);
+  }
+
+  function handleDragLeave(e: DragEvent) {
+    // Only clear if we're actually leaving this element
+    const relatedTarget = e.relatedTarget as HTMLElement | null;
+    if (relatedTarget && (e.currentTarget as HTMLElement).contains(relatedTarget)) {
+      return;
+    }
+
+    if (dragStore.dropTargetPath === node.path) {
+      dragStore.setDropTarget(null);
+    }
+  }
+
+  async function handleDrop(e: DragEvent) {
+    const draggedNode = dragStore.draggedNode;
+    if (!draggedNode) return; // Let event bubble up
+    if (!dragStore.isValidDropTarget(node)) return; // Let event bubble up to root drop zone
+
+    // Only prevent default and stop propagation if this IS a valid drop target
+    e.preventDefault();
+    e.stopPropagation();
+
+    const newPath = dragStore.getNewPath(node.path);
+    if (!newPath) return;
+
+    try {
+
+      if (draggedNode.is_dir) {
+        await renameFolder(draggedNode.path, newPath);
+      } else {
+        await renameNote(draggedNode.path, newPath);
+      }
+
+      // Update workspace if the moved file is open
+      workspaceStore.updateDocPath(draggedNode.path, newPath);
+
+      // Reload editor if needed
+      if (editorStore.currentPath === draggedNode.path) {
+        await editorStore.openNote(newPath);
+      }
+
+      await vaultStore.refreshFolderTree();
+    } catch (err) {
+      console.error("[FolderTree] Move failed:", err);
+    }
+
+    dragStore.endDrag();
+  }
+
+  function handleDragEnd() {
+    dragStore.endDrag();
+  }
+
   const isActive = $derived(editorStore.currentPath === node.path);
+  const isDragging = $derived(dragStore.draggedNode?.path === node.path);
+  const isDropTarget = $derived(
+    dragStore.dropTargetPath === node.path && dragStore.isValidDropTarget(node)
+  );
   const paddingLeft = $derived(`${depth * 16 + 8}px`);
   const newItemPadding = $derived(`${(depth + 1) * 16 + 8}px`);
 </script>
@@ -287,10 +366,18 @@
       class:is-dir={node.is_dir}
       class:is-file={!node.is_dir}
       class:is-active={isActive}
+      class:is-dragging={isDragging}
+      class:is-drop-target={isDropTarget}
       style:padding-left={paddingLeft}
+      draggable="true"
       onclick={handleClick}
       onkeydown={handleKeydown}
       oncontextmenu={handleContextMenu}
+      ondragstart={handleDragStart}
+      ondragover={handleDragOver}
+      ondragleave={handleDragLeave}
+      ondrop={handleDrop}
+      ondragend={handleDragEnd}
     >
       {#if node.is_dir}
         <span class="chevron" class:expanded={isExpanded}>
@@ -383,6 +470,21 @@
 
   .tree-item.is-active {
     background: var(--tree-item-selected-bg);
+    color: var(--color-primary);
+  }
+
+  .tree-item.is-dragging {
+    opacity: 0.5;
+    background: var(--bg-surface-sunken);
+  }
+
+  .tree-item.is-drop-target {
+    background: var(--color-primary-light);
+    outline: 2px dashed var(--color-primary);
+    outline-offset: -2px;
+  }
+
+  .tree-item.is-drop-target .folder-icon {
     color: var(--color-primary);
   }
 
