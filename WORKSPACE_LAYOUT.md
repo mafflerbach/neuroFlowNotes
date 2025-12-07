@@ -1,9 +1,8 @@
-
 # NeuroFlow Notes – Workspace Layout & View States
 
-> **Implementation Status:** ✅ UI Shell Complete (v0.2.0)
+> **Implementation Status:** ✅ v0.1.0 Released
 >
-> All layout components implemented. Data wiring in progress.
+> All layout components implemented and wired to backend data.
 
 Dieses Dokument beschreibt das grobe UI-Layout und die Zustände des Workspaces.
 Der Fokus liegt auf:
@@ -20,17 +19,19 @@ Der Fokus liegt auf:
 Oben, über allen Views:
 
 ```text
-[ ≡ ] [ M ] [ W ] [ •Today ] | [ +Note ] | [ ⚙ ]
+[ 📁 ] [ 📋 ] [ 📅 ] | [ M ] [ W ] [ •Today ] | [ +Note ] | [ ⚙ ]
 ```
 
-**Implemented in:** `src/lib/components/Topbar.svelte`
+**Implemented in:** `src/lib/components/Topbar.svelte` ✅
 
-* **[ ≡ ]** – Toggle Folderview (ein-/ausblenden)
-* **[ M ]** – Monthly View des Kalenders
-* **[ W ]** – Weekly View des Kalenders
-* **[ •Today ]** – Daily View des Kalenders für den aktuellen Tag
-* **[ +Note ]** – neue Note erstellen (z.B. `new-{timestamp}.md` im Root) und im Editor öffnen
-* **[ ⚙ ]** – Settings als Modal (Obsidian-Style), nicht als eigener Tab
+* **[ 📁 ]** – Toggle Folderview (ein-/ausblenden) ✅
+* **[ 📋 ]** – Toggle DocList Panel (ein-/ausblenden) ✅
+* **[ 📅 ]** – Toggle Calendar/Timeline (ein-/ausblenden) ✅
+* **[ M ]** – Monthly View des Kalenders ✅
+* **[ W ]** – Weekly View des Kalenders ✅
+* **[ •Today ]** – Daily View des Kalenders für den aktuellen Tag ✅
+* **[ +Note ]** – neue Note erstellen (z.B. `new-{timestamp}.md` im Root) und im Editor öffnen ✅
+* **[ ⚙ ]** – Settings als Modal (Obsidian-Style), nicht als eigener Tab ✅
 
 **Regel:**
 Ein Klick auf einen der Kalender-Buttons (`M`, `W`, `•Today`) bringt den User immer in die entsprechende Kalender-Ansicht (Kalender-View 1 oder 2, siehe unten).
@@ -299,6 +300,8 @@ User-configurable setting (`workspaceStore.multiColumnEditable`):
 
 ## 8. Implementation Summary
 
+### Core Components (v0.1.0)
+
 | Component | File | Status |
 |-----------|------|--------|
 | Topbar | `Topbar.svelte` | ✅ |
@@ -311,12 +314,81 @@ User-configurable setting (`workspaceStore.multiColumnEditable`):
 | Breadcrumb | `Breadcrumb.svelte` | ✅ |
 | Document Columns | `DocumentColumns.svelte` | ✅ |
 | Settings Modal | `SettingsModal.svelte` | ✅ |
+| Schedule Block Modal | `ScheduleBlockModal.svelte` | ✅ |
 | App Layout | `App.svelte` | ✅ |
 
-### Pending: Data Wiring
+### Editor Features (v0.1.0)
 
-- [ ] Properties API (backend)
-- [ ] Schedule Blocks API (backend)
-- [ ] Notes by Date query (backend)
-- [ ] Wire calendar components to real data
+| Feature | File | Status |
+|---------|------|--------|
+| Wiki-link autocomplete | `wikiLinkCompletion.ts` | ✅ |
+| Live preview mode | `livePreview.ts` | ✅ |
+| Syntax highlighting | `markdownHighlight.ts` | ✅ |
+| Theme-aware styling | `theme.css` | ✅ |
+
+### Backend APIs (v0.1.0)
+
+| API | Status |
+|-----|--------|
+| Properties API (CRUD) | ✅ |
+| Schedule Blocks API (CRUD) | ✅ |
+| Notes by Date query | ✅ |
+| Calendar data wiring | ✅ |
+
+---
+
+## 9. Pending Features (v0.2.0+)
+
+### 9.1 Drag & Drop for Filesystem
+
+Move files and folders by dragging in the FolderTree:
+
+```text
+FolderTree:
+[vault/]
+  daily/
+  projects/
+    ├── note-a.md  ← drag this...
+  areas/           ← ...drop here
+```
+
+**Implementation plan:**
+- Add `draggable` attribute to tree items
+- Implement `ondragstart`, `ondragover`, `ondrop` handlers
+- Visual drop indicators (highlight valid drop targets)
+- Backend command: `move_note(from_path, to_path)`
+- Handle folder moves recursively
+
+### 9.2 Drag & Drop for Schedule Blocks
+
+Move and resize schedule blocks in calendar views:
+
+**Move blocks:**
+- Drag block to different time slot (same day)
+- Drag block to different day (weekly view)
+- Visual ghost element during drag
+
+**Resize blocks:**
+- Drag top/bottom edge to change start/end time
+- Minimum duration constraint (e.g., 15 min)
+- Snap to time grid
+
+**Implementation plan:**
+- Add drag handles to `ScheduleBlockCard`
+- Track drag state in calendar components
+- Update block via `updateScheduleBlock` on drop
+- Optimistic UI update with rollback on error
+
+### 9.3 Daily Notes with Templates
+
+- Template file: `templates/daily.md`
+- Variables: `{{date}}`, `{{weekday}}`, `{{week}}`, `{{year}}`
+- Auto-create on "Open today's note" action
+- Backend: `create_daily_note(date)` command
+
+### 9.4 Link Resolution (Doc-Finder Mode)
+
+- Click `[[wikilink]]` → transition to State C (doc-finder)
+- Open linked note in new column
+- Breadcrumb navigation
 

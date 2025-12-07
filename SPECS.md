@@ -1,10 +1,12 @@
-# 🧠 **NeuroFlow Notes – Technical Specification (v1.2)**
+# 🧠 **NeuroFlow Notes – Technical Specification (v1.3)**
 
-> **Implementation Status:** Milestone 1 & 2 Complete, UI Refactor Complete
+> **Implementation Status:** v0.1.0 Released
 >
 > - Backend: Vault indexing, file watching, SQLite storage ✅
 > - Frontend: Svelte 5 with CodeMirror 6, Calendar-centric UI ✅
-> - Pending: Properties API, Schedule Blocks API, Data Wiring
+> - Properties API, Schedule Blocks API, Data Wiring ✅
+> - Editor: Wiki-links, live preview, syntax highlighting ✅
+> - Pending: Daily notes templates, JS plugins, Drag & Drop
 
 ## 1. Overview
 
@@ -332,11 +334,13 @@ Full file rewrite is simple and correct. Line-based patching is fragile (what if
 * Uses CodeMirror 6
 * Supports:
 
-  * Live edit
-  * Inline preview
-  * `[[links]]`
+  * Live edit with Obsidian-style live preview (hide syntax on inactive lines)
+  * `[[wiki-links]]` with autocomplete (triggered by `[[`)
   * `#tags`
   * Markdown tasks `- [ ]`
+  * Syntax highlighting for 100+ languages in fenced code blocks
+  * Theme-aware styling (headings, code, links adapt to light/dark mode)
+  * Code block background highlighting
 
 ### 9.4 Todo Panel
 
@@ -352,20 +356,33 @@ Full file rewrite is simple and correct. Line-based patching is fragile (what if
 * Saved views
 * Calendar picker
 
-### 9.6 Schedule Block Creation (MVP UX)
+### 9.6 Schedule Block Creation ✅
 
 **Click on empty slot in timeline:**
 
-1. Open a small popover/modal with:
-   * Start/end times (pre-filled from slot or minimal duration)
-   * Note link:
-     * If a note is currently open in editor → preselect that note
-     * Else: a "quick search" input to select a note by title/path
-   * Optional: label, color, context
+1. Opens `ScheduleBlockModal` with:
+   * Start/end times (pre-filled from clicked slot)
+   * Label input
+   * Color picker
+   * Context selector
+   * Auto-creates linked note file on save
 
-**Block resizing / drag-and-drop:** Nice to have (v2), not MVP.
+**Implemented in:** `ScheduleBlockModal.svelte`
 
 **Domain rule:** Block creation lives in `core_domain::schedule`, not in UI.
+
+### 9.7 Drag & Drop (Planned)
+
+**Filesystem Drag & Drop:**
+* Drag files/folders in FolderTree to move them
+* Visual drop indicators showing valid targets
+* Backend: `move_note(from_path, to_path)` command
+
+**Schedule Block Drag & Drop:**
+* Drag blocks to different time slots (same day)
+* Drag blocks to different days (weekly view)
+* Resize blocks by dragging edges
+* Visual feedback during drag operations
 
 ---
 
@@ -578,7 +595,7 @@ Example:
 
 ## 15. MVP Milestones
 
-### Completed
+### Completed (v0.1.0)
 
 1. ✅ Vault open + indexing (Rust)
 2. ✅ NoteEditor + folder tree (frontend)
@@ -590,18 +607,24 @@ Example:
 5. ✅ Weekly View component (Outlook-style)
 6. ✅ Daily View component (vertical timeline)
 7. ✅ Monthly View component (dots + list)
+8. ✅ Properties API (CRUD for key-value metadata)
+9. ✅ Schedule Blocks API (CRUD + queries by date)
+10. ✅ Notes by Date query (scheduled > journal > created)
+11. ✅ Wire calendar components to real backend data
+12. ✅ Schedule block creation UI (ScheduleBlockModal)
+13. ✅ Editor: Wiki-link autocomplete (`[[`)
+14. ✅ Editor: Live preview mode (Obsidian-style)
+15. ✅ Editor: Syntax highlighting for 100+ languages
+16. ✅ Editor: Theme-aware markdown styling
+17. ✅ UI: Calendar/timeline toggle
+18. ✅ UI: Theming system (light/dark/system)
 
-### In Progress
+### Pending (v0.2.0+)
 
-8. 🔄 Properties API (CRUD for key-value metadata)
-9. 🔄 Schedule Blocks API (CRUD + queries by date)
-10. 🔄 Notes by Date query (scheduled > journal > created)
-11. 🔄 Wire calendar components to real backend data
-
-### Pending
-
-12. ⏳ Daily notes with templates
-13. ⏳ Link resolution (click [[wikilink]] → open note)
-14. ⏳ Schedule block creation UI
-15. ⏳ JS plugin system (loading + basic API)
+19. ⏳ Daily notes with templates
+20. ⏳ Link resolution (click [[wikilink]] → open note in doc-finder)
+21. ⏳ JS plugin system (loading + basic API)
+22. ⏳ Drag & drop for filesystem (move files/folders)
+23. ⏳ Drag & drop for schedule blocks (move/resize)
+24. ⏳ Block resizing by dragging edges
 
