@@ -165,6 +165,25 @@ impl VaultRepository {
         Ok(count)
     }
 
+    /// Rename/move a note (update its path).
+    #[instrument(skip(self))]
+    pub async fn rename_note(&self, old_path: &str, new_path: &str) -> Result<i64> {
+        let note_id = sqlx::query_scalar::<_, i64>("SELECT id FROM notes WHERE path = ?")
+            .bind(old_path)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| StorageError::NoteNotFoundByPath(old_path.to_string()))?;
+
+        sqlx::query("UPDATE notes SET path = ?, updated_at = datetime('now') WHERE id = ?")
+            .bind(new_path)
+            .bind(note_id)
+            .execute(&self.pool)
+            .await?;
+
+        debug!("Renamed note {} -> {} (id={})", old_path, new_path, note_id);
+        Ok(note_id)
+    }
+
     // ========================================================================
     // Tags
     // ========================================================================
@@ -538,6 +557,35 @@ impl VaultRepository {
     /// Get schedule blocks for a single date.
     pub async fn get_schedule_blocks_for_date(&self, date: &str) -> Result<Vec<ScheduleBlockDto>> {
         self.get_schedule_blocks_for_range(date, date).await
+    }
+
+    /// Get schedule blocks linked to a specific note.
+    pub async fn get_schedule_blocks_for_note(&self, note_id: i64) -> Result<Vec<ScheduleBlockDto>> {
+        let rows = sqlx::query_as::<_, (i64, Option<i64>, String, String, String, Option<String>, Option<String>, Option<String>)>(
+            "SELECT id, note_id, date, start_time, end_time, label, color, context FROM schedule_blocks WHERE note_id = ? ORDER BY date, start_time",
+        )
+        .bind(note_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .filter_map(|(id, note_id, date, start_time, end_time, label, color, context)| {
+                let date = date.parse().ok()?;
+                let start_time = start_time.parse().ok()?;
+                let end_time = end_time.parse().ok()?;
+                Some(ScheduleBlockDto {
+                    id,
+                    note_id,
+                    date,
+                    start_time,
+                    end_time,
+                    label,
+                    color,
+                    context,
+                })
+            })
+            .collect())
     }
 
     // ========================================================================

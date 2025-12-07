@@ -58,6 +58,10 @@ export async function saveNote(path: string, content: string): Promise<number> {
   return invoke<number>("save_note", { path, content });
 }
 
+export async function renameNote(oldPath: string, newPath: string): Promise<number> {
+  return invoke<number>("rename_note", { oldPath, newPath });
+}
+
 // ============================================================================
 // Todos
 // ============================================================================
@@ -140,6 +144,10 @@ export async function getScheduleBlocksForDate(date: string): Promise<ScheduleBl
 
 export async function updateScheduleBlock(request: UpdateScheduleBlockRequest): Promise<void> {
   return invoke("update_schedule_block", { request });
+}
+
+export async function getScheduleBlocksForNote(noteId: number): Promise<ScheduleBlockDto[]> {
+  return invoke<ScheduleBlockDto[]>("get_schedule_blocks_for_note", { noteId });
 }
 
 export async function deleteScheduleBlock(id: number): Promise<void> {

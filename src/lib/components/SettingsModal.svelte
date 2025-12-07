@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { workspaceStore } from "../stores/workspace.svelte";
+  import { workspaceStore, type CalendarView } from "../stores/workspace.svelte";
 
   interface Props {
     open: boolean;
@@ -10,15 +10,26 @@
 
   // Local state for settings
   let multiColumnEditable = $state(workspaceStore.multiColumnEditable);
+  let defaultCalendarView = $state<CalendarView>(workspaceStore.getDefaultCalendarView());
+
+  // Reset local state when modal opens
+  $effect(() => {
+    if (open) {
+      multiColumnEditable = workspaceStore.multiColumnEditable;
+      defaultCalendarView = workspaceStore.getDefaultCalendarView();
+    }
+  });
 
   function handleSave() {
     workspaceStore.multiColumnEditable = multiColumnEditable;
+    workspaceStore.setDefaultCalendarView(defaultCalendarView);
     onClose();
   }
 
   function handleCancel() {
     // Reset to current values
     multiColumnEditable = workspaceStore.multiColumnEditable;
+    defaultCalendarView = workspaceStore.getDefaultCalendarView();
     onClose();
   }
 
@@ -94,9 +105,9 @@
               </p>
             </div>
             <div class="setting-control">
-              <select class="select-control">
+              <select class="select-control" bind:value={defaultCalendarView}>
                 <option value="monthly">Monthly</option>
-                <option value="weekly" selected>Weekly</option>
+                <option value="weekly">Weekly</option>
                 <option value="daily">Daily</option>
               </select>
             </div>

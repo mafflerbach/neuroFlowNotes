@@ -4,6 +4,9 @@
 
 import type { NoteContent, TodoDto } from "../types";
 import * as api from "../services/api";
+import { extractH1Title, generatePathFromTitle, titleToFilename } from "../utils/docListUtils";
+import { workspaceStore } from "./workspace.svelte";
+import { vaultStore } from "./vault.svelte";
 
 class EditorStore {
   currentNote = $state<NoteContent | null>(null);
@@ -11,6 +14,12 @@ class EditorStore {
   isLoading = $state(false);
   isDirty = $state(false);
   error = $state<string | null>(null);
+
+  // Flag to prevent reload during save/rename operations
+  private isSaving = false;
+
+  // Callback to notify App.svelte to refresh calendar data
+  onScheduleBlocksUpdated: (() => void) | null = null;
 
   get isOpen() {
     return this.currentNote !== null;
@@ -25,7 +34,13 @@ class EditorStore {
   }
 
   async openNote(path: string) {
-    // Don't reload if already open
+    // Don't reload if we're in the middle of a save/rename
+    if (this.isSaving) {
+      console.log("[EditorStore] Skipping openNote during save");
+      return;
+    }
+
+    // Don't reload if already open (check by path)
     if (this.currentPath === path) return;
 
     // Save current note if dirty
@@ -68,18 +83,95 @@ class EditorStore {
   async save() {
     if (!this.currentNote || !this.isDirty) return;
 
-    this.isLoading = true;
+    // Note: Don't set isLoading = true here - that would hide the editor and destroy the container
+    this.isSaving = true;
     this.error = null;
 
     try {
       await api.saveNote(this.currentNote.path, this.currentNote.content);
       this.isDirty = false;
       await this.refreshTodos();
+
+      // Sync H1 title to linked schedule blocks and rename file if needed
+      await this.syncTitleAndRename();
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
     } finally {
-      this.isLoading = false;
+      this.isSaving = false;
+    }
+  }
+
+  /**
+   * Sync the current note's H1 title to schedule blocks and rename file if needed.
+   */
+  private async syncTitleAndRename() {
+    if (!this.currentNote) return;
+
+    const h1Title = extractH1Title(this.currentNote.content);
+    if (!h1Title) return;
+
+    try {
+      // Check if filename needs to be updated based on H1
+      const expectedFilename = titleToFilename(h1Title);
+      const currentFilename = this.currentNote.path.split("/").pop() || "";
+
+      if (currentFilename !== expectedFilename) {
+        const oldPath = this.currentNote.path;
+        const newPath = generatePathFromTitle(oldPath, h1Title);
+        console.log(`[EditorStore] Renaming note: ${oldPath} -> ${newPath}`);
+
+        try {
+          await api.renameNote(oldPath, newPath);
+          // Update the current note's path in memory
+          this.currentNote.path = newPath;
+          // Update workspace store's breadcrumb
+          workspaceStore.updateDocPath(oldPath, newPath, h1Title);
+          // Refresh folder tree to show the renamed file
+          await vaultStore.refreshFolderTree();
+          console.log(`[EditorStore] Note renamed successfully`);
+        } catch (e) {
+          // File might already exist with that name, just log and continue
+          console.warn(`[EditorStore] Could not rename file:`, e);
+        }
+      }
+
+      // Get schedule blocks linked to this note
+      const blocks = await api.getScheduleBlocksForNote(this.currentNote.id);
+
+      // Update any blocks where label differs from H1
+      let blocksUpdated = false;
+      for (const block of blocks) {
+        if (block.label !== h1Title) {
+          console.log(`[EditorStore] Syncing H1 "${h1Title}" to schedule block ${block.id}`);
+          await api.updateScheduleBlock({
+            id: block.id,
+            note_id: block.note_id,
+            date: null,
+            start_time: null,
+            end_time: null,
+            label: h1Title,
+            color: null,
+            context: null,
+          });
+          blocksUpdated = true;
+        }
+      }
+
+      // Update title property
+      await api.setProperty({
+        note_id: this.currentNote.id,
+        key: "title",
+        value: h1Title,
+        property_type: "text",
+      });
+
+      // Notify App.svelte to refresh calendar data if blocks were updated
+      if (blocksUpdated && this.onScheduleBlocksUpdated) {
+        this.onScheduleBlocksUpdated();
+      }
+    } catch (e) {
+      console.error("[EditorStore] Failed to sync title:", e);
     }
   }
 

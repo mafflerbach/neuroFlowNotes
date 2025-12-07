@@ -31,6 +31,7 @@ fn main() {
             commands::get_note,
             commands::get_note_content,
             commands::save_note,
+            commands::rename_note,
             // Todos
             commands::get_todos_for_note,
             commands::toggle_todo,
@@ -50,6 +51,7 @@ fn main() {
             commands::create_schedule_block,
             commands::get_schedule_blocks,
             commands::get_schedule_blocks_for_date,
+            commands::get_schedule_blocks_for_note,
             commands::update_schedule_block,
             commands::delete_schedule_block,
             // Notes by Date

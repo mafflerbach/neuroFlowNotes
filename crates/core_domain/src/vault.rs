@@ -21,6 +21,9 @@ pub enum VaultError {
     #[error("Vault path is not a directory: {0}")]
     NotADirectory(PathBuf),
 
+    #[error("File already exists: {0}")]
+    FileAlreadyExists(String),
+
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
 
@@ -324,6 +327,29 @@ impl Vault {
             let _ = self.event_tx.send(VaultEvent::NotesUpdated(vec![note_id]));
         }
 
+        Ok(note_id)
+    }
+
+    /// Rename a note (file and database path).
+    #[instrument(skip(self))]
+    pub async fn rename_note(&self, old_path: &str, new_path: &str) -> Result<i64> {
+        // Check if target already exists
+        if self.fs.exists(Path::new(new_path)).await {
+            return Err(VaultError::FileAlreadyExists(new_path.to_string()));
+        }
+
+        // Rename the file on disk
+        self.fs
+            .rename_file(Path::new(old_path), Path::new(new_path))
+            .await?;
+
+        // Update the database path
+        let note_id = self.repo.rename_note(old_path, new_path).await?;
+
+        // Emit event
+        let _ = self.event_tx.send(VaultEvent::NotesUpdated(vec![note_id]));
+
+        info!("Renamed note {} -> {} (id={})", old_path, new_path, note_id);
         Ok(note_id)
     }
 }

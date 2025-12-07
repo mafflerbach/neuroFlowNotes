@@ -192,6 +192,23 @@ pub async fn save_note(state: State<'_, AppState>, path: String, content: String
         .map_err(|e| CommandError::Vault(e.to_string()))
 }
 
+/// Rename a note (file and database path).
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn rename_note(
+    state: State<'_, AppState>,
+    old_path: String,
+    new_path: String,
+) -> Result<i64> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .rename_note(&old_path, &new_path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
 // ============================================================================
 // Todo Commands
 // ============================================================================
@@ -497,6 +514,22 @@ pub async fn get_schedule_blocks_for_date(
     vault
         .repo()
         .get_schedule_blocks_for_date(&date)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get schedule blocks linked to a specific note.
+#[tauri::command]
+pub async fn get_schedule_blocks_for_note(
+    state: State<'_, AppState>,
+    note_id: i64,
+) -> Result<Vec<ScheduleBlockDto>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_schedule_blocks_for_note(note_id)
         .await
         .map_err(|e| CommandError::Vault(e.to_string()))
 }

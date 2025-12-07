@@ -4,6 +4,7 @@
 
 import type { VaultInfo, FolderNode } from "../types";
 import * as api from "../services/api";
+import { getSetting, setSetting } from "../services/settings";
 
 class VaultStore {
   info = $state<VaultInfo | null>(null);
@@ -22,12 +23,30 @@ class VaultStore {
     try {
       this.info = await api.openVault(path);
       await this.refreshFolderTree();
+      // Save as last opened vault
+      setSetting("lastVaultPath", path);
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
       throw e;
     } finally {
       this.isLoading = false;
     }
+  }
+
+  /** Try to open the last used vault */
+  async openLastVault(): Promise<boolean> {
+    const lastPath = getSetting("lastVaultPath");
+    if (lastPath) {
+      try {
+        await this.open(lastPath);
+        return true;
+      } catch (e) {
+        console.warn("[VaultStore] Failed to open last vault:", e);
+        // Clear the invalid path
+        setSetting("lastVaultPath", null);
+      }
+    }
+    return false;
   }
 
   async close() {

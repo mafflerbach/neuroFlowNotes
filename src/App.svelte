@@ -23,7 +23,9 @@
     getNotesForDateRange,
     getNotesForDate,
     getNote,
+    getNoteContent,
     saveNote,
+    renameNote,
     setProperty,
     createScheduleBlock,
     updateScheduleBlock,
@@ -35,8 +37,10 @@
   import {
     separateAndDeduplicateNotes,
     flattenNotesFromDateMap,
-    generateNoteFilename,
     generateNoteContent,
+    replaceH1Title,
+    generatePathFromTitle,
+    titleToFilename,
     type DocWithSource,
   } from "./lib/utils/docListUtils";
 
@@ -197,9 +201,8 @@
       try {
         const dateStr = block.date;
         const timeStr = block.start_time.slice(0, 5);
-        const label = block.label || "note";
         const title = block.label || `Note for ${timeStr}`;
-        const path = generateNoteFilename(dateStr, timeStr, label);
+        const path = titleToFilename(title);
         const content = generateNoteContent(title);
 
         console.log("[App] Creating note for block:", path);
@@ -292,9 +295,9 @@
     console.log("[App] handleSaveBlock called with:", data);
     try {
       if (blockModalMode === "create") {
-        // Auto-create note file for the schedule block
+        // Auto-create note file for the schedule block (filename based on title, like Obsidian)
         const timeStr = data.start_time.slice(0, 5);
-        const path = generateNoteFilename(data.date, timeStr, data.label);
+        const path = titleToFilename(data.label);
         const content = generateNoteContent(data.label);
 
         console.log("[App] Creating note for schedule block:", path);
@@ -323,6 +326,45 @@
         // Refresh folder tree to show the new file
         await vaultStore.refreshFolderTree();
       } else if (blockModalBlock) {
+        // If label changed and there's a linked note, sync the H1, title property, and rename file
+        if (blockModalBlock.note_id && data.label !== blockModalBlock.label) {
+          console.log("[App] Label changed, syncing to linked note...");
+          try {
+            const note = await getNote(blockModalBlock.note_id);
+            const noteContent = await getNoteContent(note.path);
+            const updatedContent = replaceH1Title(noteContent.content, data.label);
+            await saveNote(note.path, updatedContent);
+
+            // Rename the file to match the new label
+            const newPath = generatePathFromTitle(note.path, data.label);
+            if (newPath !== note.path) {
+              console.log("[App] Renaming note:", note.path, "->", newPath);
+              try {
+                await renameNote(note.path, newPath);
+                // Update workspace store's breadcrumb with new path
+                workspaceStore.updateDocPath(note.path, newPath, data.label);
+                console.log("[App] Note renamed successfully");
+              } catch (e) {
+                console.warn("[App] Could not rename file:", e);
+              }
+            }
+
+            // Update title property
+            await setProperty({
+              note_id: blockModalBlock.note_id,
+              key: "title",
+              value: data.label,
+              property_type: "text",
+            });
+
+            // Refresh folder tree to show the renamed file
+            await vaultStore.refreshFolderTree();
+            console.log("[App] Note H1 and title property synced");
+          } catch (e) {
+            console.error("[App] Failed to sync label to note:", e);
+          }
+        }
+
         const request = {
           id: blockModalBlock.id,
           note_id: blockModalBlock.note_id, // Preserve existing note link
@@ -370,11 +412,22 @@
   }
 
   onMount(async () => {
+    // Try to open the last used vault
+    await vaultStore.openLastVault();
+
+    // Register callback for when editor updates schedule blocks
+    editorStore.onScheduleBlocksUpdated = () => {
+      console.log("[App] Schedule blocks updated, refreshing calendar data");
+      fetchCalendarData();
+    };
+
     // Subscribe to backend events
     unlisteners.push(
       await onNotesUpdated((payload) => {
         console.log("Notes updated:", payload.note_ids);
         vaultStore.refreshFolderTree();
+        // Also refresh calendar data since note titles may have changed
+        fetchCalendarData();
       })
     );
 

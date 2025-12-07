@@ -6,6 +6,8 @@
  * State C: Doc/Finder mode (no calendar, multi-column)
  */
 
+import { getSetting, setSetting } from "../services/settings";
+
 export type WorkspaceState = "calendar-only" | "calendar-with-doc" | "doc-finder";
 export type CalendarView = "monthly" | "weekly" | "daily";
 
@@ -19,8 +21,8 @@ class WorkspaceStore {
   // Current workspace state
   state = $state<WorkspaceState>("calendar-only");
 
-  // Calendar settings
-  calendarView = $state<CalendarView>("weekly");
+  // Calendar settings - initialized from saved settings
+  calendarView = $state<CalendarView>(getSetting("defaultCalendarView"));
   selectedDate = $state<Date>(new Date());
 
   // Folder view visibility
@@ -58,6 +60,16 @@ class WorkspaceStore {
     if (this.state === "doc-finder") {
       this.state = this.breadcrumb.length > 0 ? "calendar-with-doc" : "calendar-only";
     }
+  }
+
+  /** Set the default calendar view (persisted to settings) */
+  setDefaultCalendarView(view: CalendarView) {
+    setSetting("defaultCalendarView", view);
+  }
+
+  /** Get the saved default calendar view */
+  getDefaultCalendarView(): CalendarView {
+    return getSetting("defaultCalendarView");
   }
 
   /** Go to today */
@@ -119,6 +131,16 @@ class WorkspaceStore {
     if (this.breadcrumb.length === 0) {
       this.state = "calendar-only";
     }
+  }
+
+  /** Update a document's path and title (after rename) */
+  updateDocPath(oldPath: string, newPath: string, newTitle?: string) {
+    this.breadcrumb = this.breadcrumb.map((doc) => {
+      if (doc.path === oldPath) {
+        return { ...doc, path: newPath, title: newTitle ?? doc.title };
+      }
+      return doc;
+    });
   }
 
   /** Close all documents and return to calendar */

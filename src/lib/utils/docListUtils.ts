@@ -133,3 +133,57 @@ export function generateNoteFilename(date: string, time: string, label: string):
 export function generateNoteContent(title: string): string {
   return `# ${title}\n\n`;
 }
+
+/**
+ * Extract the first H1 title from markdown content.
+ * Returns null if no H1 found.
+ */
+export function extractH1Title(content: string): string | null {
+  const match = content.match(/^#\s+(.+)$/m);
+  return match ? match[1].trim() : null;
+}
+
+/**
+ * Generate a safe filename from a title (like Obsidian does).
+ * Converts the title to a filename-safe string.
+ */
+export function titleToFilename(title: string): string {
+  // Replace characters that are invalid in filenames
+  // Keep: letters, numbers, spaces, dashes, underscores
+  // Replace others with dashes
+  const safe = title
+    .replace(/[<>:"/\\|?*]/g, "-") // Invalid filename chars
+    .replace(/\s+/g, " ") // Normalize whitespace
+    .trim();
+  return `${safe}.md`;
+}
+
+/**
+ * Get the directory part of a path.
+ */
+export function getDirectory(path: string): string {
+  const lastSlash = path.lastIndexOf("/");
+  return lastSlash >= 0 ? path.substring(0, lastSlash) : "";
+}
+
+/**
+ * Generate a new path for a note based on its title, keeping it in the same directory.
+ */
+export function generatePathFromTitle(currentPath: string, title: string): string {
+  const dir = getDirectory(currentPath);
+  const filename = titleToFilename(title);
+  return dir ? `${dir}/${filename}` : filename;
+}
+
+/**
+ * Replace the first H1 title in markdown content with a new title.
+ * If no H1 exists, prepends one to the content.
+ */
+export function replaceH1Title(content: string, newTitle: string): string {
+  const h1Regex = /^#\s+.+$/m;
+  if (h1Regex.test(content)) {
+    return content.replace(h1Regex, `# ${newTitle}`);
+  }
+  // No H1 found, prepend one
+  return `# ${newTitle}\n\n${content}`;
+}

@@ -122,6 +122,26 @@ impl VaultFs {
         Ok(())
     }
 
+    /// Rename/move a file within the vault.
+    #[instrument(skip(self), fields(vault = %self.root.display()))]
+    pub async fn rename_file(&self, from_path: &Path, to_path: &Path) -> Result<()> {
+        let from_absolute = self.to_absolute(from_path);
+        let to_absolute = self.to_absolute(to_path);
+        debug!("Renaming file: {} -> {}", from_absolute.display(), to_absolute.display());
+
+        if !from_absolute.exists() {
+            return Err(FsError::NotFound(from_absolute));
+        }
+
+        // Ensure target directory exists
+        if let Some(parent) = to_absolute.parent() {
+            fs::create_dir_all(parent).await?;
+        }
+
+        fs::rename(&from_absolute, &to_absolute).await?;
+        Ok(())
+    }
+
     /// Check if a file exists.
     pub async fn exists(&self, relative_path: &Path) -> bool {
         let absolute = self.to_absolute(relative_path);
