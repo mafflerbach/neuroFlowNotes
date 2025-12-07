@@ -1,0 +1,11 @@
+[package]
+name = "core_fs"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+xxhash-rust.workspace = true
+async-recursion = "1.1"

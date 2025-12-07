@@ -1,0 +1,13 @@
+[package]
+name = "core_storage"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+shared_types = { path = "../shared_types" }
+core_index = { path = "../core_index" }
+thiserror.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+chrono.workspace = true

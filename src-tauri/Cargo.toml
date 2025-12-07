@@ -1,0 +1,27 @@
+[package]
+name = "neuroflow-notes"
+version.workspace = true
+edition.workspace = true
+description = "A local-first second brain application"
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+shared_types = { path = "../crates/shared_types" }
+core_fs = { path = "../crates/core_fs" }
+core_index = { path = "../crates/core_index" }
+core_storage = { path = "../crates/core_storage" }
+core_domain = { path = "../crates/core_domain" }
+tauri.workspace = true
+tauri-plugin-dialog = "2"
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+thiserror.workspace = true
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

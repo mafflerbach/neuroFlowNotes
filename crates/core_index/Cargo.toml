@@ -1,0 +1,12 @@
+[package]
+name = "core_index"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+shared_types = { path = "../shared_types" }
+thiserror.workspace = true
+pulldown-cmark.workspace = true
+regex.workspace = true
+once_cell.workspace = true
+tracing.workspace = true

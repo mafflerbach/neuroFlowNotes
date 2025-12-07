@@ -1,0 +1,579 @@
+//! Tauri commands - the IPC boundary between frontend and backend.
+
+use crate::state::AppState;
+use core_domain::Vault;
+use shared_types::{
+    BacklinkDto, CreateScheduleBlockRequest, FolderNode, NoteContent, NoteDto, NoteForDate,
+    NoteListItem, PropertyDto, ScheduleBlockDto, SearchResult, SetPropertyRequest, TagDto,
+    TodoDto, UpdateScheduleBlockRequest, VaultInfo,
+};
+use tauri::{AppHandle, Emitter, State};
+use thiserror::Error;
+use tracing::{error, info, instrument};
+
+/// Error type for commands.
+#[derive(Debug, Error)]
+pub enum CommandError {
+    #[error("No vault is currently open")]
+    NoVaultOpen,
+
+    #[error("Vault error: {0}")]
+    Vault(String),
+
+    #[error("Note not found: {0}")]
+    NoteNotFound(String),
+}
+
+impl serde::Serialize for CommandError {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+type Result<T> = std::result::Result<T, CommandError>;
+
+// ============================================================================
+// Vault Commands
+// ============================================================================
+
+/// Open a vault at the given path.
+#[tauri::command]
+#[instrument(skip(state, app))]
+pub async fn open_vault(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    path: String,
+) -> Result<VaultInfo> {
+    info!("Opening vault: {}", path);
+
+    // Open the vault
+    let mut vault = Vault::open(&path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    // Subscribe to events and forward to frontend
+    let mut rx = vault.subscribe();
+    let app_clone = app.clone();
+    tokio::spawn(async move {
+        while let Ok(event) = rx.recv().await {
+            match event {
+                core_domain::vault::VaultEvent::NotesUpdated(ids) => {
+                    let _ = app_clone.emit("notes:updated", shared_types::NotesUpdatedPayload { note_ids: ids });
+                }
+                core_domain::vault::VaultEvent::NotesDeleted(ids) => {
+                    let _ = app_clone.emit("notes:deleted", shared_types::NotesDeletedPayload { note_ids: ids });
+                }
+                core_domain::vault::VaultEvent::IndexComplete(payload) => {
+                    let _ = app_clone.emit("index:complete", payload);
+                }
+            }
+        }
+    });
+
+    // Perform initial index
+    vault
+        .full_index()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    // Start file watcher
+    vault
+        .start_watcher()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    // Get vault info
+    let info = vault
+        .info()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    // Store in state
+    *state.vault.write().await = Some(vault);
+
+    Ok(info)
+}
+
+/// Close the current vault.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn close_vault(state: State<'_, AppState>) -> Result<()> {
+    info!("Closing vault");
+
+    let mut vault_guard = state.vault.write().await;
+    if let Some(mut vault) = vault_guard.take() {
+        vault.stop_watcher().await;
+    }
+
+    Ok(())
+}
+
+/// Get information about the current vault.
+#[tauri::command]
+pub async fn get_vault_info(state: State<'_, AppState>) -> Result<Option<VaultInfo>> {
+    let vault_guard = state.vault.read().await;
+    if let Some(vault) = vault_guard.as_ref() {
+        let info = vault
+            .info()
+            .await
+            .map_err(|e| CommandError::Vault(e.to_string()))?;
+        Ok(Some(info))
+    } else {
+        Ok(None)
+    }
+}
+
+// ============================================================================
+// Note Commands
+// ============================================================================
+
+/// List all notes in the vault.
+#[tauri::command]
+pub async fn list_notes(state: State<'_, AppState>) -> Result<Vec<NoteListItem>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .list_notes()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get a note by ID.
+#[tauri::command]
+pub async fn get_note(state: State<'_, AppState>, note_id: i64) -> Result<NoteDto> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_note(note_id)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get a note's content.
+#[tauri::command]
+pub async fn get_note_content(state: State<'_, AppState>, path: String) -> Result<NoteContent> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    let content = vault
+        .read_note(&path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    let note = vault
+        .repo()
+        .get_note_by_path(&path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    Ok(NoteContent {
+        id: note.id,
+        path: note.path,
+        content,
+    })
+}
+
+/// Save a note's content.
+#[tauri::command]
+#[instrument(skip(state, content))]
+pub async fn save_note(state: State<'_, AppState>, path: String, content: String) -> Result<i64> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .write_note(&path, &content)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Todo Commands
+// ============================================================================
+
+/// Get todos for a specific note.
+#[tauri::command]
+pub async fn get_todos_for_note(state: State<'_, AppState>, note_id: i64) -> Result<Vec<TodoDto>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .get_todos_for_note(note_id)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Toggle a todo's completion status.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn toggle_todo(
+    state: State<'_, AppState>,
+    todo_id: i64,
+    completed: bool,
+) -> Result<()> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .toggle_todo(todo_id, completed)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get all incomplete todos.
+#[tauri::command]
+pub async fn get_incomplete_todos(state: State<'_, AppState>) -> Result<Vec<TodoDto>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .get_incomplete_todos()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Tag Commands
+// ============================================================================
+
+/// List all tags with counts.
+#[tauri::command]
+pub async fn list_tags(state: State<'_, AppState>) -> Result<Vec<TagDto>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .list_tags()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Backlink Commands
+// ============================================================================
+
+/// Get backlinks for a note.
+#[tauri::command]
+pub async fn get_backlinks(state: State<'_, AppState>, note_id: i64) -> Result<Vec<BacklinkDto>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_backlinks(note_id)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Search Commands
+// ============================================================================
+
+/// Search notes.
+#[tauri::command]
+pub async fn search_notes(
+    state: State<'_, AppState>,
+    query: String,
+    limit: Option<i32>,
+) -> Result<Vec<SearchResult>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .search(&query, limit.unwrap_or(50))
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Folder Tree Commands
+// ============================================================================
+
+/// Get the folder tree for the vault.
+#[tauri::command]
+pub async fn get_folder_tree(state: State<'_, AppState>) -> Result<FolderNode> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    let notes = vault
+        .list_notes()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    // Build tree from flat list of paths
+    let root = build_folder_tree(&notes, vault.fs().root().to_string_lossy().to_string());
+
+    Ok(root)
+}
+
+/// Build a folder tree from a flat list of note paths.
+fn build_folder_tree(notes: &[NoteListItem], vault_name: String) -> FolderNode {
+    let mut root = FolderNode {
+        name: vault_name.split('/').last().unwrap_or("Vault").to_string(),
+        path: String::new(),
+        is_dir: true,
+        children: Vec::new(),
+    };
+
+    for note in notes {
+        let parts: Vec<&str> = note.path.split('/').collect();
+        insert_path(&mut root, &parts, &note.path);
+    }
+
+    // Sort children recursively
+    sort_tree(&mut root);
+
+    root
+}
+
+fn insert_path(node: &mut FolderNode, parts: &[&str], full_path: &str) {
+    if parts.is_empty() {
+        return;
+    }
+
+    let name = parts[0];
+    let is_file = parts.len() == 1;
+
+    // Find or create child
+    let child_idx = node.children.iter().position(|c| c.name == name);
+
+    if let Some(idx) = child_idx {
+        if !is_file {
+            insert_path(&mut node.children[idx], &parts[1..], full_path);
+        }
+    } else {
+        let child_path = if node.path.is_empty() {
+            name.to_string()
+        } else {
+            format!("{}/{}", node.path, name)
+        };
+
+        let mut child = FolderNode {
+            name: name.to_string(),
+            path: if is_file {
+                full_path.to_string()
+            } else {
+                child_path
+            },
+            is_dir: !is_file,
+            children: Vec::new(),
+        };
+
+        if !is_file {
+            insert_path(&mut child, &parts[1..], full_path);
+        }
+
+        node.children.push(child);
+    }
+}
+
+fn sort_tree(node: &mut FolderNode) {
+    // Sort: directories first, then alphabetically
+    node.children.sort_by(|a, b| {
+        match (a.is_dir, b.is_dir) {
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+        }
+    });
+
+    for child in &mut node.children {
+        sort_tree(child);
+    }
+}
+
+// ============================================================================
+// Property Commands
+// ============================================================================
+
+/// Get all properties for a note.
+#[tauri::command]
+pub async fn get_properties(state: State<'_, AppState>, note_id: i64) -> Result<Vec<PropertyDto>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_properties_for_note(note_id)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Set a property for a note.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn set_property(state: State<'_, AppState>, request: SetPropertyRequest) -> Result<i64> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .set_property(
+            request.note_id,
+            &request.key,
+            request.value.as_deref(),
+            request.property_type.as_deref(),
+        )
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Delete a property from a note.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn delete_property(state: State<'_, AppState>, note_id: i64, key: String) -> Result<()> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .delete_property(note_id, &key)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Schedule Block Commands
+// ============================================================================
+
+/// Create a schedule block.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn create_schedule_block(
+    state: State<'_, AppState>,
+    request: CreateScheduleBlockRequest,
+) -> Result<i64> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .create_schedule_block(
+            request.note_id,
+            &request.date.to_string(),
+            &request.start_time.to_string(),
+            &request.end_time.to_string(),
+            request.label.as_deref(),
+            request.color.as_deref(),
+            request.context.as_deref(),
+        )
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get schedule blocks for a date range.
+#[tauri::command]
+pub async fn get_schedule_blocks(
+    state: State<'_, AppState>,
+    start_date: String,
+    end_date: String,
+) -> Result<Vec<ScheduleBlockDto>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_schedule_blocks_for_range(&start_date, &end_date)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get schedule blocks for a single date.
+#[tauri::command]
+pub async fn get_schedule_blocks_for_date(
+    state: State<'_, AppState>,
+    date: String,
+) -> Result<Vec<ScheduleBlockDto>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_schedule_blocks_for_date(&date)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Update a schedule block.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn update_schedule_block(
+    state: State<'_, AppState>,
+    request: UpdateScheduleBlockRequest,
+) -> Result<()> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .update_schedule_block(
+            request.id,
+            request.note_id,
+            request.date.as_ref().map(|d| d.to_string()).as_deref(),
+            request.start_time.as_ref().map(|t| t.to_string()).as_deref(),
+            request.end_time.as_ref().map(|t| t.to_string()).as_deref(),
+            request.label.as_deref(),
+            request.color.as_deref(),
+            request.context.as_deref(),
+        )
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Delete a schedule block.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn delete_schedule_block(state: State<'_, AppState>, id: i64) -> Result<()> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .delete_schedule_block(id)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Notes by Date Commands
+// ============================================================================
+
+/// Get notes for a specific date (ordered by: scheduled > journal > created).
+#[tauri::command]
+pub async fn get_notes_for_date(
+    state: State<'_, AppState>,
+    date: String,
+) -> Result<Vec<NoteForDate>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_notes_for_date(&date)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get notes for a date range (for weekly/monthly views).
+#[tauri::command]
+pub async fn get_notes_for_date_range(
+    state: State<'_, AppState>,
+    start_date: String,
+    end_date: String,
+) -> Result<Vec<(String, Vec<NoteForDate>)>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_notes_for_date_range(&start_date, &end_date)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}

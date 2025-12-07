@@ -1,0 +1,18 @@
+[package]
+name = "core_domain"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+shared_types = { path = "../shared_types" }
+core_fs = { path = "../core_fs" }
+core_index = { path = "../core_index" }
+core_storage = { path = "../core_storage" }
+thiserror.workspace = true
+anyhow.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+notify.workspace = true
+notify-debouncer-mini.workspace = true
+sqlx.workspace = true
