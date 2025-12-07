@@ -28,6 +28,9 @@ class WorkspaceStore {
   // Folder view visibility
   folderViewVisible = $state(true);
 
+  // Doc list panel visibility
+  docListVisible = $state(true);
+
   // Breadcrumb / document stack (for State C)
   breadcrumb = $state<OpenDoc[]>([]);
 
@@ -51,6 +54,11 @@ class WorkspaceStore {
   /** Toggle folder view visibility */
   toggleFolderView() {
     this.folderViewVisible = !this.folderViewVisible;
+  }
+
+  /** Toggle doc list panel visibility */
+  toggleDocList() {
+    this.docListVisible = !this.docListVisible;
   }
 
   /** Switch calendar view (monthly, weekly, daily) */

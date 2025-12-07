@@ -136,7 +136,48 @@ pub async fn init_database(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     // Migration: Ensure properties table has UNIQUE(note_id, key) constraint
     migrate_properties(pool).await?;
 
+    // Migration: Add created_date column for local date storage
+    migrate_created_date(pool).await?;
+
     info!("Database schema initialized");
+    Ok(())
+}
+
+/// Migrate notes table to add created_date column for local date storage.
+/// This avoids timezone issues with UTC timestamps.
+async fn migrate_created_date(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    // Check if created_date column exists
+    let columns: Vec<(i64, String, String, i64, Option<String>, i64)> = sqlx::query_as(
+        "SELECT cid, name, type, `notnull`, dflt_value, pk FROM pragma_table_info('notes')"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let has_created_date = columns.iter().any(|(_, name, _, _, _, _)| name == "created_date");
+
+    if !has_created_date {
+        info!("Migrating notes table: adding created_date column");
+
+        // Add the column
+        sqlx::query("ALTER TABLE notes ADD COLUMN created_date TEXT")
+            .execute(pool)
+            .await?;
+
+        // Backfill existing notes with date extracted from created_at (UTC, but better than nothing)
+        sqlx::query("UPDATE notes SET created_date = date(created_at) WHERE created_date IS NULL AND created_at IS NOT NULL")
+            .execute(pool)
+            .await?;
+
+        // Create index for faster queries
+        sqlx::query("CREATE INDEX IF NOT EXISTS idx_notes_created_date ON notes(created_date)")
+            .execute(pool)
+            .await?;
+
+        info!("notes table migration complete: added created_date column");
+    } else {
+        debug!("notes.created_date column already exists");
+    }
+
     Ok(())
 }
 

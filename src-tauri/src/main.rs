@@ -32,6 +32,10 @@ fn main() {
             commands::get_note_content,
             commands::save_note,
             commands::rename_note,
+            commands::delete_note,
+            // Folders
+            commands::create_folder,
+            commands::delete_folder,
             // Todos
             commands::get_todos_for_note,
             commands::toggle_todo,

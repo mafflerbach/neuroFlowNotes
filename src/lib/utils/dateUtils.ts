@@ -10,11 +10,15 @@ export const MONTH_NAMES_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul
 export const MONTH_NAMES_FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 /**
- * Format a Date as YYYY-MM-DD string (ISO date without time).
+ * Format a Date as YYYY-MM-DD string (local date without time).
  * This is the standard format used for date keys throughout the app.
+ * Uses local timezone to avoid UTC conversion issues.
  */
 export function formatDateKey(date: Date): string {
-  return date.toISOString().split("T")[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /**

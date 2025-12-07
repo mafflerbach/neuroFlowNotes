@@ -2268,6 +2268,7 @@ dependencies = [
 name = "neuroflow-notes"
 version = "0.1.0"
 dependencies = [
+ "async-recursion",
  "core_domain",
  "core_fs",
  "core_index",

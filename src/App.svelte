@@ -58,6 +58,7 @@
   const state = $derived(workspaceStore.state);
   const calendarView = $derived(workspaceStore.calendarView);
   const folderViewVisible = $derived(workspaceStore.folderViewVisible);
+  const docListVisible = $derived(workspaceStore.docListVisible);
   const activeDoc = $derived(workspaceStore.activeDoc);
   const selectedDate = $derived(workspaceStore.selectedDate);
 
@@ -470,7 +471,7 @@
     {/if}
 
     <!-- DocList panel (between sidebar and calendar) -->
-    {#if state === "calendar-only" || state === "calendar-with-doc"}
+    {#if docListVisible && (state === "calendar-only" || state === "calendar-with-doc")}
       <div class="doc-list-panel">
         <DocList
           {scheduledDocs}

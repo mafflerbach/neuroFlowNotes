@@ -37,11 +37,13 @@ impl VaultRepository {
         hash: &str,
     ) -> Result<i64> {
         let now = Utc::now().to_rfc3339();
+        // Use local date for created_date to avoid timezone issues
+        let local_date = chrono::Local::now().format("%Y-%m-%d").to_string();
 
         let result = sqlx::query_scalar::<_, i64>(
             r#"
-            INSERT INTO notes (path, title, hash, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO notes (path, title, hash, created_at, updated_at, created_date)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(path) DO UPDATE SET
                 title = excluded.title,
                 hash = excluded.hash,
@@ -54,6 +56,7 @@ impl VaultRepository {
         .bind(hash)
         .bind(&now)
         .bind(&now)
+        .bind(&local_date)
         .fetch_one(&self.pool)
         .await?;
 
@@ -760,12 +763,12 @@ impl VaultRepository {
             });
         }
 
-        // 3. Notes created on this date
+        // 3. Notes created on this date (using created_date for local timezone accuracy)
         let created_rows = sqlx::query_as::<_, (i64, String, Option<String>, i32)>(
             r#"
             SELECT n.id, n.path, n.title, n.pinned
             FROM notes n
-            WHERE date(n.created_at) = ?
+            WHERE n.created_date = ?
             AND n.id NOT IN (SELECT note_id FROM schedule_blocks WHERE date = ?)
             AND n.id NOT IN (SELECT note_id FROM properties WHERE key = 'journal_date' AND value = ?)
             "#,
@@ -855,12 +858,13 @@ impl VaultRepository {
             }
         }
 
-        // 3. Get created notes in range
+        // 3. Get created notes in range (using created_date for local timezone accuracy)
         let created_rows = sqlx::query_as::<_, (i64, String, Option<String>, i32, String)>(
             r#"
-            SELECT id, path, title, pinned, date(created_at) as created_date
+            SELECT id, path, title, pinned, created_date
             FROM notes
-            WHERE date(created_at) >= ? AND date(created_at) <= ?
+            WHERE created_date >= ? AND created_date <= ?
+            AND created_date IS NOT NULL
             "#,
         )
         .bind(start_date)

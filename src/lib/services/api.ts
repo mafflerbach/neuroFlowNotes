@@ -62,6 +62,22 @@ export async function renameNote(oldPath: string, newPath: string): Promise<numb
   return invoke<number>("rename_note", { oldPath, newPath });
 }
 
+export async function deleteNote(path: string): Promise<number | null> {
+  return invoke<number | null>("delete_note", { path });
+}
+
+// ============================================================================
+// Folders
+// ============================================================================
+
+export async function createFolder(path: string): Promise<void> {
+  return invoke("create_folder", { path });
+}
+
+export async function deleteFolder(path: string): Promise<number[]> {
+  return invoke<number[]>("delete_folder", { path });
+}
+
 // ============================================================================
 // Todos
 // ============================================================================

@@ -49,6 +49,15 @@
   const hasDocs = $derived(
     scheduledDocs.length > 0 || journalDocs.length > 0 || createdDocs.length > 0
   );
+
+  // Sort created docs alphabetically by filename
+  const sortedCreatedDocs = $derived(
+    [...createdDocs].sort((a, b) => {
+      const nameA = a.note.path.split("/").pop()?.toLowerCase() || "";
+      const nameB = b.note.path.split("/").pop()?.toLowerCase() || "";
+      return nameA.localeCompare(nameB);
+    })
+  );
 </script>
 
 <div class="doc-list">
@@ -136,7 +145,7 @@
             Created
           </h4>
           <div class="doc-items">
-            {#each createdDocs as doc (doc.note.id)}
+            {#each sortedCreatedDocs as doc (doc.note.id)}
               <button
                 class="doc-item created"
                 onclick={() => onDocClick?.(doc.note)}

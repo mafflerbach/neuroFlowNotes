@@ -352,4 +352,67 @@ impl Vault {
         info!("Renamed note {} -> {} (id={})", old_path, new_path, note_id);
         Ok(note_id)
     }
+
+    /// Delete a note (file and database record).
+    #[instrument(skip(self))]
+    pub async fn delete_note(&self, path: &str) -> Result<Option<i64>> {
+        // Delete file from disk
+        self.fs.delete_file(Path::new(path)).await?;
+
+        // Remove from database
+        let deleted_id = self.repo.delete_note(path).await?;
+
+        // Emit event
+        if let Some(id) = deleted_id {
+            let _ = self.event_tx.send(VaultEvent::NotesDeleted(vec![id]));
+            info!("Deleted note: {} (id={})", path, id);
+        }
+
+        Ok(deleted_id)
+    }
+
+    /// Create a folder in the vault.
+    #[instrument(skip(self))]
+    pub async fn create_folder(&self, path: &str) -> Result<()> {
+        let absolute = self.fs.to_absolute(Path::new(path));
+        tokio::fs::create_dir_all(&absolute)
+            .await
+            .map_err(core_fs::FsError::from)?;
+        info!("Created folder: {}", path);
+        Ok(())
+    }
+
+    /// Delete a folder and all its contents.
+    #[instrument(skip(self))]
+    pub async fn delete_folder(&self, path: &str) -> Result<Vec<i64>> {
+        let absolute = self.fs.to_absolute(Path::new(path));
+
+        // First, find all notes in this folder and delete them from the database
+        let notes = self.repo.list_notes().await?;
+        let folder_prefix = if path.is_empty() { String::new() } else { format!("{}/", path) };
+        let mut deleted_ids = Vec::new();
+
+        for note in notes {
+            if note.path.starts_with(&folder_prefix) || note.path == path {
+                if let Some(id) = self.repo.delete_note(&note.path).await? {
+                    deleted_ids.push(id);
+                }
+            }
+        }
+
+        // Then delete the folder from disk
+        if absolute.exists() {
+            tokio::fs::remove_dir_all(&absolute)
+                .await
+                .map_err(core_fs::FsError::from)?;
+        }
+
+        // Emit event for deleted notes
+        if !deleted_ids.is_empty() {
+            let _ = self.event_tx.send(VaultEvent::NotesDeleted(deleted_ids.clone()));
+        }
+
+        info!("Deleted folder: {} ({} notes removed)", path, deleted_ids.len());
+        Ok(deleted_ids)
+    }
 }

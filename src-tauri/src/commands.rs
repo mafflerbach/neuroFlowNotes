@@ -209,6 +209,45 @@ pub async fn rename_note(
         .map_err(|e| CommandError::Vault(e.to_string()))
 }
 
+/// Delete a note (file and database record).
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn delete_note(state: State<'_, AppState>, path: String) -> Result<Option<i64>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .delete_note(&path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Create a folder in the vault.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn create_folder(state: State<'_, AppState>, path: String) -> Result<()> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .create_folder(&path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Delete a folder and all its contents.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn delete_folder(state: State<'_, AppState>, path: String) -> Result<Vec<i64>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .delete_folder(&path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
 // ============================================================================
 // Todo Commands
 // ============================================================================
@@ -325,9 +364,72 @@ pub async fn get_folder_tree(state: State<'_, AppState>) -> Result<FolderNode> {
         .map_err(|e| CommandError::Vault(e.to_string()))?;
 
     // Build tree from flat list of paths
-    let root = build_folder_tree(&notes, vault.fs().root().to_string_lossy().to_string());
+    let mut root = build_folder_tree(&notes, vault.fs().root().to_string_lossy().to_string());
+
+    // Also scan actual directories to include empty folders
+    scan_directories(&mut root, vault.fs().root(), vault.fs().root())
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    // Re-sort after adding directories
+    sort_tree(&mut root);
 
     Ok(root)
+}
+
+/// Recursively scan directories and add empty folders to the tree.
+#[async_recursion::async_recursion]
+async fn scan_directories(
+    node: &mut FolderNode,
+    current_dir: &std::path::Path,
+    vault_root: &std::path::Path,
+) -> std::result::Result<(), String> {
+    let mut entries = match tokio::fs::read_dir(current_dir).await {
+        Ok(entries) => entries,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        let path = entry.path();
+        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+        // Skip hidden files/directories
+        if file_name.starts_with('.') {
+            continue;
+        }
+
+        if path.is_dir() {
+            // Get relative path
+            let relative = path
+                .strip_prefix(vault_root)
+                .map_err(|e| e.to_string())?
+                .to_string_lossy()
+                .to_string();
+
+            // Check if this directory already exists in the tree
+            let dir_exists = node.children.iter().any(|c| c.is_dir && c.path == relative);
+
+            if !dir_exists {
+                // Add the directory
+                let mut new_dir = FolderNode {
+                    name: file_name.to_string(),
+                    path: relative.clone(),
+                    is_dir: true,
+                    children: Vec::new(),
+                };
+                // Recursively scan subdirectories
+                scan_directories(&mut new_dir, &path, vault_root).await?;
+                node.children.push(new_dir);
+            } else {
+                // Directory exists, find it and scan its subdirectories
+                if let Some(existing_dir) = node.children.iter_mut().find(|c| c.is_dir && c.path == relative) {
+                    scan_directories(existing_dir, &path, vault_root).await?;
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// Build a folder tree from a flat list of note paths.
