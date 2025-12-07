@@ -31,6 +31,9 @@ class WorkspaceStore {
   // Doc list panel visibility
   docListVisible = $state(true);
 
+  // Calendar/timeline visibility
+  calendarVisible = $state(true);
+
   // Breadcrumb / document stack (for State C)
   breadcrumb = $state<OpenDoc[]>([]);
 
@@ -62,6 +65,11 @@ class WorkspaceStore {
   /** Toggle doc list panel visibility */
   toggleDocList() {
     this.docListVisible = !this.docListVisible;
+  }
+
+  /** Toggle calendar/timeline visibility */
+  toggleCalendar() {
+    this.calendarVisible = !this.calendarVisible;
   }
 
   /** Switch calendar view (monthly, weekly, daily) */

@@ -3,10 +3,12 @@
   import { EditorState } from "@codemirror/state";
   import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
   import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-  import { markdown } from "@codemirror/lang-markdown";
-  import { syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
+  import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+  import { languages } from "@codemirror/language-data";
+  import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
   import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
   import { editorStore } from "../stores";
+  import { wikiLinkCompletion, livePreview, markdownHighlight } from "../editor";
 
   interface Props {
     readonly?: boolean;
@@ -23,12 +25,15 @@
     "&": {
       height: "100%",
       fontSize: "var(--font-size-md)",
+      color: "var(--text-primary)",
     },
     ".cm-content": {
       fontFamily: "var(--font-family-mono)",
       padding: "var(--spacing-4) 0",
+      color: "var(--text-primary)",
     },
     ".cm-line": {
+      color: "var(--text-primary)",
       padding: "0 var(--spacing-4)",
     },
     ".cm-gutters": {
@@ -82,13 +87,24 @@
       highlightActiveLine(),
       history(),
       highlightSelectionMatches(),
-      markdown(),
-      syntaxHighlighting(defaultHighlightStyle),
+      // Markdown with code block language support for 100+ languages
+      markdown({
+        base: markdownLanguage,
+        codeLanguages: languages,
+      }),
+      // Custom markdown highlighting with theme-aware colors
+      markdownHighlight(),
+      // Default syntax highlighting as fallback for any missed tokens
+      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
       saveKeymap,
       updateListener,
       editorTheme,
       EditorView.lineWrapping,
+      // Wiki-link autocomplete ([[)
+      wikiLinkCompletion(),
+      // Live preview (hide markdown syntax on inactive lines)
+      livePreview(),
     ];
 
     // Add readonly extension if readonly prop is true
@@ -183,10 +199,20 @@
   .editor-content {
     flex: 1;
     overflow: hidden;
+    position: relative;
   }
 
   .editor-content :global(.cm-editor) {
     height: 100%;
+  }
+
+  /* Ensure autocomplete tooltip is visible */
+  .editor-content :global(.cm-tooltip) {
+    z-index: var(--z-dropdown);
+  }
+
+  .editor-content :global(.cm-tooltip-autocomplete) {
+    z-index: var(--z-dropdown);
   }
 
   .editor-loading,

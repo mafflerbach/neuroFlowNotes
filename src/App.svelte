@@ -61,6 +61,7 @@
   const calendarView = $derived(workspaceStore.calendarView);
   const folderViewVisible = $derived(workspaceStore.folderViewVisible);
   const docListVisible = $derived(workspaceStore.docListVisible);
+  const calendarVisible = $derived(workspaceStore.calendarVisible);
   const activeDoc = $derived(workspaceStore.activeDoc);
   const selectedDate = $derived(workspaceStore.selectedDate);
 
@@ -485,36 +486,8 @@
     <main class="main-content">
       {#if workspaceState === "calendar-only"}
         <!-- State A: Calendar only -->
-        <div class="calendar-area">
-          {#if calendarView === "monthly"}
-            <CalendarMonthly
-              {notesForMonth}
-              onNoteClick={handleNoteClick}
-              onDayClick={handleDayClick}
-            />
-          {:else if calendarView === "weekly"}
-            <CalendarWeekly
-              {scheduleBlocks}
-              {notesForWeek}
-              onBlockClick={handleBlockClick}
-              onBlockEdit={handleBlockEdit}
-              onNoteClick={handleNoteClick}
-              onEmptySlotClick={handleWeeklyEmptySlotClick}
-            />
-          {:else if calendarView === "daily"}
-            <CalendarDaily
-              {scheduleBlocks}
-              onBlockClick={handleBlockClick}
-              onBlockEdit={handleBlockEdit}
-              onEmptySlotClick={handleEmptySlotClick}
-            />
-          {/if}
-        </div>
-
-      {:else if workspaceState === "calendar-with-doc"}
-        <!-- State B: Calendar with one document -->
-        <div class="split-view">
-          <div class="calendar-panel">
+        {#if calendarVisible}
+          <div class="calendar-area">
             {#if calendarView === "monthly"}
               <CalendarMonthly
                 {notesForMonth}
@@ -539,8 +512,44 @@
               />
             {/if}
           </div>
+        {:else}
+          <div class="empty-state">
+            <p>Calendar hidden. Click the calendar icon to show.</p>
+          </div>
+        {/if}
 
-          <div class="doc-panel">
+      {:else if workspaceState === "calendar-with-doc"}
+        <!-- State B: Calendar with one document -->
+        <div class="split-view">
+          {#if calendarVisible}
+            <div class="calendar-panel">
+              {#if calendarView === "monthly"}
+                <CalendarMonthly
+                  {notesForMonth}
+                  onNoteClick={handleNoteClick}
+                  onDayClick={handleDayClick}
+                />
+              {:else if calendarView === "weekly"}
+                <CalendarWeekly
+                  {scheduleBlocks}
+                  {notesForWeek}
+                  onBlockClick={handleBlockClick}
+                  onBlockEdit={handleBlockEdit}
+                  onNoteClick={handleNoteClick}
+                  onEmptySlotClick={handleWeeklyEmptySlotClick}
+                />
+              {:else if calendarView === "daily"}
+                <CalendarDaily
+                  {scheduleBlocks}
+                  onBlockClick={handleBlockClick}
+                  onBlockEdit={handleBlockEdit}
+                  onEmptySlotClick={handleEmptySlotClick}
+                />
+              {/if}
+            </div>
+          {/if}
+
+          <div class="doc-panel" class:full-width={!calendarVisible}>
             {#if activeDoc}
               <div class="doc-header">
                 <span class="doc-title">{activeDoc.title || activeDoc.path}</span>
@@ -652,6 +661,19 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  .doc-panel.full-width {
+    max-width: none;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: var(--font-size-md);
   }
 
   .doc-header {

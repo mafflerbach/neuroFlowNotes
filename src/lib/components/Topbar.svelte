@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Folder, List, Plus, Settings } from "lucide-svelte";
+  import { Folder, List, Plus, Settings, Calendar } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import { vaultStore } from "../stores/vault.svelte";
   import * as api from "../services/api";
@@ -62,6 +62,14 @@
       title="Toggle File List"
     >
       <List size={18} />
+    </button>
+    <button
+      class="icon-btn"
+      class:active={workspaceStore.calendarVisible}
+      onclick={() => workspaceStore.toggleCalendar()}
+      title="Toggle Calendar"
+    >
+      <Calendar size={18} />
     </button>
   </div>
 
