@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { ChevronRight, Folder, File, FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-svelte";
+  import { ChevronRight, Folder, File } from "lucide-svelte";
   import type { FolderNode } from "../types";
   import { editorStore, workspaceStore, vaultStore } from "../stores";
   import { listNotes, renameNote, deleteNote, deleteFolder, createFolder, saveNote, getNoteContent } from "../services/api";
   import { replaceH1Title } from "../utils/docListUtils";
   import { ask } from "@tauri-apps/plugin-dialog";
   import FolderTree from "./FolderTree.svelte";
+  import TreeContextMenu from "./folder-tree/TreeContextMenu.svelte";
 
   interface Props {
     node: FolderNode;
@@ -342,35 +343,16 @@
 
   <!-- Context Menu -->
   {#if showContextMenu}
-    <div
-      class="context-menu"
-      role="menu"
-      tabindex="-1"
-      style:left="{contextMenuX}px"
-      style:top="{contextMenuY}px"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.key === "Escape" && closeContextMenu()}
-    >
-      {#if node.is_dir}
-        <button class="menu-item" onclick={startCreateFile}>
-          <FilePlus size={14} />
-          New Note
-        </button>
-        <button class="menu-item" onclick={startCreateFolder}>
-          <FolderPlus size={14} />
-          New Folder
-        </button>
-        <div class="menu-divider"></div>
-      {/if}
-      <button class="menu-item" onclick={startRename}>
-        <Pencil size={14} />
-        Rename
-      </button>
-      <button class="menu-item danger" onclick={handleDelete}>
-        <Trash2 size={14} />
-        Delete
-      </button>
-    </div>
+    <TreeContextMenu
+      isDir={node.is_dir}
+      x={contextMenuX}
+      y={contextMenuY}
+      onNewFile={startCreateFile}
+      onNewFolder={startCreateFolder}
+      onRename={startRename}
+      onDelete={handleDelete}
+      onClose={closeContextMenu}
+    />
   {/if}
 </div>
 
@@ -468,50 +450,5 @@
 
   .rename-input:focus {
     box-shadow: var(--shadow-focus);
-  }
-
-  /* Context Menu */
-  .context-menu {
-    position: fixed;
-    z-index: var(--z-context-menu);
-    min-width: 160px;
-    background: var(--context-menu-bg);
-    border: 1px solid var(--context-menu-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--context-menu-shadow);
-    padding: var(--spacing-1);
-  }
-
-  .menu-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    width: 100%;
-    padding: var(--spacing-2) var(--spacing-3);
-    border: none;
-    background: transparent;
-    text-align: left;
-    cursor: pointer;
-    font-size: var(--font-size-base);
-    color: var(--text-primary);
-    border-radius: var(--radius-sm);
-  }
-
-  .menu-item:hover {
-    background: var(--context-menu-item-hover-bg);
-  }
-
-  .menu-item.danger {
-    color: var(--color-error);
-  }
-
-  .menu-item.danger:hover {
-    background: var(--color-error-light);
-  }
-
-  .menu-divider {
-    height: 1px;
-    margin: var(--spacing-1) 0;
-    background: var(--context-menu-separator);
   }
 </style>
