@@ -285,15 +285,30 @@
     date: string;
     start_time: string;
     end_time: string;
-    label: string | null;
+    label: string;
     color: string;
     context: string | null;
   }) {
     console.log("[App] handleSaveBlock called with:", data);
     try {
       if (blockModalMode === "create") {
+        // Auto-create note file for the schedule block
+        const timeStr = data.start_time.slice(0, 5);
+        const path = generateNoteFilename(data.date, timeStr, data.label);
+        const content = generateNoteContent(data.label);
+
+        console.log("[App] Creating note for schedule block:", path);
+        const noteId = await saveNote(path, content);
+        console.log("[App] Note created with id:", noteId);
+
+        // Store metadata as properties in the database
+        await setProperty({ note_id: noteId, key: "date", value: data.date, property_type: "date" });
+        await setProperty({ note_id: noteId, key: "time", value: timeStr, property_type: "time" });
+        await setProperty({ note_id: noteId, key: "title", value: data.label, property_type: "text" });
+
+        // Create schedule block linked to the note
         const request = {
-          note_id: null, // Blocks are standalone, not linked to notes
+          note_id: noteId,
           date: data.date,
           start_time: data.start_time,
           end_time: data.end_time,
@@ -302,12 +317,15 @@
           context: data.context,
         };
         console.log("[App] Creating schedule block with:", request);
-        const result = await createScheduleBlock(request);
-        console.log("[App] Schedule block created with id:", result);
+        const blockId = await createScheduleBlock(request);
+        console.log("[App] Schedule block created with id:", blockId);
+
+        // Refresh folder tree to show the new file
+        await vaultStore.refreshFolderTree();
       } else if (blockModalBlock) {
         const request = {
           id: blockModalBlock.id,
-          note_id: null,
+          note_id: blockModalBlock.note_id, // Preserve existing note link
           date: data.date,
           start_time: data.start_time,
           end_time: data.end_time,
