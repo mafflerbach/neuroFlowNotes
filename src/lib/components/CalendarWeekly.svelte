@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ChevronLeft, ChevronRight, Pencil } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import type { ScheduleBlockDto, NoteListItem } from "../types";
   import {
@@ -82,16 +83,12 @@
 <div class="calendar-weekly">
   <!-- Navigation header -->
   <div class="week-nav">
-    <button class="nav-arrow" onclick={goToPreviousWeek}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
+    <button class="nav-arrow" onclick={goToPreviousWeek} aria-label="Previous week">
+      <ChevronLeft size={20} />
     </button>
     <span class="week-range">{weekRange()}</span>
-    <button class="nav-arrow" onclick={goToNextWeek}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 18l6-6-6-6" />
-      </svg>
+    <button class="nav-arrow" onclick={goToNextWeek} aria-label="Next week">
+      <ChevronRight size={20} />
     </button>
   </div>
 
@@ -134,6 +131,7 @@
           <button
             class="hour-slot"
             onclick={() => handleSlotClick(date, hour)}
+            aria-label="Create event at {hour}:00"
           ></button>
         {/each}
 
@@ -163,10 +161,7 @@
                 }}
                 title="Edit block"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
+                <Pencil size={12} />
               </button>
             </div>
           {/each}
@@ -198,16 +193,16 @@
     flex-direction: column;
     height: 100%;
     min-height: 400px;
-    background: var(--calendar-bg, #fff);
+    background: var(--calendar-bg);
   }
 
   .week-nav {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 16px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    gap: var(--spacing-4);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--calendar-border);
   }
 
   .nav-arrow {
@@ -218,26 +213,26 @@
     height: 36px;
     border: none;
     background: transparent;
-    border-radius: 8px;
-    color: var(--text-color, #333);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
     cursor: pointer;
   }
 
   .nav-arrow:hover {
-    background: var(--hover-bg, #f0f0f0);
+    background: var(--bg-hover);
   }
 
   .week-range {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-color, #333);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
     min-width: 200px;
     text-align: center;
   }
 
   .week-header {
     display: flex;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    border-bottom: 1px solid var(--calendar-border);
     flex-shrink: 0;
   }
 
@@ -251,21 +246,21 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px 4px;
+    padding: var(--spacing-2) var(--spacing-1);
     border: none;
     background: transparent;
     cursor: pointer;
-    border-left: 1px solid var(--border-color, #e0e0e0);
+    border-left: 1px solid var(--calendar-border);
   }
 
   .day-header:hover {
-    background: var(--hover-bg, #f5f5f5);
+    background: var(--bg-hover);
   }
 
   .day-header.is-today .day-number {
-    background: var(--primary-color, #4f6bed);
-    color: white;
-    border-radius: 50%;
+    background: var(--calendar-selected-bg);
+    color: var(--calendar-selected-text);
+    border-radius: var(--radius-full);
     width: 28px;
     height: 28px;
     display: flex;
@@ -274,19 +269,19 @@
   }
 
   .day-header.is-selected {
-    background: var(--active-bg, #e0e7ff);
+    background: var(--bg-active);
   }
 
   .day-name {
-    font-size: 11px;
-    color: var(--text-muted, #666);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   .day-number {
-    font-size: 18px;
-    font-weight: 500;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-medium);
     margin-top: 2px;
   }
 
@@ -306,45 +301,45 @@
     display: flex;
     align-items: flex-start;
     justify-content: flex-end;
-    padding-right: 8px;
-    font-size: 11px;
-    color: var(--text-muted, #666);
+    padding-right: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
     transform: translateY(-6px);
   }
 
   .day-column {
     flex: 1;
     position: relative;
-    border-left: 1px solid var(--border-color, #e0e0e0);
+    border-left: 1px solid var(--calendar-border);
     display: flex;
     flex-direction: column;
   }
 
   .day-column.is-weekend {
-    background: var(--weekend-bg, #fafafa);
+    background: var(--calendar-weekend-bg);
   }
 
   .day-column.is-today {
-    background: var(--today-bg, #f0f7ff);
+    background: var(--calendar-today-bg);
   }
 
   .hour-slot {
     height: 48px;
     border: none;
     background: transparent;
-    border-bottom: 1px solid var(--border-light, #f0f0f0);
+    border-bottom: 1px solid var(--border-light);
     cursor: pointer;
   }
 
   .hour-slot:hover {
-    background: var(--hover-bg, #f5f5f5);
+    background: var(--bg-hover);
   }
 
   .blocks-container {
     position: absolute;
     top: 0;
-    left: 4px;
-    right: 4px;
+    left: var(--spacing-1);
+    right: var(--spacing-1);
     bottom: 0;
     pointer-events: none;
   }
@@ -353,10 +348,10 @@
     position: absolute;
     /* left and width set dynamically via style for overlapping blocks */
     border: none;
-    border-radius: 4px;
-    padding: 4px 6px;
-    color: white;
-    font-size: 11px;
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-1) var(--spacing-2);
+    color: var(--block-default-text);
+    font-size: var(--font-size-xs);
     cursor: pointer;
     overflow: hidden;
     text-align: left;
@@ -367,7 +362,7 @@
 
   .schedule-block:hover {
     opacity: 1;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
   }
 
   .schedule-block:hover .block-edit-btn {
@@ -385,10 +380,10 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.2);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.15s, background 0.15s;
+    transition: opacity var(--transition-normal), background var(--transition-normal);
     color: inherit;
   }
 
@@ -398,7 +393,7 @@
 
   .block-time {
     display: block;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     white-space: nowrap;
   }
 
@@ -412,31 +407,31 @@
 
   .notes-indicator {
     position: absolute;
-    bottom: 4px;
-    left: 4px;
-    right: 4px;
+    bottom: var(--spacing-1);
+    left: var(--spacing-1);
+    right: var(--spacing-1);
     display: flex;
-    gap: 4px;
+    gap: var(--spacing-1);
     align-items: center;
   }
 
   .note-dot {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
-    background: var(--note-dot-color, #888);
+    border-radius: var(--radius-full);
+    background: var(--text-muted);
     border: none;
     cursor: pointer;
     padding: 0;
   }
 
   .note-dot:hover {
-    background: var(--primary-color, #4f6bed);
+    background: var(--color-primary);
     transform: scale(1.2);
   }
 
   .more-notes {
-    font-size: 10px;
-    color: var(--text-muted, #666);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
   }
 </style>

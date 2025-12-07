@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { EditorState } from "@codemirror/state";
   import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
   import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
@@ -9,12 +9,10 @@
   import { editorStore } from "../stores";
 
   interface Props {
-    noteId?: number;
     readonly?: boolean;
-    onLinkClick?: (path: string) => void;
   }
 
-  let { noteId, readonly = false, onLinkClick }: Props = $props();
+  let { readonly = false }: Props = $props();
 
   let editorContainer: HTMLDivElement | undefined = $state();
   let view: EditorView | null = null;
@@ -24,31 +22,31 @@
   const editorTheme = EditorView.theme({
     "&": {
       height: "100%",
-      fontSize: "14px",
+      fontSize: "var(--font-size-md)",
     },
     ".cm-content": {
-      fontFamily: "'SF Mono', 'Fira Code', 'Consolas', monospace",
-      padding: "16px 0",
+      fontFamily: "var(--font-family-mono)",
+      padding: "var(--spacing-4) 0",
     },
     ".cm-line": {
-      padding: "0 16px",
+      padding: "0 var(--spacing-4)",
     },
     ".cm-gutters": {
-      background: "var(--editor-gutter-bg, #f5f5f5)",
+      background: "var(--editor-gutter-bg)",
       border: "none",
-      color: "var(--editor-gutter-color, #999)",
+      color: "var(--editor-gutter-color)",
     },
     ".cm-activeLineGutter": {
-      background: "var(--editor-active-gutter-bg, #e8e8e8)",
+      background: "var(--editor-active-gutter-bg)",
     },
     ".cm-activeLine": {
-      background: "var(--editor-active-line-bg, #f8f8f8)",
+      background: "var(--editor-active-line-bg)",
     },
     "&.cm-focused .cm-cursor": {
-      borderLeftColor: "var(--primary-color, #3b5998)",
+      borderLeftColor: "var(--editor-cursor)",
     },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
-      background: "var(--editor-selection-bg, #c8daf8)",
+      background: "var(--editor-selection-bg)",
     },
   });
 
@@ -157,29 +155,29 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--editor-bg, #fff);
+    background: var(--editor-bg);
   }
 
   .editor-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: var(--editor-header-bg, #fafafa);
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
-    font-size: 13px;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-4);
+    background: var(--editor-header-bg);
+    border-bottom: 1px solid var(--border-default);
+    font-size: var(--font-size-base);
   }
 
   .editor-path {
-    color: var(--text-muted, #666);
+    color: var(--text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .dirty-indicator {
-    color: var(--primary-color, #3b5998);
-    font-size: 10px;
+    color: var(--color-primary);
+    font-size: var(--font-size-xs);
   }
 
   .editor-content {
@@ -199,19 +197,19 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: var(--text-muted, #666);
+    color: var(--text-muted);
   }
 
   .editor-error {
-    color: var(--error-color, #d32f2f);
+    color: var(--color-error);
   }
 
   .editor-empty p {
-    margin: 4px 0;
+    margin: var(--spacing-1) 0;
   }
 
   .editor-empty .hint {
-    font-size: 13px;
+    font-size: var(--font-size-base);
     opacity: 0.7;
   }
 </style>

@@ -65,52 +65,52 @@
     min-width: 200px;
     max-width: 400px;
     height: 100%;
-    background: var(--panel-bg, #fafafa);
-    border-left: 1px solid var(--border-color, #e0e0e0);
+    background: var(--panel-bg);
+    border-left: 1px solid var(--panel-border);
   }
 
   .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--panel-border);
   }
 
   .panel-header h3 {
     margin: 0;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
   }
 
   .task-count {
-    font-size: 12px;
-    color: var(--text-muted, #666);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
   }
 
   .panel-content {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
+    padding: var(--spacing-2);
   }
 
   .empty-state {
-    padding: 16px;
+    padding: var(--spacing-4);
     text-align: center;
-    color: var(--text-muted, #666);
-    font-size: 13px;
+    color: var(--text-muted);
+    font-size: var(--font-size-base);
   }
 
   .todo-group {
-    margin-bottom: 16px;
+    margin-bottom: var(--spacing-4);
   }
 
   .group-heading {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted, #666);
-    margin: 0 0 8px 0;
-    padding: 0 8px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-2) 0;
+    padding: 0 var(--spacing-2);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -122,25 +122,25 @@
   }
 
   .todo-item {
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
   }
 
   .todo-item:hover {
-    background: var(--hover-bg, #f0f0f0);
+    background: var(--bg-hover);
   }
 
   .todo-item.completed .todo-text {
     text-decoration: line-through;
-    color: var(--text-muted, #999);
+    color: var(--text-muted);
   }
 
   .todo-label {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
+    gap: var(--spacing-2);
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--font-size-base);
   }
 
   .todo-label input[type="checkbox"] {
@@ -150,6 +150,6 @@
 
   .todo-text {
     flex: 1;
-    line-height: 1.4;
+    line-height: var(--line-height-normal);
   }
 </style>

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { X } from "lucide-svelte";
+  import "./lib/styles/theme.css";
   import {
     Sidebar,
     Topbar,
@@ -55,7 +57,7 @@
   let blockModalBlock = $state<ScheduleBlockDto | null>(null);
 
   // Workspace state
-  const state = $derived(workspaceStore.state);
+  const workspaceState = $derived(workspaceStore.state);
   const calendarView = $derived(workspaceStore.calendarView);
   const folderViewVisible = $derived(workspaceStore.folderViewVisible);
   const docListVisible = $derived(workspaceStore.docListVisible);
@@ -153,12 +155,11 @@
 
   // Refetch when view or date changes
   $effect(() => {
-    // Explicitly read dependencies to track them
-    const _view = calendarView;
-    const _date = selectedDate;
-    const isOpen = vaultStore.isOpen;
+    // Track dependencies by reading them
+    void calendarView;
+    void selectedDate;
 
-    if (isOpen) {
+    if (vaultStore.isOpen) {
       fetchCalendarData();
     }
   });
@@ -407,12 +408,10 @@
     // Optionally switch to daily view
   }
 
-  function handleLinkClick(targetPath: string) {
-    // TODO: Resolve the link and open the target note
-    console.log("Link clicked:", targetPath);
-  }
-
   onMount(async () => {
+    // Initialize theme from settings
+    workspaceStore.initTheme();
+
     // Try to open the last used vault
     await vaultStore.openLastVault();
 
@@ -471,13 +470,12 @@
     {/if}
 
     <!-- DocList panel (between sidebar and calendar) -->
-    {#if docListVisible && (state === "calendar-only" || state === "calendar-with-doc")}
+    {#if docListVisible && (workspaceState === "calendar-only" || workspaceState === "calendar-with-doc")}
       <div class="doc-list-panel">
         <DocList
           {scheduledDocs}
           {journalDocs}
           {createdDocs}
-          viewMode={calendarView}
           onDocClick={handleNoteClick}
         />
       </div>
@@ -485,7 +483,7 @@
 
     <!-- Main content area -->
     <main class="main-content">
-      {#if state === "calendar-only"}
+      {#if workspaceState === "calendar-only"}
         <!-- State A: Calendar only -->
         <div class="calendar-area">
           {#if calendarView === "monthly"}
@@ -513,7 +511,7 @@
           {/if}
         </div>
 
-      {:else if state === "calendar-with-doc"}
+      {:else if workspaceState === "calendar-with-doc"}
         <!-- State B: Calendar with one document -->
         <div class="split-view">
           <div class="calendar-panel">
@@ -551,27 +549,22 @@
                   onclick={() => workspaceStore.closeDoc(activeDoc.path)}
                   title="Close document"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
+                  <X size={14} />
                 </button>
               </div>
               <div class="doc-content">
-                <NoteEditor
-                  noteId={activeDoc.id}
-                  onLinkClick={handleLinkClick}
-                />
+                <NoteEditor />
               </div>
               <PropertiesPanel noteId={activeDoc.id} />
             {/if}
           </div>
         </div>
 
-      {:else if state === "doc-finder"}
+      {:else if workspaceState === "doc-finder"}
         <!-- State C: Doc-finder mode (multi-column) -->
         <div class="doc-finder-view">
           <Breadcrumb />
-          <DocumentColumns onLinkClick={handleLinkClick} />
+          <DocumentColumns />
         </div>
       {/if}
     </main>
@@ -594,53 +587,7 @@
 </div>
 
 <style>
-  :root {
-    /* Colors */
-    --primary-color: #4f6bed;
-    --primary-hover: #3b5998;
-    --primary-light-bg: #e0e7ff;
-    --text-color: #1a1a1a;
-    --text-muted: #666;
-    --border-color: #e0e0e0;
-    --border-light: #f0f0f0;
-    --hover-bg: #f0f0f0;
-    --active-bg: #e0e7ff;
-    --active-color: #3b5998;
-    --error-color: #d32f2f;
-    --error-bg: #fee;
-    --success-color: #2e7d32;
-    --success-bg: #e8f5e9;
-
-    /* Backgrounds */
-    --topbar-bg: #fff;
-    --sidebar-bg: #f8f9fa;
-    --panel-bg: #fafafa;
-    --surface-color: #ffffff;
-    --calendar-bg: #fff;
-    --editor-bg: #ffffff;
-    --editor-header-bg: #fafafa;
-    --editor-gutter-bg: #f5f5f5;
-    --editor-gutter-color: #999;
-    --editor-active-gutter-bg: #e8e8e8;
-    --editor-active-line-bg: #f8f8f8;
-    --editor-selection-bg: #c8daf8;
-    --breadcrumb-bg: #f8f9fa;
-    --column-header-bg: #f8f9fa;
-    --active-column-header-bg: #e0e7ff;
-
-    /* Calendar specific */
-    --today-bg: #f0f7ff;
-    --weekend-bg: #fafafa;
-    --note-dot-color: #888;
-    --nav-bg: #f0f0f0;
-    --active-nav-bg: #fff;
-
-    /* Modal */
-    --modal-bg: #fff;
-    --toggle-bg: #ccc;
-    --input-bg: #fff;
-    --btn-secondary-bg: #f0f0f0;
-  }
+  /* Theme variables are defined in /src/lib/styles/theme.css */
 
   .app {
     display: flex;
@@ -648,7 +595,7 @@
     height: 100vh;
     width: 100vw;
     overflow: hidden;
-    background: var(--editor-bg);
+    background: var(--bg-app);
   }
 
   .app-body {
@@ -696,7 +643,7 @@
     max-width: 600px;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-default);
     overflow: hidden;
   }
 
@@ -711,15 +658,15 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px;
-    background: var(--editor-header-bg);
-    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-2) var(--spacing-4);
+    background: var(--column-header-bg);
+    border-bottom: 1px solid var(--border-default);
   }
 
   .doc-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-color);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -733,14 +680,14 @@
     height: 24px;
     border: none;
     background: transparent;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     color: var(--text-muted);
     cursor: pointer;
   }
 
   .close-btn:hover {
-    background: var(--error-bg);
-    color: var(--error-color);
+    background: var(--color-error-light);
+    color: var(--color-error);
   }
 
   .doc-content {
@@ -754,52 +701,5 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-  }
-
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --primary-color: #6b8cff;
-      --primary-hover: #5a7ae0;
-      --primary-light-bg: #2d3748;
-      --text-color: #e0e0e0;
-      --text-muted: #999;
-      --border-color: #333;
-      --border-light: #2a2a2a;
-      --hover-bg: #2a2a2a;
-      --active-bg: #2d3748;
-      --active-color: #90b0ff;
-      --error-color: #ef5350;
-      --error-bg: #3d2222;
-      --success-color: #66bb6a;
-      --success-bg: #1b3320;
-
-      --topbar-bg: #1e1e1e;
-      --sidebar-bg: #1a1a1a;
-      --panel-bg: #1e1e1e;
-      --surface-color: #2a2a2a;
-      --calendar-bg: #1e1e1e;
-      --editor-bg: #1e1e1e;
-      --editor-header-bg: #252525;
-      --editor-gutter-bg: #252525;
-      --editor-gutter-color: #666;
-      --editor-active-gutter-bg: #2a2a2a;
-      --editor-active-line-bg: #252525;
-      --editor-selection-bg: #264f78;
-      --breadcrumb-bg: #252525;
-      --column-header-bg: #252525;
-      --active-column-header-bg: #2d3748;
-
-      --today-bg: #1a2a3a;
-      --weekend-bg: #1a1a1a;
-      --note-dot-color: #666;
-      --nav-bg: #2a2a2a;
-      --active-nav-bg: #333;
-
-      --modal-bg: #252525;
-      --toggle-bg: #444;
-      --input-bg: #1e1e1e;
-      --btn-secondary-bg: #333;
-    }
   }
 </style>

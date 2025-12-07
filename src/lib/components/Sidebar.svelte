@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { FilePlus, FolderPlus, Folder, File } from "lucide-svelte";
   import { vaultStore } from "../stores";
   import FolderTree from "./FolderTree.svelte";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -92,19 +93,10 @@
         <h2 class="vault-name">{vaultStore.info?.name}</h2>
         <div class="header-actions">
           <button class="header-btn" onclick={startCreateFile} title="New Note">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="12" y1="18" x2="12" y2="12" />
-              <line x1="9" y1="15" x2="15" y2="15" />
-            </svg>
+            <FilePlus size={14} />
           </button>
           <button class="header-btn" onclick={startCreateFolder} title="New Folder">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              <line x1="12" y1="11" x2="12" y2="17" />
-              <line x1="9" y1="14" x2="15" y2="14" />
-            </svg>
+            <FolderPlus size={14} />
           </button>
         </div>
       </div>
@@ -126,14 +118,9 @@
           <div class="new-item-wrapper">
             <span class="item-icon">
               {#if newItemType === "folder"}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                </svg>
+                <Folder size={14} />
               {:else}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
+                <File size={14} />
               {/if}
             </span>
             <input
@@ -174,29 +161,29 @@
   .sidebar {
     display: flex;
     flex-direction: column;
-    width: 260px;
+    width: var(--sidebar-width);
     min-width: 200px;
     max-width: 400px;
     height: 100%;
-    background: var(--sidebar-bg, #f5f5f5);
-    border-right: 1px solid var(--border-color, #e0e0e0);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
   }
 
   .sidebar-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--sidebar-border);
   }
 
   .header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--spacing-2);
   }
 
   .header-actions {
     display: flex;
-    gap: 4px;
+    gap: var(--spacing-1);
   }
 
   .header-btn {
@@ -207,36 +194,36 @@
     height: 28px;
     border: none;
     background: transparent;
-    border-radius: 6px;
-    color: var(--text-muted, #666);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
     cursor: pointer;
   }
 
   .header-btn:hover {
-    background: var(--hover-bg, #e8e8e8);
-    color: var(--text-color, #333);
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 
   .vault-name {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
     margin: 0;
-    color: var(--text-color, #333);
+    color: var(--text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .note-count {
-    font-size: 12px;
-    color: var(--text-muted, #666);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
   }
 
   .new-item-wrapper {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
+    gap: var(--spacing-1);
+    padding: var(--spacing-1) var(--spacing-2);
   }
 
   .item-icon {
@@ -245,79 +232,75 @@
     justify-content: center;
     width: 14px;
     height: 14px;
-    color: var(--text-muted, #666);
+    color: var(--text-muted);
     flex-shrink: 0;
   }
 
   .new-item-input {
     flex: 1;
-    padding: 4px 8px;
-    border: 1px solid var(--primary-color, #4f6bed);
-    border-radius: 4px;
-    font-size: 13px;
-    background: var(--input-bg, #fff);
-    color: var(--text-color, #333);
+    padding: var(--spacing-1) var(--spacing-2);
+    border: 1px solid var(--input-border-focus);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-base);
+    background: var(--input-bg);
+    color: var(--input-text);
     outline: none;
   }
 
   .new-item-input:focus {
-    box-shadow: 0 0 0 2px rgba(79, 107, 237, 0.2);
+    box-shadow: var(--shadow-focus);
   }
 
   .sidebar-content {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
-  }
-
-  .folder-tree {
-    /* Tree styles handled by FolderTree component */
+    padding: var(--spacing-2);
   }
 
   .loading,
   .error,
   .empty-state {
-    padding: 16px;
+    padding: var(--spacing-4);
     text-align: center;
-    color: var(--text-muted, #666);
+    color: var(--text-muted);
   }
 
   .error {
-    color: var(--error-color, #d32f2f);
+    color: var(--color-error);
   }
 
   .open-vault-btn {
-    margin-top: 12px;
-    padding: 8px 16px;
-    background: var(--primary-color, #3b5998);
-    color: white;
+    margin-top: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-4);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-md);
   }
 
   .open-vault-btn:hover {
-    background: var(--primary-hover, #2d4373);
+    background: var(--btn-primary-bg-hover);
   }
 
   .sidebar-footer {
-    padding: 12px;
-    border-top: 1px solid var(--border-color, #e0e0e0);
+    padding: var(--spacing-3);
+    border-top: 1px solid var(--sidebar-border);
   }
 
   .action-btn {
     width: 100%;
-    padding: 8px;
+    padding: var(--spacing-2);
     background: transparent;
-    border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 6px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-size: 13px;
-    color: var(--text-color, #333);
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
   }
 
   .action-btn:hover {
-    background: var(--hover-bg, #e8e8e8);
+    background: var(--bg-hover);
   }
 </style>

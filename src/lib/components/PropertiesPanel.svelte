@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Plus, X, Check } from "lucide-svelte";
   import { getProperties, setProperty, deleteProperty } from "../services/api";
   import type { PropertyDto } from "../types";
 
@@ -14,7 +15,7 @@
   let newValue = $state("");
   let isAddingNew = $state(false);
   let editingKey = $state<string | null>(null);
-  let keyInputRef: HTMLInputElement | null = null;
+  let keyInputRef = $state<HTMLInputElement | null>(null);
 
   // Auto-focus key input when adding new property
   $effect(() => {
@@ -143,9 +144,7 @@
       title="Add property"
       disabled={isAddingNew}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      <Plus size={16} />
     </button>
   </div>
 
@@ -198,9 +197,7 @@
             onclick={() => handleDeleteProperty(prop.key)}
             title="Delete property"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+            <X size={14} />
           </button>
         </div>
       {/each}
@@ -231,10 +228,9 @@
               class="confirm-btn"
               onclick={handleAddProperty}
               disabled={!newKey.trim() || !newValue.trim()}
+              aria-label="Add property"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <Check size={14} />
             </button>
             <button
               class="cancel-btn"
@@ -243,10 +239,9 @@
                 newKey = "";
                 newValue = "";
               }}
+              aria-label="Cancel"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
+              <X size={14} />
             </button>
           </div>
         </div>
@@ -259,22 +254,22 @@
   .properties-panel {
     display: flex;
     flex-direction: column;
-    background: var(--panel-bg, #fff);
-    border-top: 1px solid var(--border-color, #e0e0e0);
+    background: var(--panel-bg);
+    border-top: 1px solid var(--panel-border);
   }
 
   .panel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    padding: var(--spacing-3);
+    border-bottom: 1px solid var(--panel-border);
   }
 
   .panel-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted, #666);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin: 0;
@@ -288,63 +283,63 @@
     height: 24px;
     border: none;
     background: transparent;
-    border-radius: 4px;
-    color: var(--text-muted, #666);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
     cursor: pointer;
   }
 
   .add-btn:hover {
-    background: var(--hover-bg, #f0f0f0);
-    color: var(--text-color, #333);
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 
   .properties-list {
-    padding: 8px;
+    padding: var(--spacing-2);
     max-height: 200px;
     overflow-y: auto;
   }
 
   .loading-state {
-    padding: 16px;
+    padding: var(--spacing-4);
     text-align: center;
-    color: var(--text-muted, #666);
-    font-size: 13px;
+    color: var(--text-muted);
+    font-size: var(--font-size-base);
   }
 
   .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 16px;
+    padding: var(--spacing-4);
     text-align: center;
   }
 
   .empty-state p {
-    font-size: 13px;
-    color: var(--text-muted, #999);
-    margin: 0 0 8px 0;
+    font-size: var(--font-size-base);
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-2) 0;
   }
 
   .add-first-btn {
-    font-size: 12px;
-    color: var(--primary-color, #4f6bed);
+    font-size: var(--font-size-sm);
+    color: var(--color-primary);
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
   }
 
   .add-first-btn:hover {
-    background: var(--hover-bg, #f0f0f0);
+    background: var(--bg-hover);
   }
 
   .property-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border-light, #f0f0f0);
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) 0;
+    border-bottom: 1px solid var(--border-light);
   }
 
   .property-row:last-child {
@@ -353,9 +348,9 @@
 
   .property-key {
     flex: 0 0 100px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted, #666);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-muted);
   }
 
   .property-value {
@@ -366,12 +361,12 @@
   .value-display {
     width: 100%;
     text-align: left;
-    font-size: 13px;
-    color: var(--text-color, #333);
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
     background: transparent;
     border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
@@ -379,24 +374,24 @@
   }
 
   .value-display:hover {
-    background: var(--hover-bg, #f5f5f5);
+    background: var(--bg-hover);
   }
 
   .key-input,
   .value-input {
     width: 100%;
-    font-size: 13px;
-    padding: 4px 8px;
-    border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 4px;
-    background: var(--input-bg, #fff);
-    color: var(--text-color, #333);
+    font-size: var(--font-size-base);
+    padding: var(--spacing-1) var(--spacing-2);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    background: var(--input-bg);
+    color: var(--input-text);
   }
 
   .key-input:focus,
   .value-input:focus {
     outline: none;
-    border-color: var(--primary-color, #4f6bed);
+    border-color: var(--input-border-focus);
   }
 
   .delete-btn {
@@ -407,11 +402,11 @@
     height: 24px;
     border: none;
     background: transparent;
-    border-radius: 4px;
-    color: var(--text-muted, #999);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: opacity var(--transition-normal);
   }
 
   .property-row:hover .delete-btn {
@@ -419,20 +414,20 @@
   }
 
   .delete-btn:hover {
-    background: var(--error-bg, #fee);
-    color: var(--error-color, #d32f2f);
+    background: var(--color-error-light);
+    color: var(--color-error);
   }
 
   .new-property {
-    background: var(--new-property-bg, #f8f9fa);
-    border-radius: 6px;
-    padding: 8px;
-    margin-top: 4px;
+    background: var(--bg-surface-raised);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-2);
+    margin-top: var(--spacing-1);
   }
 
   .new-property-actions {
     display: flex;
-    gap: 4px;
+    gap: var(--spacing-1);
   }
 
   .confirm-btn,
@@ -443,17 +438,17 @@
     width: 24px;
     height: 24px;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
   }
 
   .confirm-btn {
-    background: var(--success-bg, #e8f5e9);
-    color: var(--success-color, #2e7d32);
+    background: var(--color-success-light);
+    color: var(--color-success);
   }
 
   .confirm-btn:hover:not(:disabled) {
-    background: var(--success-hover-bg, #c8e6c9);
+    background: var(--color-success-hover);
   }
 
   .confirm-btn:disabled {
@@ -462,11 +457,11 @@
   }
 
   .cancel-btn {
-    background: var(--cancel-bg, #f5f5f5);
-    color: var(--text-muted, #666);
+    background: var(--bg-surface-sunken);
+    color: var(--text-muted);
   }
 
   .cancel-btn:hover {
-    background: var(--hover-bg, #e0e0e0);
+    background: var(--bg-hover);
   }
 </style>

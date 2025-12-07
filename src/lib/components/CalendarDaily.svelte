@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ChevronLeft, ChevronRight, Pencil } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import type { ScheduleBlockDto } from "../types";
   import {
@@ -57,10 +58,8 @@
 <div class="calendar-daily">
   <!-- Header with date navigation -->
   <div class="day-header">
-    <button class="nav-arrow" onclick={goToPreviousDay}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
+    <button class="nav-arrow" onclick={goToPreviousDay} aria-label="Previous day">
+      <ChevronLeft size={20} />
     </button>
 
     <div class="date-display" class:is-today={isToday(selectedDate)}>
@@ -70,10 +69,8 @@
       </span>
     </div>
 
-    <button class="nav-arrow" onclick={goToNextDay}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 18l6-6-6-6" />
-      </svg>
+    <button class="nav-arrow" onclick={goToNextDay} aria-label="Next day">
+      <ChevronRight size={20} />
     </button>
   </div>
 
@@ -130,10 +127,7 @@
               }}
               title="Edit block"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
+              <Pencil size={14} />
             </button>
           </div>
         {/each}
@@ -161,15 +155,15 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--calendar-bg, #fff);
+    background: var(--calendar-bg);
   }
 
   .day-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--calendar-border);
   }
 
   .nav-arrow {
@@ -180,13 +174,13 @@
     height: 36px;
     border: none;
     background: transparent;
-    border-radius: 8px;
-    color: var(--text-color, #333);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
     cursor: pointer;
   }
 
   .nav-arrow:hover {
-    background: var(--hover-bg, #f0f0f0);
+    background: var(--bg-hover);
   }
 
   .date-display {
@@ -194,19 +188,19 @@
   }
 
   .date-display.is-today .day-name {
-    color: var(--primary-color, #4f6bed);
+    color: var(--color-primary);
   }
 
   .day-name {
     display: block;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-color, #333);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
   }
 
   .date-full {
-    font-size: 12px;
-    color: var(--text-muted, #666);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
   }
 
   .day-grid {
@@ -227,16 +221,16 @@
     display: flex;
     align-items: flex-start;
     justify-content: flex-end;
-    padding-right: 12px;
-    font-size: 12px;
-    color: var(--text-muted, #666);
+    padding-right: var(--spacing-3);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
     transform: translateY(-8px);
   }
 
   .day-column {
     flex: 1;
     position: relative;
-    border-left: 1px solid var(--border-color, #e0e0e0);
+    border-left: 1px solid var(--calendar-border);
   }
 
   .hour-slot {
@@ -244,19 +238,19 @@
     width: 100%;
     border: none;
     background: transparent;
-    border-bottom: 1px solid var(--border-light, #f0f0f0);
+    border-bottom: 1px solid var(--border-light);
     cursor: pointer;
     text-align: left;
-    padding: 4px 8px;
+    padding: var(--spacing-1) var(--spacing-2);
   }
 
   .hour-slot:hover {
-    background: var(--hover-bg, #f5f5f5);
+    background: var(--bg-hover);
   }
 
   .slot-time {
-    font-size: 10px;
-    color: var(--text-muted, #999);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
     opacity: 0;
   }
 
@@ -267,8 +261,8 @@
   .blocks-container {
     position: absolute;
     top: 0;
-    left: 8px;
-    right: 8px;
+    left: var(--spacing-2);
+    right: var(--spacing-2);
     bottom: 0;
     pointer-events: none;
   }
@@ -277,9 +271,9 @@
     position: absolute;
     /* left and width set dynamically via style for overlapping blocks */
     border: none;
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: white;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-2) var(--spacing-3);
+    color: var(--block-default-text);
     cursor: pointer;
     text-align: left;
     pointer-events: auto;
@@ -290,7 +284,7 @@
 
   .schedule-block:hover {
     opacity: 1;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lg);
   }
 
   .schedule-block:hover .block-edit-btn {
@@ -299,8 +293,8 @@
 
   .block-edit-btn {
     position: absolute;
-    top: 6px;
-    right: 6px;
+    top: var(--spacing-2);
+    right: var(--spacing-2);
     width: 24px;
     height: 24px;
     display: flex;
@@ -308,10 +302,10 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.2);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.15s, background 0.15s;
+    transition: opacity var(--transition-normal), background var(--transition-normal);
     color: inherit;
   }
 
@@ -326,17 +320,17 @@
   }
 
   .block-time {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
   }
 
   .block-label {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
   }
 
   .block-context {
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     opacity: 0.9;
   }
 
@@ -345,7 +339,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: var(--error-color, #d32f2f);
+    background: var(--color-error);
     z-index: 10;
   }
 
@@ -355,7 +349,7 @@
     top: -4px;
     width: 10px;
     height: 10px;
-    background: var(--error-color, #d32f2f);
-    border-radius: 50%;
+    background: var(--color-error);
+    border-radius: var(--radius-full);
   }
 </style>

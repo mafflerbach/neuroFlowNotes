@@ -6,7 +6,7 @@
  * State C: Doc/Finder mode (no calendar, multi-column)
  */
 
-import { getSetting, setSetting } from "../services/settings";
+import { getSetting, setSetting, type Theme } from "../services/settings";
 
 export type WorkspaceState = "calendar-only" | "calendar-with-doc" | "doc-finder";
 export type CalendarView = "monthly" | "weekly" | "daily";
@@ -36,6 +36,9 @@ class WorkspaceStore {
 
   // Settings
   multiColumnEditable = $state(true); // If false, non-active columns are read-only
+
+  // Theme
+  theme = $state<Theme>(getSetting("theme"));
 
   // Computed: visible documents (last 3 of breadcrumb)
   get visibleDocs(): OpenDoc[] {
@@ -168,6 +171,39 @@ class WorkspaceStore {
     if (this.state === "doc-finder") {
       this.state = this.breadcrumb.length > 0 ? "calendar-with-doc" : "calendar-only";
     }
+  }
+
+  // ========================================================================
+  // Theme
+  // ========================================================================
+
+  /** Get the saved theme preference */
+  getTheme(): Theme {
+    return getSetting("theme");
+  }
+
+  /** Set the theme preference */
+  setTheme(theme: Theme) {
+    this.theme = theme;
+    setSetting("theme", theme);
+    this.applyTheme(theme);
+  }
+
+  /** Apply theme to document */
+  applyTheme(theme: Theme) {
+    const root = document.documentElement;
+
+    if (theme === "system") {
+      // Remove explicit theme, let CSS media query handle it
+      root.removeAttribute("data-theme");
+    } else {
+      root.setAttribute("data-theme", theme);
+    }
+  }
+
+  /** Initialize theme on app start */
+  initTheme() {
+    this.applyTheme(this.theme);
   }
 }
 

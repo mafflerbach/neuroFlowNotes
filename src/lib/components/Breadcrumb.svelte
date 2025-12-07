@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Calendar, X } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
 
   interface Props {
@@ -31,12 +32,7 @@
     onclick={handleReturnToCalendar}
     title="Return to calendar"
   >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
+    <Calendar size={16} />
   </button>
 
   <span class="separator">/</span>
@@ -80,9 +76,7 @@
       onclick={() => workspaceStore.closeAllDocs()}
       title="Close all documents"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M18 6L6 18M6 6l12 12" />
-      </svg>
+      <X size={14} />
     </button>
   {/if}
 </nav>
@@ -91,10 +85,10 @@
   .breadcrumb {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: var(--breadcrumb-bg, #f8f9fa);
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--bg-surface-raised);
+    border-bottom: 1px solid var(--border-default);
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -111,62 +105,62 @@
     height: 28px;
     border: none;
     background: transparent;
-    border-radius: 6px;
-    color: var(--text-muted, #666);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
     cursor: pointer;
     flex-shrink: 0;
   }
 
   .return-btn:hover {
-    background: var(--hover-bg, #e8e8e8);
-    color: var(--primary-color, #4f6bed);
+    background: var(--bg-hover);
+    color: var(--color-primary);
   }
 
   .separator {
-    color: var(--text-muted, #999);
-    font-size: 12px;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
     flex-shrink: 0;
   }
 
   .collapsed-indicator {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
+    gap: var(--spacing-1);
+    padding: var(--spacing-1) var(--spacing-2);
     border: none;
-    background: var(--collapsed-bg, #e8e8e8);
-    border-radius: 4px;
-    font-size: 12px;
-    color: var(--text-muted, #666);
+    background: var(--bg-hover);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
     cursor: pointer;
     flex-shrink: 0;
   }
 
   .collapsed-indicator:hover {
-    background: var(--hover-bg, #ddd);
+    background: var(--border-default);
   }
 
   .ellipsis {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
   }
 
   .count {
-    font-size: 10px;
-    background: var(--count-bg, #ccc);
-    color: var(--count-color, #fff);
-    padding: 1px 4px;
-    border-radius: 8px;
+    font-size: var(--font-size-xs);
+    background: var(--text-muted);
+    color: var(--text-inverse);
+    padding: 1px var(--spacing-1);
+    border-radius: var(--radius-lg);
     min-width: 16px;
     text-align: center;
   }
 
   .crumb {
-    padding: 4px 10px;
+    padding: var(--spacing-1) var(--spacing-3);
     border: none;
     background: transparent;
-    border-radius: 4px;
-    font-size: 13px;
-    color: var(--text-muted, #666);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-base);
+    color: var(--text-muted);
     cursor: pointer;
     white-space: nowrap;
     max-width: 150px;
@@ -176,14 +170,14 @@
   }
 
   .crumb:hover {
-    background: var(--hover-bg, #e8e8e8);
-    color: var(--text-color, #333);
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 
   .crumb.active {
-    background: var(--active-crumb-bg, #e0e7ff);
-    color: var(--primary-color, #4f6bed);
-    font-weight: 500;
+    background: var(--bg-active);
+    color: var(--color-primary);
+    font-weight: var(--font-weight-medium);
   }
 
   .close-all-btn {
@@ -194,15 +188,15 @@
     height: 24px;
     border: none;
     background: transparent;
-    border-radius: 4px;
-    color: var(--text-muted, #999);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
     cursor: pointer;
     margin-left: auto;
     flex-shrink: 0;
   }
 
   .close-all-btn:hover {
-    background: var(--error-bg, #fee);
-    color: var(--error-color, #d32f2f);
+    background: var(--color-error-light);
+    color: var(--color-error);
   }
 </style>

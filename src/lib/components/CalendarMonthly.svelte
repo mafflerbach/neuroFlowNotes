@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ChevronLeft, ChevronRight } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import type { NoteListItem } from "../types";
   import {
@@ -61,20 +62,16 @@
 <div class="calendar-monthly">
   <!-- Month header with navigation -->
   <div class="month-header">
-    <button class="nav-arrow" onclick={goToPreviousMonth}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
+    <button class="nav-arrow" onclick={goToPreviousMonth} aria-label="Previous month">
+      <ChevronLeft size={20} />
     </button>
 
     <h2 class="month-title">
       {MONTH_NAMES_FULL[selectedDate.getMonth()]} {selectedDate.getFullYear()}
     </h2>
 
-    <button class="nav-arrow" onclick={goToNextMonth}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 18l6-6-6-6" />
-      </svg>
+    <button class="nav-arrow" onclick={goToNextMonth} aria-label="Next month">
+      <ChevronRight size={20} />
     </button>
   </div>
 
@@ -104,7 +101,7 @@
               <span class="day-number">{date.getDate()}</span>
               {#if notes.length > 0}
                 <div class="note-dots">
-                  {#each notes.slice(0, 3) as _ , i}
+                  {#each notes.slice(0, 3)}
                     <span class="dot"></span>
                   {/each}
                   {#if notes.length > 3}
@@ -145,15 +142,15 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--calendar-bg, #fff);
+    background: var(--calendar-bg);
   }
 
   .month-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--calendar-border);
   }
 
   .nav-arrow {
@@ -164,53 +161,53 @@
     height: 36px;
     border: none;
     background: transparent;
-    border-radius: 8px;
-    color: var(--text-color, #333);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
     cursor: pointer;
   }
 
   .nav-arrow:hover {
-    background: var(--hover-bg, #f0f0f0);
+    background: var(--bg-hover);
   }
 
   .month-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-color, #333);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
     margin: 0;
   }
 
   .calendar-grid {
-    padding: 12px;
+    padding: var(--spacing-3);
   }
 
   .day-names {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    margin-bottom: 8px;
+    gap: var(--spacing-1);
+    margin-bottom: var(--spacing-2);
   }
 
   .day-name {
     text-align: center;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted, #666);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 4px;
+    padding: var(--spacing-1);
   }
 
   .weeks {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--spacing-1);
   }
 
   .week-row {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    gap: var(--spacing-1);
   }
 
   .day-cell {
@@ -218,17 +215,17 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 8px 4px;
+    padding: var(--spacing-2) var(--spacing-1);
     min-height: 48px;
     border: none;
     background: transparent;
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    gap: 4px;
+    gap: var(--spacing-1);
   }
 
   .day-cell:hover {
-    background: var(--hover-bg, #f5f5f5);
+    background: var(--bg-hover);
   }
 
   .day-cell.other-month {
@@ -236,9 +233,9 @@
   }
 
   .day-cell.is-today .day-number {
-    background: var(--primary-color, #4f6bed);
-    color: white;
-    border-radius: 50%;
+    background: var(--calendar-selected-bg);
+    color: var(--calendar-selected-text);
+    border-radius: var(--radius-full);
     width: 28px;
     height: 28px;
     display: flex;
@@ -247,13 +244,13 @@
   }
 
   .day-cell.is-selected {
-    background: var(--active-bg, #e0e7ff);
+    background: var(--bg-active);
   }
 
   .day-number {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-color, #333);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
   }
 
   .note-dots {
@@ -265,75 +262,75 @@
   .dot {
     width: 6px;
     height: 6px;
-    border-radius: 50%;
-    background: var(--note-dot-color, #888);
+    border-radius: var(--radius-full);
+    background: var(--text-muted);
   }
 
   .day-cell.is-today .dot {
-    background: var(--primary-color, #4f6bed);
+    background: var(--color-primary);
   }
 
   .more {
     font-size: 9px;
-    color: var(--text-muted, #666);
+    color: var(--text-muted);
   }
 
   .month-notes {
     flex: 1;
     overflow-y: auto;
-    border-top: 1px solid var(--border-color, #e0e0e0);
-    padding: 12px;
+    border-top: 1px solid var(--calendar-border);
+    padding: var(--spacing-3);
   }
 
   .notes-header {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-muted, #666);
-    margin: 0 0 12px 0;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-3) 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   .empty-state {
-    font-size: 13px;
-    color: var(--text-muted, #999);
+    font-size: var(--font-size-base);
+    color: var(--text-muted);
     text-align: center;
-    padding: 24px;
+    padding: var(--spacing-6);
   }
 
   .notes-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--spacing-1);
   }
 
   .note-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
+    gap: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-3);
     border: none;
     background: transparent;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     cursor: pointer;
     text-align: left;
     width: 100%;
   }
 
   .note-item:hover {
-    background: var(--hover-bg, #f5f5f5);
+    background: var(--bg-hover);
   }
 
   .note-date {
-    font-size: 12px;
-    color: var(--text-muted, #666);
-    font-family: monospace;
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    font-family: var(--font-family-mono);
     flex-shrink: 0;
   }
 
   .note-title {
-    font-size: 14px;
-    color: var(--text-color, #333);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

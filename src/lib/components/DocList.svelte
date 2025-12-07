@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { Clock, FileText, FilePlus, BookOpen } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
-  import type { NoteListItem, ScheduleBlockDto } from "../types";
+  import type { NoteListItem } from "../types";
   import {
     formatDateDisplay,
     formatWeekRange,
@@ -13,7 +14,6 @@
     scheduledDocs?: DocWithSource[];
     journalDocs?: DocWithSource[];
     createdDocs?: DocWithSource[];
-    viewMode?: "daily" | "weekly" | "monthly";
     onDocClick?: (note: NoteListItem) => void;
   }
 
@@ -21,7 +21,6 @@
     scheduledDocs = [],
     journalDocs = [],
     createdDocs = [],
-    viewMode = "daily",
     onDocClick,
   }: Props = $props();
 
@@ -69,10 +68,7 @@
     {#if !hasDocs}
       <div class="empty-state">
         <div class="empty-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
+          <FileText size={32} strokeWidth={1.5} />
         </div>
         <p>{emptyMessage()}</p>
       </div>
@@ -81,10 +77,7 @@
       {#if scheduledDocs.length > 0}
         <div class="doc-section">
           <h4 class="section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+            <Clock size={14} />
             Scheduled
           </h4>
           <div class="doc-items">
@@ -113,10 +106,7 @@
       {#if journalDocs.length > 0}
         <div class="doc-section">
           <h4 class="section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-            </svg>
+            <BookOpen size={14} />
             Journal
           </h4>
           <div class="doc-items">
@@ -136,12 +126,7 @@
       {#if createdDocs.length > 0}
         <div class="doc-section">
           <h4 class="section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="12" y1="18" x2="12" y2="12" />
-              <line x1="9" y1="15" x2="15" y2="15" />
-            </svg>
+            <FilePlus size={14} />
             Created
           </h4>
           <div class="doc-items">
@@ -166,25 +151,25 @@
     flex-direction: column;
     height: 100%;
     background: var(--panel-bg);
-    border-right: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-default);
   }
 
   .list-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--border-default);
   }
 
   .date-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-color);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
     margin: 0;
   }
 
   .list-content {
     flex: 1;
     overflow-y: auto;
-    padding: 12px;
+    padding: var(--spacing-3);
   }
 
   .empty-state {
@@ -192,23 +177,23 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48px 24px;
+    padding: var(--spacing-12) var(--spacing-6);
     text-align: center;
   }
 
   .empty-icon {
     color: var(--text-muted);
-    margin-bottom: 12px;
+    margin-bottom: var(--spacing-3);
   }
 
   .empty-state p {
-    font-size: 13px;
+    font-size: var(--font-size-base);
     color: var(--text-muted);
     margin: 0;
   }
 
   .doc-section {
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-5);
   }
 
   .doc-section:last-child {
@@ -218,37 +203,37 @@
   .section-title {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
+    gap: var(--spacing-1);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin: 0 0 8px 0;
+    margin: 0 0 var(--spacing-2) 0;
   }
 
   .doc-items {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--spacing-1);
   }
 
   .doc-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
     border: none;
-    background: var(--surface-color);
-    border-radius: 8px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
     cursor: pointer;
     text-align: left;
     width: 100%;
-    transition: background 0.15s;
+    transition: background var(--transition-normal);
   }
 
   .doc-item:hover {
-    background: var(--hover-bg);
+    background: var(--bg-hover);
   }
 
   .schedule-indicator {
@@ -259,16 +244,16 @@
   }
 
   .schedule-time {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-    font-family: monospace;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    font-family: var(--font-family-mono);
     flex-shrink: 0;
   }
 
   .doc-title {
-    font-size: 14px;
-    color: var(--text-color);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -279,10 +264,10 @@
   }
 
   .doc-item.journal {
-    background: var(--surface-color);
+    background: var(--bg-surface);
   }
 
   .doc-item.journal:hover {
-    background: var(--hover-bg);
+    background: var(--bg-hover);
   }
 </style>

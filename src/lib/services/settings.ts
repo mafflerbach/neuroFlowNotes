@@ -6,14 +6,18 @@ import type { CalendarView } from "../stores/workspace.svelte";
 
 const STORAGE_KEY = "neuroflow-settings";
 
+export type Theme = "system" | "light" | "dark";
+
 export interface AppSettings {
   lastVaultPath: string | null;
   defaultCalendarView: CalendarView;
+  theme: Theme;
 }
 
 const defaultSettings: AppSettings = {
   lastVaultPath: null,
   defaultCalendarView: "weekly",
+  theme: "system",
 };
 
 /**

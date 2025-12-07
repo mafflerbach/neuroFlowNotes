@@ -1,13 +1,8 @@
 <script lang="ts">
+  import { X, Eye } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import NoteEditor from "./NoteEditor.svelte";
   import PropertiesPanel from "./PropertiesPanel.svelte";
-
-  interface Props {
-    onLinkClick?: (path: string) => void;
-  }
-
-  let { onLinkClick }: Props = $props();
 
   const visibleDocs = $derived(workspaceStore.visibleDocs);
   const activeDoc = $derived(workspaceStore.activeDoc);
@@ -28,19 +23,10 @@
   function handleCloseDoc(path: string) {
     workspaceStore.closeDoc(path);
   }
-
-  function handleLinkClick(targetPath: string) {
-    onLinkClick?.(targetPath);
-  }
-
-  // Mock properties for now - in real implementation these would come from SQLite
-  function getPropertiesForNote(_noteId: number): { key: string; value: string; type: "text" }[] {
-    return [];
-  }
 </script>
 
 <div class="document-columns" class:single={visibleDocs.length === 1}>
-  {#each visibleDocs as doc, i (doc.path)}
+  {#each visibleDocs as doc (doc.path)}
     {@const isActive = isActiveColumn(doc.path)}
     {@const isEditable = multiColumnEditable || isActive}
 
@@ -63,38 +49,26 @@
           onclick={() => handleCloseDoc(doc.path)}
           title="Close document"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
+          <X size={14} />
         </button>
       </div>
 
       <!-- Editor area -->
       <div class="column-content">
         <div class="editor-wrapper">
-          <NoteEditor
-            noteId={doc.id}
-            readonly={!isEditable}
-            onLinkClick={handleLinkClick}
-          />
+          <NoteEditor readonly={!isEditable} />
         </div>
 
         <!-- Properties panel (only for active doc) -->
         {#if isActive}
-          <PropertiesPanel
-            noteId={doc.id}
-            properties={getPropertiesForNote(doc.id)}
-          />
+          <PropertiesPanel noteId={doc.id} />
         {/if}
       </div>
 
       <!-- Read-only overlay indicator -->
       {#if !isEditable}
         <div class="readonly-indicator" title="Click to make active and edit">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
+          <Eye size={16} />
         </div>
       {/if}
     </div>
@@ -106,7 +80,7 @@
     display: flex;
     flex: 1;
     gap: 1px;
-    background: var(--border-color, #e0e0e0);
+    background: var(--border-default);
     overflow: hidden;
   }
 
@@ -114,10 +88,10 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: var(--editor-bg, #fff);
+    background: var(--editor-bg);
     min-width: 300px;
     position: relative;
-    transition: opacity 0.15s;
+    transition: opacity var(--transition-normal);
   }
 
   .document-columns.single .column {
@@ -140,32 +114,32 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
-    background: var(--column-header-bg, #f8f9fa);
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--editor-header-bg);
+    border-bottom: 1px solid var(--border-default);
   }
 
   .column.active .column-header {
-    background: var(--active-column-header-bg, #e0e7ff);
+    background: var(--bg-active);
   }
 
   .column-title {
     flex: 1;
     text-align: left;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-color, #333);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 4px 0;
+    padding: var(--spacing-1) 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .column.active .column-title {
-    color: var(--primary-color, #4f6bed);
+    color: var(--color-primary);
   }
 
   .column-title:hover {
@@ -180,14 +154,14 @@
     height: 24px;
     border: none;
     background: transparent;
-    border-radius: 4px;
-    color: var(--text-muted, #999);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
     cursor: pointer;
   }
 
   .close-btn:hover {
-    background: var(--error-bg, #fee);
-    color: var(--error-color, #d32f2f);
+    background: var(--color-error-light);
+    color: var(--color-error);
   }
 
   .column-content {
@@ -204,15 +178,15 @@
 
   .readonly-indicator {
     position: absolute;
-    top: 8px;
+    top: var(--spacing-2);
     right: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 24px;
     height: 24px;
-    background: var(--readonly-indicator-bg, rgba(0, 0, 0, 0.05));
-    border-radius: 4px;
-    color: var(--text-muted, #999);
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
   }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Folder, List, Plus, Settings } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import { vaultStore } from "../stores/vault.svelte";
   import * as api from "../services/api";
@@ -52,9 +53,7 @@
       onclick={() => workspaceStore.toggleFolderView()}
       title="Toggle Folder View"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-      </svg>
+      <Folder size={18} />
     </button>
     <button
       class="icon-btn"
@@ -62,14 +61,7 @@
       onclick={() => workspaceStore.toggleDocList()}
       title="Toggle File List"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="8" y1="6" x2="21" y2="6" />
-        <line x1="8" y1="12" x2="21" y2="12" />
-        <line x1="8" y1="18" x2="21" y2="18" />
-        <line x1="3" y1="6" x2="3.01" y2="6" />
-        <line x1="3" y1="12" x2="3.01" y2="12" />
-        <line x1="3" y1="18" x2="3.01" y2="18" />
-      </svg>
+      <List size={18} />
     </button>
   </div>
 
@@ -110,9 +102,7 @@
       title="New Note"
       disabled={!vaultStore.isOpen}
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      <Plus size={18} />
     </button>
   </div>
 
@@ -122,10 +112,7 @@
       onclick={onOpenSettings}
       title="Settings"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-      </svg>
+      <Settings size={18} />
     </button>
   </div>
 </header>
@@ -135,71 +122,71 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 48px;
-    padding: 0 12px;
-    background: var(--topbar-bg, #fff);
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
-    gap: 16px;
+    height: var(--topbar-height);
+    padding: 0 var(--spacing-3);
+    background: var(--topbar-bg);
+    border-bottom: 1px solid var(--topbar-border);
+    gap: var(--spacing-4);
   }
 
   .topbar-left,
   .topbar-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--spacing-2);
   }
 
   .topbar-center {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--spacing-3);
   }
 
   .calendar-nav {
     display: flex;
     align-items: center;
-    gap: 4px;
-    background: var(--nav-bg, #f0f0f0);
-    border-radius: 8px;
-    padding: 4px;
+    gap: var(--spacing-1);
+    background: var(--bg-surface-sunken);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-1);
   }
 
   .nav-btn {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
+    gap: var(--spacing-1);
+    padding: var(--spacing-2) var(--spacing-3);
     border: none;
     background: transparent;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-color, #333);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: background var(--transition-normal), color var(--transition-normal);
   }
 
   .nav-btn:hover {
-    background: var(--hover-bg, #e0e0e0);
+    background: var(--bg-hover);
   }
 
   .nav-btn.active {
-    background: var(--active-nav-bg, #fff);
-    color: var(--primary-color, #4f6bed);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background: var(--bg-surface);
+    color: var(--color-primary);
+    box-shadow: var(--shadow-md);
   }
 
   .today-btn .dot {
     width: 6px;
     height: 6px;
-    background: var(--primary-color, #4f6bed);
-    border-radius: 50%;
+    background: var(--color-primary);
+    border-radius: var(--radius-full);
   }
 
   .divider {
     width: 1px;
     height: 24px;
-    background: var(--border-color, #e0e0e0);
+    background: var(--border-default);
   }
 
   .icon-btn {
@@ -210,19 +197,19 @@
     height: 36px;
     border: none;
     background: transparent;
-    border-radius: 8px;
-    color: var(--text-color, #333);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background var(--transition-normal);
   }
 
   .icon-btn:hover {
-    background: var(--hover-bg, #f0f0f0);
+    background: var(--bg-hover);
   }
 
   .icon-btn.active {
-    background: var(--active-bg, #e0e7ff);
-    color: var(--primary-color, #4f6bed);
+    background: var(--bg-active);
+    color: var(--color-primary);
   }
 
   .icon-btn:disabled {

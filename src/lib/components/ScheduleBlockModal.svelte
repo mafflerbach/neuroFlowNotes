@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { X, Calendar, Check } from "lucide-svelte";
   import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR, getBlockColor } from "../constants/colors";
   import type { ScheduleBlockDto } from "../types";
 
@@ -107,6 +108,7 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="modal-title"
+    tabindex="-1"
     onkeydown={handleKeydown}
     onclick={handleBackdropClick}
   >
@@ -116,9 +118,7 @@
           {mode === "create" ? "New Schedule Block" : "Edit Schedule Block"}
         </h2>
         <button class="close-btn" onclick={onClose} aria-label="Close">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
+          <X size={20} />
         </button>
       </div>
 
@@ -126,12 +126,7 @@
         <div class="modal-body">
           <!-- Date display -->
           <div class="date-display">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
+            <Calendar size={16} />
             <span>{formatDisplayDate(date)}</span>
           </div>
 
@@ -182,7 +177,7 @@
 
           <!-- Color picker -->
           <div class="form-group">
-            <label>Color</label>
+            <span class="field-label">Color</span>
             <div class="color-picker">
               {#each BLOCK_COLORS as color (color.hex)}
                 <button
@@ -195,9 +190,7 @@
                   aria-label={color.name}
                 >
                   {#if selectedColor === color.hex}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color.textColor} stroke-width="3">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <Check size={14} strokeWidth={3} color={color.textColor} />
                   {/if}
                 </button>
               {/each}
@@ -206,7 +199,7 @@
 
           <!-- Preview -->
           <div class="preview-section">
-            <label>Preview</label>
+            <span class="field-label">Preview</span>
             <div
               class="block-preview"
               style="background-color: {selectedColor}; color: {currentColorObj.textColor}"
@@ -245,42 +238,40 @@
 <style>
   .modal-backdrop {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    inset: 0;
+    background: var(--modal-backdrop-bg);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: var(--z-modal-backdrop);
   }
 
   .modal-content {
-    background: var(--modal-bg, #fff);
-    border-radius: 12px;
+    background: var(--modal-bg);
+    border-radius: var(--radius-xl);
     width: 100%;
     max-width: 420px;
     max-height: 90vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--modal-shadow);
+    z-index: var(--z-modal);
   }
 
   .modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    padding: var(--spacing-4) var(--spacing-5);
+    border-bottom: 1px solid var(--modal-border);
   }
 
   .modal-header h2 {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
     margin: 0;
-    color: var(--text-color, #333);
+    color: var(--text-primary);
   }
 
   .close-btn {
@@ -291,18 +282,18 @@
     height: 32px;
     border: none;
     background: transparent;
-    border-radius: 6px;
-    color: var(--text-muted, #666);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
     cursor: pointer;
   }
 
   .close-btn:hover {
-    background: var(--hover-bg, #f0f0f0);
-    color: var(--text-color, #333);
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 
   .modal-body {
-    padding: 20px;
+    padding: var(--spacing-5);
     overflow-y: auto;
     flex: 1;
   }
@@ -310,53 +301,52 @@
   .date-display {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    background: var(--panel-bg, #f5f5f5);
-    border-radius: 8px;
-    margin-bottom: 20px;
-    color: var(--text-color, #333);
-    font-size: 14px;
-    font-weight: 500;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3);
+    background: var(--bg-surface-raised);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-5);
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
   }
 
   .form-group {
-    margin-bottom: 16px;
+    margin-bottom: var(--spacing-4);
   }
 
-  .form-group label {
+  .form-group label,
+  .field-label {
     display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-muted, #666);
-    margin-bottom: 6px;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-2);
   }
 
   .required {
-    color: var(--error-color, #d32f2f);
+    color: var(--color-error);
   }
 
-  .form-group input,
-  .form-group select {
+  .form-group input {
     width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 8px;
-    font-size: 14px;
-    background: var(--input-bg, #fff);
-    color: var(--text-color, #333);
+    padding: var(--spacing-3);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-md);
+    background: var(--input-bg);
+    color: var(--input-text);
   }
 
-  .form-group input:focus,
-  .form-group select:focus {
+  .form-group input:focus {
     outline: none;
-    border-color: var(--primary-color, #4f6bed);
-    box-shadow: 0 0 0 3px var(--primary-light-bg, #e0e7ff);
+    border-color: var(--input-border-focus);
+    box-shadow: var(--shadow-focus);
   }
 
   .form-row {
     display: flex;
-    gap: 12px;
+    gap: var(--spacing-3);
   }
 
   .form-row .form-group {
@@ -366,19 +356,19 @@
   .color-picker {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--spacing-2);
   }
 
   .color-swatch {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     border: 2px solid transparent;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.15s, border-color 0.15s;
+    transition: transform var(--transition-normal), border-color var(--transition-normal);
   }
 
   .color-swatch:hover {
@@ -386,42 +376,38 @@
   }
 
   .color-swatch.selected {
-    border-color: var(--text-color, #333);
-    box-shadow: 0 0 0 2px var(--modal-bg, #fff);
+    border-color: var(--text-primary);
+    box-shadow: 0 0 0 2px var(--modal-bg);
   }
 
   .preview-section {
-    margin-top: 20px;
+    margin-top: var(--spacing-5);
   }
 
-  .preview-section label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-muted, #666);
-    margin-bottom: 8px;
+  .preview-section .field-label {
+    margin-bottom: var(--spacing-2);
   }
 
   .block-preview {
-    padding: 12px 16px;
-    border-radius: 8px;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--spacing-1);
   }
 
   .preview-time {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
   }
 
   .preview-label {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
   }
 
   .preview-context {
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     opacity: 0.85;
   }
 
@@ -429,44 +415,44 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    border-top: 1px solid var(--border-color, #e0e0e0);
-    gap: 12px;
+    padding: var(--spacing-4) var(--spacing-5);
+    border-top: 1px solid var(--modal-border);
+    gap: var(--spacing-3);
   }
 
   .footer-actions {
     display: flex;
-    gap: 8px;
+    gap: var(--spacing-2);
     margin-left: auto;
   }
 
   .cancel-btn,
   .save-btn,
   .delete-btn {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
+    padding: var(--spacing-3) var(--spacing-5);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
     border: none;
   }
 
   .cancel-btn {
-    background: var(--btn-secondary-bg, #f0f0f0);
-    color: var(--text-color, #333);
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
   }
 
   .cancel-btn:hover {
-    background: var(--hover-bg, #e0e0e0);
+    background: var(--btn-secondary-bg-hover);
   }
 
   .save-btn {
-    background: var(--primary-color, #4f6bed);
-    color: white;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
   }
 
   .save-btn:hover:not(:disabled) {
-    background: var(--primary-hover, #3b5998);
+    background: var(--btn-primary-bg-hover);
   }
 
   .save-btn:disabled {
@@ -475,11 +461,11 @@
   }
 
   .delete-btn {
-    background: var(--error-bg, #fee);
-    color: var(--error-color, #d32f2f);
+    background: var(--color-error-light);
+    color: var(--color-error);
   }
 
   .delete-btn:hover {
-    background: #fdd;
+    background: var(--color-error-hover);
   }
 </style>

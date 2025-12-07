@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ChevronRight, Folder, File, FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-svelte";
   import type { FolderNode } from "../types";
   import { editorStore, workspaceStore, vaultStore } from "../stores";
   import { listNotes, renameNote, deleteNote, deleteFolder, createFolder, saveNote, getNoteContent } from "../services/api";
@@ -292,22 +293,15 @@
     >
       {#if node.is_dir}
         <span class="chevron" class:expanded={isExpanded}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 18l6-6-6-6" />
-          </svg>
+          <ChevronRight size={10} />
         </span>
         <span class="folder-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-          </svg>
+          <Folder size={14} />
         </span>
       {:else}
         <span class="chevron-placeholder"></span>
         <span class="file-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
+          <File size={14} />
         </span>
       {/if}
       <span class="name">{node.name}</span>
@@ -320,14 +314,9 @@
       <div class="new-item-wrapper" style:padding-left={newItemPadding}>
         <span class="item-icon">
           {#if newItemType === "folder"}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
+            <Folder size={14} />
           {:else}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
+            <File size={14} />
           {/if}
         </span>
         <input
@@ -364,35 +353,21 @@
     >
       {#if node.is_dir}
         <button class="menu-item" onclick={startCreateFile}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="12" y1="18" x2="12" y2="12" />
-            <line x1="9" y1="15" x2="15" y2="15" />
-          </svg>
+          <FilePlus size={14} />
           New Note
         </button>
         <button class="menu-item" onclick={startCreateFolder}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            <line x1="12" y1="11" x2="12" y2="17" />
-            <line x1="9" y1="14" x2="15" y2="14" />
-          </svg>
+          <FolderPlus size={14} />
           New Folder
         </button>
         <div class="menu-divider"></div>
       {/if}
       <button class="menu-item" onclick={startRename}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-        </svg>
+        <Pencil size={14} />
         Rename
       </button>
       <button class="menu-item danger" onclick={handleDelete}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        </svg>
+        <Trash2 size={14} />
         Delete
       </button>
     </div>
@@ -408,25 +383,25 @@
   .tree-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--spacing-1);
     width: 100%;
-    padding: 4px 8px;
+    padding: var(--spacing-1) var(--spacing-2);
     border: none;
     background: transparent;
     text-align: left;
     cursor: pointer;
-    font-size: 13px;
-    color: var(--text-color, #333);
-    border-radius: 4px;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
   }
 
   .tree-item:hover {
-    background: var(--hover-bg, #f0f0f0);
+    background: var(--tree-item-hover-bg);
   }
 
   .tree-item.is-active {
-    background: var(--active-bg, #e0e7ff);
-    color: var(--active-color, #3b5998);
+    background: var(--tree-item-selected-bg);
+    color: var(--color-primary);
   }
 
   .chevron {
@@ -435,8 +410,8 @@
     justify-content: center;
     width: 14px;
     height: 14px;
-    color: var(--text-muted, #666);
-    transition: transform 0.15s ease;
+    color: var(--tree-icon-color);
+    transition: transform var(--transition-normal);
     flex-shrink: 0;
   }
 
@@ -457,12 +432,12 @@
     justify-content: center;
     width: 14px;
     height: 14px;
-    color: var(--text-muted, #666);
+    color: var(--tree-file-icon-color);
     flex-shrink: 0;
   }
 
   .folder-icon {
-    color: var(--primary-color, #4f6bed);
+    color: var(--tree-folder-icon-color);
   }
 
   .name {
@@ -476,67 +451,67 @@
   .new-item-wrapper {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
+    gap: var(--spacing-1);
+    padding: 2px var(--spacing-2);
   }
 
   .rename-input {
     flex: 1;
-    padding: 4px 8px;
-    border: 1px solid var(--primary-color, #4f6bed);
-    border-radius: 4px;
-    font-size: 13px;
-    background: var(--input-bg, #fff);
-    color: var(--text-color, #333);
+    padding: var(--spacing-1) var(--spacing-2);
+    border: 1px solid var(--input-border-focus);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-base);
+    background: var(--input-bg);
+    color: var(--input-text);
     outline: none;
   }
 
   .rename-input:focus {
-    box-shadow: 0 0 0 2px rgba(79, 107, 237, 0.2);
+    box-shadow: var(--shadow-focus);
   }
 
   /* Context Menu */
   .context-menu {
     position: fixed;
-    z-index: 1000;
+    z-index: var(--z-context-menu);
     min-width: 160px;
-    background: var(--modal-bg, #fff);
-    border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 4px;
+    background: var(--context-menu-bg);
+    border: 1px solid var(--context-menu-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--context-menu-shadow);
+    padding: var(--spacing-1);
   }
 
   .menu-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--spacing-2);
     width: 100%;
-    padding: 8px 12px;
+    padding: var(--spacing-2) var(--spacing-3);
     border: none;
     background: transparent;
     text-align: left;
     cursor: pointer;
-    font-size: 13px;
-    color: var(--text-color, #333);
-    border-radius: 4px;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
   }
 
   .menu-item:hover {
-    background: var(--hover-bg, #f0f0f0);
+    background: var(--context-menu-item-hover-bg);
   }
 
   .menu-item.danger {
-    color: var(--error-color, #d32f2f);
+    color: var(--color-error);
   }
 
   .menu-item.danger:hover {
-    background: var(--error-bg, #fee);
+    background: var(--color-error-light);
   }
 
   .menu-divider {
     height: 1px;
-    margin: 4px 0;
-    background: var(--border-color, #e0e0e0);
+    margin: var(--spacing-1) 0;
+    background: var(--context-menu-separator);
   }
 </style>

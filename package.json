@@ -20,7 +20,8 @@
     "@codemirror/view": "^6.34.0",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
-    "codemirror": "^6.0.0"
+    "codemirror": "^6.0.0",
+    "lucide-svelte": "^0.556.0"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
