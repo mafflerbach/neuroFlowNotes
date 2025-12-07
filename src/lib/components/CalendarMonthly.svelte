@@ -53,6 +53,7 @@
 
   function handleDayClick(date: Date) {
     workspaceStore.selectDate(date);
+    workspaceStore.setCalendarView("daily");
     onDayClick?.(date);
   }
 </script>

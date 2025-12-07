@@ -12,7 +12,7 @@
       date: string;
       start_time: string;
       end_time: string;
-      label: string | null;
+      label: string;
       color: string;
       context: string | null;
     }) => void;
@@ -61,11 +61,14 @@
   function handleSubmit(e: Event) {
     e.preventDefault();
 
+    const trimmedLabel = label.trim();
+    if (!trimmedLabel) return; // Shouldn't happen due to required, but safety check
+
     onSave({
       date,
       start_time: startTime + ":00",
       end_time: endTime + ":00",
-      label: label.trim() || null,
+      label: trimmedLabel,
       color: selectedColor,
       context: context.trim() || null,
     });
@@ -154,14 +157,15 @@
             </div>
           </div>
 
-          <!-- Label -->
+          <!-- Label (required - becomes the note title/filename) -->
           <div class="form-group">
-            <label for="block-label">Label (optional)</label>
+            <label for="block-label">Title <span class="required">*</span></label>
             <input
               id="block-label"
               type="text"
               bind:value={label}
               placeholder="Meeting, Focus time, etc."
+              required
             />
           </div>
 
@@ -326,6 +330,10 @@
     font-weight: 500;
     color: var(--text-muted, #666);
     margin-bottom: 6px;
+  }
+
+  .required {
+    color: var(--error-color, #d32f2f);
   }
 
   .form-group input,
