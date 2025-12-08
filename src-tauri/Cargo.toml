@@ -13,7 +13,7 @@ core_fs = { path = "../crates/core_fs" }
 core_index = { path = "../crates/core_index" }
 core_storage = { path = "../crates/core_storage" }
 core_domain = { path = "../crates/core_domain" }
-tauri.workspace = true
+tauri = { workspace = true, features = ["protocol-asset"] }
 tauri-plugin-dialog = "2"
 serde.workspace = true
 serde_json.workspace = true
@@ -22,6 +22,8 @@ tracing.workspace = true
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 thiserror.workspace = true
 async-recursion = "1.0"
+base64 = "0.22"
+chrono = "0.4"
 
 [features]
 default = ["custom-protocol"]

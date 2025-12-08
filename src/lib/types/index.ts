@@ -8,3 +8,4 @@ export * from "./vault";
 export * from "./metadata";
 export * from "./search";
 export * from "./events";
+export * from "./embed";

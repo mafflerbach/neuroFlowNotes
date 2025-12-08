@@ -3,9 +3,9 @@
 use crate::state::AppState;
 use core_domain::Vault;
 use shared_types::{
-    BacklinkDto, CreateScheduleBlockRequest, FolderNode, NoteContent, NoteDto, NoteForDate,
-    NoteListItem, PropertyDto, ScheduleBlockDto, SearchResult, SetPropertyRequest, TagDto,
-    TodoDto, UpdateScheduleBlockRequest, VaultInfo,
+    BacklinkDto, CreateScheduleBlockRequest, EmbedContent, FolderNode, HeadingInfo, NoteContent,
+    NoteDto, NoteForDate, NoteListItem, PropertyDto, ResolveEmbedRequest, ScheduleBlockDto,
+    SearchResult, SetPropertyRequest, TagDto, TodoDto, UpdateScheduleBlockRequest, VaultInfo,
 };
 use tauri::{AppHandle, Emitter, State};
 use thiserror::Error;
@@ -394,7 +394,23 @@ pub async fn get_folder_tree(state: State<'_, AppState>) -> Result<FolderNode> {
     Ok(root)
 }
 
-/// Recursively scan directories and add empty folders to the tree.
+/// Image/media file extensions to include in the tree
+const MEDIA_EXTENSIONS: &[&str] = &[
+    "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico",
+    "mp3", "wav", "ogg", "m4a", "flac",
+    "mp4", "webm", "mov", "avi",
+    "pdf",
+];
+
+/// Check if a file extension is a media type
+fn is_media_file(path: &std::path::Path) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| MEDIA_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
+        .unwrap_or(false)
+}
+
+/// Recursively scan directories and add empty folders and media files to the tree.
 #[async_recursion::async_recursion]
 async fn scan_directories(
     node: &mut FolderNode,
@@ -415,14 +431,14 @@ async fn scan_directories(
             continue;
         }
 
-        if path.is_dir() {
-            // Get relative path
-            let relative = path
-                .strip_prefix(vault_root)
-                .map_err(|e| e.to_string())?
-                .to_string_lossy()
-                .to_string();
+        // Get relative path
+        let relative = path
+            .strip_prefix(vault_root)
+            .map_err(|e| e.to_string())?
+            .to_string_lossy()
+            .to_string();
 
+        if path.is_dir() {
             // Check if this directory already exists in the tree
             let dir_exists = node.children.iter().any(|c| c.is_dir && c.path == relative);
 
@@ -442,6 +458,18 @@ async fn scan_directories(
                 if let Some(existing_dir) = node.children.iter_mut().find(|c| c.is_dir && c.path == relative) {
                     scan_directories(existing_dir, &path, vault_root).await?;
                 }
+            }
+        } else if is_media_file(&path) {
+            // Add media files that aren't already in the tree
+            let file_exists = node.children.iter().any(|c| !c.is_dir && c.path == relative);
+
+            if !file_exists {
+                node.children.push(FolderNode {
+                    name: file_name.to_string(),
+                    path: relative,
+                    is_dir: false,
+                    children: Vec::new(),
+                });
             }
         }
     }
@@ -728,4 +756,166 @@ pub async fn get_notes_for_date_range(
         .get_notes_for_date_range(&start_date, &end_date)
         .await
         .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Embed Commands
+// ============================================================================
+
+/// Resolve an embed (![[target]] or ![[target#section]]).
+/// Returns the content to embed, handling images and notes differently.
+#[tauri::command]
+pub async fn resolve_embed(
+    state: State<'_, AppState>,
+    _app: AppHandle,
+    request: ResolveEmbedRequest,
+) -> Result<EmbedContent> {
+    // Check depth limit
+    if request.depth > 3 {
+        return Ok(EmbedContent {
+            note_id: None,
+            path: request.target.clone(),
+            content: None,
+            is_image: false,
+            asset_url: None,
+            error: Some("Maximum embed depth (3) exceeded".to_string()),
+        });
+    }
+
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    // Check if target is an image
+    let image_extensions = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
+    let target_lower = request.target.to_lowercase();
+    let is_image = image_extensions.iter().any(|ext| target_lower.ends_with(&format!(".{}", ext)));
+
+    if is_image {
+        // Resolve image path
+        let image_path = vault.resolve_asset_path(&request.target).await;
+
+        match image_path {
+            Some(full_path) => {
+                // Return the full filesystem path - frontend will convert it using convertFileSrc
+                Ok(EmbedContent {
+                    note_id: None,
+                    path: request.target,
+                    content: None,
+                    is_image: true,
+                    asset_url: Some(full_path.to_string_lossy().to_string()),
+                    error: None,
+                })
+            }
+            None => Ok(EmbedContent {
+                note_id: None,
+                path: request.target.clone(),
+                content: None,
+                is_image: true,
+                asset_url: None,
+                error: Some(format!("Image not found: {}", request.target)),
+            }),
+        }
+    } else {
+        // Resolve note
+        let note_result = vault.resolve_note(&request.target).await;
+
+        match note_result {
+            Some((note_id, path)) => {
+                // Read note content
+                let content = vault.read_note(&path).await.map_err(|e| CommandError::Vault(e.to_string()))?;
+
+                // Extract section if requested
+                let final_content = if let Some(ref section) = request.section {
+                    // Slugify the section name to match how headings are stored
+                    let section_slug = core_index::markdown::slugify(section);
+                    core_index::markdown::extract_section_with_heading(&content, &section_slug)
+                        .unwrap_or_else(|| format!("Section '{}' not found", section))
+                } else {
+                    content
+                };
+
+                Ok(EmbedContent {
+                    note_id: Some(note_id),
+                    path,
+                    content: Some(final_content),
+                    is_image: false,
+                    asset_url: None,
+                    error: None,
+                })
+            }
+            None => Ok(EmbedContent {
+                note_id: None,
+                path: request.target.clone(),
+                content: None,
+                is_image: false,
+                asset_url: None,
+                error: Some(format!("Note not found: {}", request.target)),
+            }),
+        }
+    }
+}
+
+/// Get all headings from a note (for section autocomplete).
+#[tauri::command]
+pub async fn get_note_headings(
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<Vec<HeadingInfo>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    // Read note content
+    let content = vault.read_note(&path).await.map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    // Parse and extract headings
+    let analysis = core_index::markdown::parse(&content);
+
+    Ok(analysis
+        .headings
+        .into_iter()
+        .map(|h| HeadingInfo {
+            level: h.level,
+            text: h.text,
+            slug: h.slug,
+        })
+        .collect())
+}
+
+/// Save a pasted image to the vault's assets folder.
+/// Returns the filename that was saved (e.g., "Pasted image 20251208143000.png").
+#[tauri::command]
+pub async fn save_pasted_image(
+    state: State<'_, AppState>,
+    image_data: String,
+    extension: String,
+) -> Result<String> {
+    use std::io::Write;
+
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    // Get vault root path
+    let vault_root = vault.root_path();
+
+    // Generate filename with timestamp (matching Obsidian's format)
+    let timestamp = chrono::Local::now().format("%Y%m%d%H%M%S");
+    let filename = format!("Pasted image {}.{}", timestamp, extension);
+    let file_path = vault_root.join(&filename);
+
+    // Decode base64 image data
+    use base64::Engine;
+    let image_bytes = base64::engine::general_purpose::STANDARD
+        .decode(&image_data)
+        .map_err(|e| CommandError::Vault(format!("Failed to decode image data: {}", e)))?;
+
+    // Write the file
+    let mut file = std::fs::File::create(&file_path)
+        .map_err(|e| CommandError::Vault(format!("Failed to create image file: {}", e)))?;
+    file.write_all(&image_bytes)
+        .map_err(|e| CommandError::Vault(format!("Failed to write image data: {}", e)))?;
+
+    info!("Saved pasted image: {}", file_path.display());
+
+    // Return the filename (relative to vault root)
+    Ok(filename)
 }

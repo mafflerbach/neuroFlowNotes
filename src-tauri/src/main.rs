@@ -62,6 +62,11 @@ fn main() {
             // Notes by Date
             commands::get_notes_for_date,
             commands::get_notes_for_date_range,
+            // Embeds
+            commands::resolve_embed,
+            commands::get_note_headings,
+            // Assets
+            commands::save_pasted_image,
         ])
         .setup(|app| {
             info!("Tauri app setup complete");

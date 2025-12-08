@@ -883,3 +883,267 @@
 .cm-list-3 {
   color: var(--md-list-marker);
 }
+
+/* ============================================================================
+ * Embed Container Styles
+ * ============================================================================ */
+
+/* Wrapper to make inline widget display as block */
+.cm-embed-wrapper {
+  display: block;
+  width: 100%;
+}
+
+.cm-embed-container {
+  margin: var(--spacing-2) 0;
+  padding: var(--spacing-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-raised);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+}
+
+.cm-embed-container.cm-embed-loading {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.cm-embed-loading-text {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.cm-embed-loading-text::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: cm-embed-spin 0.8s linear infinite;
+}
+
+@keyframes cm-embed-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Embed Error State */
+.cm-embed-container.cm-embed-error {
+  border-color: var(--color-error);
+  background: var(--color-error-light);
+}
+
+.cm-embed-error-content {
+  color: var(--color-error);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.cm-embed-error-content::before {
+  content: "⚠";
+  font-size: var(--font-size-lg);
+}
+
+/* Embed Note Content */
+.cm-embed-container.cm-embed-note {
+  border-left: 3px solid var(--color-primary);
+}
+
+.cm-embed-header {
+  margin-bottom: var(--spacing-2);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.cm-embed-link {
+  color: var(--md-wiki-link);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+}
+
+.cm-embed-link:hover {
+  text-decoration: underline;
+}
+
+.cm-embed-content {
+  color: var(--text-primary);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.cm-embed-content p {
+  margin: 0 0 var(--spacing-2);
+}
+
+.cm-embed-content p:last-child {
+  margin-bottom: 0;
+}
+
+.cm-embed-content h2,
+.cm-embed-content h3,
+.cm-embed-content h4 {
+  margin: var(--spacing-3) 0 var(--spacing-2);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.cm-embed-content h2 {
+  font-size: var(--font-size-lg);
+}
+
+.cm-embed-content h3 {
+  font-size: var(--font-size-md);
+}
+
+.cm-embed-content h4 {
+  font-size: var(--font-size-base);
+}
+
+.cm-embed-content code {
+  font-family: var(--font-family-mono);
+  font-size: 0.9em;
+  background: var(--md-code-bg);
+  color: var(--md-code-text);
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+}
+
+.cm-embed-content strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.cm-embed-content em {
+  font-style: italic;
+}
+
+.cm-embed-wikilink {
+  color: var(--md-wiki-link);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Embed Image */
+.cm-embed-container.cm-embed-image {
+  padding: var(--spacing-2);
+  text-align: center;
+  background: var(--bg-surface);
+}
+
+.cm-embed-image img {
+  max-width: 100%;
+  max-height: 500px;
+  height: auto;
+  border-radius: var(--radius-sm);
+  display: block;
+  margin: 0 auto;
+}
+
+/* ============================================================================
+ * Hover Preview Tooltip Styles
+ * ============================================================================ */
+
+.cm-hover-preview {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-3);
+  max-width: 350px;
+  max-height: 300px;
+  overflow: hidden;
+  z-index: var(--z-tooltip);
+}
+
+.cm-hover-loading {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.cm-hover-error {
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
+.cm-hover-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Hover Note Preview */
+.cm-hover-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.cm-hover-note-title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--md-wiki-link);
+  padding-bottom: var(--spacing-1);
+  border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cm-hover-note-content {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+}
+
+/* Hover Image Preview */
+.cm-hover-image {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.cm-hover-image img {
+  max-width: 100%;
+  max-height: 200px;
+  height: auto;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+}
+
+.cm-hover-image-name {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Override CodeMirror tooltip base styles */
+.cm-tooltip.cm-tooltip-hover {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ============================================================================
+ * Link Click Cursor Styles
+ * ============================================================================ */
+
+/* Show pointer cursor on wiki links when modifier key is held */
+.cm-content .cm-hmd-internal-link {
+  cursor: pointer;
+}

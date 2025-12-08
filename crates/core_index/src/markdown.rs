@@ -6,9 +6,15 @@ use regex::Regex;
 use tracing::{debug, instrument};
 
 /// Regex for matching [[wikilinks]].
-/// Matches [[link]] or [[link|display text]]
+/// Matches [[link]], [[link|display text]], [[link#section]], [[link#section|display]]
+/// Also matches embeds: ![[link]], ![[link#section]]
 static WIKILINK_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]").unwrap());
+    Lazy::new(|| Regex::new(r"!?\[\[([^\]#|]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]").unwrap());
+
+/// Regex for matching wikilinks with section anchors.
+/// Captures: 1=target, 2=section (optional), 3=display (optional)
+static WIKILINK_FULL_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(!?)\[\[([^\]#|]+)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]").unwrap());
 
 /// Regex for matching #tags.
 /// Matches #tag but not ## headings or # in URLs
@@ -46,6 +52,15 @@ pub struct ParsedHeading {
 
     /// Line number where the heading starts (1-indexed).
     pub line_number: usize,
+
+    /// Byte offset where the heading content starts (after the heading line).
+    pub content_start: usize,
+
+    /// Byte offset where the heading content ends (before next heading or EOF).
+    pub content_end: usize,
+
+    /// URL-safe slug generated from the heading text.
+    pub slug: String,
 }
 
 /// A todo item found in the document.
@@ -68,6 +83,7 @@ pub struct ParsedTodo {
 #[instrument(skip(content))]
 pub fn parse(content: &str) -> NoteAnalysis {
     let mut analysis = NoteAnalysis::default();
+    let content_len = content.len();
 
     // Track line numbers
     let line_offsets = compute_line_offsets(content);
@@ -75,30 +91,44 @@ pub fn parse(content: &str) -> NoteAnalysis {
     // Track current heading stack for heading_path
     let mut heading_stack: Vec<(u8, String)> = Vec::new();
 
+    // Temporary storage for heading data before computing content boundaries
+    struct TempHeading {
+        level: u8,
+        text: String,
+        line_number: usize,
+        heading_end_offset: usize,
+    }
+    let mut temp_headings: Vec<TempHeading> = Vec::new();
+
     // Parse with pulldown-cmark
     let options = Options::ENABLE_TASKLISTS | Options::ENABLE_STRIKETHROUGH;
     let parser = Parser::new_ext(content, options);
 
     let mut current_heading_level: Option<u8> = None;
     let mut current_heading_text = String::new();
+    let mut current_heading_start: usize = 0;
     let mut in_task_item = false;
     let mut task_completed = false;
     let mut task_text = String::new();
     let mut current_offset: usize = 0;
 
     for (event, range) in parser.into_offset_iter() {
-        current_offset = range.start;
+        // Track offset for todo line number computation
+        if matches!(event, Event::End(TagEnd::Item)) {
+            current_offset = range.start;
+        }
 
         match event {
             Event::Start(Tag::Heading { level, .. }) => {
                 current_heading_level = Some(heading_level_to_u8(level));
                 current_heading_text.clear();
+                current_heading_start = range.start;
             }
 
             Event::End(TagEnd::Heading(_)) => {
                 if let Some(level) = current_heading_level.take() {
                     let text = current_heading_text.trim().to_string();
-                    let line_number = offset_to_line(&line_offsets, current_offset);
+                    let line_number = offset_to_line(&line_offsets, current_heading_start);
 
                     // Set title from first H1
                     if level == 1 && analysis.title.is_none() {
@@ -111,10 +141,17 @@ pub fn parse(content: &str) -> NoteAnalysis {
                     }
                     heading_stack.push((level, text.clone()));
 
-                    analysis.headings.push(ParsedHeading {
+                    // Find where the heading line ends (after newline)
+                    let heading_end_offset = content[range.end..]
+                        .find('\n')
+                        .map(|i| range.end + i + 1)
+                        .unwrap_or(range.end);
+
+                    temp_headings.push(TempHeading {
                         level,
                         text,
                         line_number,
+                        heading_end_offset,
                     });
                 }
             }
@@ -167,6 +204,42 @@ pub fn parse(content: &str) -> NoteAnalysis {
 
             _ => {}
         }
+    }
+
+    // Convert temp_headings to ParsedHeading with computed content boundaries
+    for (i, th) in temp_headings.iter().enumerate() {
+        // content_start is right after the heading line
+        let content_start = th.heading_end_offset;
+
+        // content_end is the byte offset where the next heading of same or higher level starts,
+        // or EOF if no such heading exists.
+        // For nested headings (e.g., H3 under H2), the H2's content_end includes all H3 content.
+        let content_end = temp_headings[i + 1..]
+            .iter()
+            .find(|next| next.level <= th.level)
+            .map(|next| {
+                // Find the start of the next heading's line by looking for the # character
+                // The heading_end_offset is after the heading, so we need to go back
+                let heading_text_approx = &content[..next.heading_end_offset];
+                // Find the last occurrence of a line starting with #
+                heading_text_approx
+                    .rfind('\n')
+                    .and_then(|nl| {
+                        // Go back one more newline to find line start
+                        content[..nl].rfind('\n').map(|p| p + 1).or(Some(0))
+                    })
+                    .unwrap_or(0)
+            })
+            .unwrap_or(content_len);
+
+        analysis.headings.push(ParsedHeading {
+            level: th.level,
+            text: th.text.clone(),
+            line_number: th.line_number,
+            content_start,
+            content_end,
+            slug: slugify(&th.text),
+        });
     }
 
     // Extract wikilinks and tags using regex
@@ -244,6 +317,118 @@ fn heading_level_to_u8(level: HeadingLevel) -> u8 {
         HeadingLevel::H5 => 5,
         HeadingLevel::H6 => 6,
     }
+}
+
+/// Generate a URL-safe slug from heading text.
+///
+/// Converts "My Heading Text" to "my-heading-text".
+/// Handles special characters, emojis, and unicode.
+pub fn slugify(text: &str) -> String {
+    text.to_lowercase()
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c
+            } else if c.is_whitespace() || c == '-' || c == '_' {
+                '-'
+            } else {
+                // Skip other characters (punctuation, emojis, etc.)
+                '\0'
+            }
+        })
+        .filter(|&c| c != '\0')
+        .collect::<String>()
+        // Collapse multiple dashes
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
+/// Extract a section's content by its slug.
+///
+/// Returns the content from the heading to the next heading of same or higher level,
+/// or to EOF if no such heading exists.
+pub fn extract_section(content: &str, section_slug: &str) -> Option<String> {
+    let analysis = parse(content);
+
+    // Find the heading with matching slug
+    let heading_idx = analysis.headings.iter().position(|h| h.slug == section_slug)?;
+    let heading = &analysis.headings[heading_idx];
+
+    // Extract content from content_start to content_end
+    let section_content = &content[heading.content_start..heading.content_end];
+
+    Some(section_content.to_string())
+}
+
+/// Extract section content including the heading itself.
+pub fn extract_section_with_heading(content: &str, section_slug: &str) -> Option<String> {
+    let analysis = parse(content);
+
+    // Find the heading with matching slug
+    let heading_idx = analysis.headings.iter().position(|h| h.slug == section_slug)?;
+    let heading = &analysis.headings[heading_idx];
+
+    // Find the start of the heading line
+    // content_start points to the line after the heading
+    // We need to find the line number's starting position
+    let heading_line_start = if heading.line_number == 1 {
+        0
+    } else {
+        // Find the nth newline to get to the start of line_number
+        let mut newline_count = 0;
+        let mut pos = 0;
+        for (i, c) in content.char_indices() {
+            if c == '\n' {
+                newline_count += 1;
+                if newline_count == heading.line_number - 1 {
+                    pos = i + 1;
+                    break;
+                }
+            }
+        }
+        pos
+    };
+
+    // Extract from heading start to content end
+    let section_content = &content[heading_line_start..heading.content_end];
+
+    Some(section_content.to_string())
+}
+
+/// Update wiki links in content when a note is renamed.
+///
+/// Handles all forms: [[old]], [[old|alias]], [[old#section]], [[old#section|alias]], ![[old]]
+pub fn update_wiki_links(content: &str, old_name: &str, new_name: &str) -> String {
+    WIKILINK_FULL_REGEX.replace_all(content, |caps: &regex::Captures| {
+        let embed_prefix = &caps[1]; // "!" or ""
+        let target = &caps[2];
+        let section = caps.get(3).map(|m| m.as_str());
+        let display = caps.get(4).map(|m| m.as_str());
+
+        // Check if target matches old name (case-insensitive for flexibility)
+        let target_normalized = target.trim();
+        let old_normalized = old_name.trim();
+
+        if target_normalized.eq_ignore_ascii_case(old_normalized) {
+            // Rebuild the link with new name
+            let mut result = format!("{}[[{}", embed_prefix, new_name);
+            if let Some(sec) = section {
+                result.push('#');
+                result.push_str(sec);
+            }
+            if let Some(disp) = display {
+                result.push('|');
+                result.push_str(disp);
+            }
+            result.push_str("]]");
+            result
+        } else {
+            // No change
+            caps[0].to_string()
+        }
+    }).to_string()
 }
 
 /// Toggle a todo's completion status and return the modified content.
@@ -355,5 +540,93 @@ mod tests {
             analysis.todos[0].heading_path,
             Some("Project > Tasks".to_string())
         );
+    }
+
+    #[test]
+    fn test_slugify() {
+        assert_eq!(slugify("Hello World"), "hello-world");
+        assert_eq!(slugify("My Section!"), "my-section");
+        assert_eq!(slugify("Test   Multiple   Spaces"), "test-multiple-spaces");
+        assert_eq!(slugify("With-Dashes-Already"), "with-dashes-already");
+        assert_eq!(slugify("Numbers 123 Here"), "numbers-123-here");
+        assert_eq!(slugify("UPPERCASE"), "uppercase");
+        assert_eq!(slugify("  Leading and Trailing  "), "leading-and-trailing");
+    }
+
+    #[test]
+    fn test_heading_slugs() {
+        let content = "# Main Title\n\n## My Section\n\nSome content\n\n### Sub Section\n";
+        let analysis = parse(content);
+
+        assert_eq!(analysis.headings[0].slug, "main-title");
+        assert_eq!(analysis.headings[1].slug, "my-section");
+        assert_eq!(analysis.headings[2].slug, "sub-section");
+    }
+
+    #[test]
+    fn test_extract_section() {
+        let content = "# Title\n\nIntro text.\n\n## Section One\n\nSection one content.\n\n## Section Two\n\nSection two content.\n";
+
+        let section = extract_section(content, "section-one");
+        assert!(section.is_some());
+        let section_text = section.unwrap();
+        assert!(section_text.contains("Section one content"));
+        assert!(!section_text.contains("Section two content"));
+    }
+
+    #[test]
+    fn test_extract_section_with_heading() {
+        let content = "# Title\n\n## My Section\n\nContent here.\n\n## Next Section\n";
+
+        let section = extract_section_with_heading(content, "my-section");
+        assert!(section.is_some());
+        let section_text = section.unwrap();
+        assert!(section_text.contains("## My Section"));
+        assert!(section_text.contains("Content here"));
+        // Should not include the next section
+        assert!(!section_text.contains("## Next Section"));
+    }
+
+    #[test]
+    fn test_update_wiki_links() {
+        // Basic link
+        let content = "See [[old note]] for details.";
+        let updated = update_wiki_links(content, "old note", "new note");
+        assert_eq!(updated, "See [[new note]] for details.");
+
+        // Link with display text
+        let content = "See [[old note|my link]] for details.";
+        let updated = update_wiki_links(content, "old note", "new note");
+        assert_eq!(updated, "See [[new note|my link]] for details.");
+
+        // Link with section
+        let content = "See [[old note#section]] for details.";
+        let updated = update_wiki_links(content, "old note", "new note");
+        assert_eq!(updated, "See [[new note#section]] for details.");
+
+        // Embed
+        let content = "![[old note]]";
+        let updated = update_wiki_links(content, "old note", "new note");
+        assert_eq!(updated, "![[new note]]");
+
+        // Embed with section
+        let content = "![[old note#heading]]";
+        let updated = update_wiki_links(content, "old note", "new note");
+        assert_eq!(updated, "![[new note#heading]]");
+
+        // Multiple links
+        let content = "See [[old note]] and [[old note#section]] and [[other]].";
+        let updated = update_wiki_links(content, "old note", "new note");
+        assert_eq!(updated, "See [[new note]] and [[new note#section]] and [[other]].");
+    }
+
+    #[test]
+    fn test_wikilinks_with_sections() {
+        let content = "Link to [[note#section]] and ![[embed#heading]].\n";
+        let analysis = parse(content);
+
+        // The links should capture just the note name, not the section
+        assert!(analysis.links.contains(&"note".to_string()));
+        assert!(analysis.links.contains(&"embed".to_string()));
     }
 }

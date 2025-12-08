@@ -285,6 +285,32 @@ impl VaultRepository {
             .collect())
     }
 
+    /// Get notes that link to a specific note name (for reference updating on rename).
+    /// This searches for notes that have backlinks to the target, regardless of how they reference it.
+    pub async fn get_notes_linking_to(&self, target_note_id: i64) -> Result<Vec<NoteListItem>> {
+        let rows = sqlx::query_as::<_, (i64, String, Option<String>, i32)>(
+            r#"
+            SELECT DISTINCT n.id, n.path, n.title, n.pinned
+            FROM backlinks b
+            JOIN notes n ON b.from_note_id = n.id
+            WHERE b.to_note_id = ?
+            "#,
+        )
+        .bind(target_note_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(id, path, title, pinned)| NoteListItem {
+                id,
+                path,
+                title,
+                pinned: pinned != 0,
+            })
+            .collect())
+    }
+
     // ========================================================================
     // Todos
     // ========================================================================

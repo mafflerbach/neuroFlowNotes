@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRight, Folder, File } from "lucide-svelte";
+  import { ChevronRight, Folder, File, Image, FileAudio, FileVideo, FileText } from "lucide-svelte";
   import type { FolderNode } from "../types";
   import { editorStore, workspaceStore, vaultStore, dragStore } from "../stores";
   import { listNotes, renameNote, deleteNote, deleteFolder, renameFolder, createFolder, saveNote, getNoteContent } from "../services/api";
@@ -37,6 +37,37 @@
   let newItemName = $state("");
   let newItemInput = $state<HTMLInputElement | null>(null);
 
+  // Media file extensions
+  const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
+  const AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "flac"];
+  const VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "avi"];
+  const PDF_EXTENSIONS = ["pdf"];
+
+  function getFileExtension(filename: string): string {
+    return filename.split(".").pop()?.toLowerCase() ?? "";
+  }
+
+  function isMediaFile(filename: string): boolean {
+    const ext = getFileExtension(filename);
+    return [...IMAGE_EXTENSIONS, ...AUDIO_EXTENSIONS, ...VIDEO_EXTENSIONS, ...PDF_EXTENSIONS].includes(ext);
+  }
+
+  function isImageFile(filename: string): boolean {
+    return IMAGE_EXTENSIONS.includes(getFileExtension(filename));
+  }
+
+  function isAudioFile(filename: string): boolean {
+    return AUDIO_EXTENSIONS.includes(getFileExtension(filename));
+  }
+
+  function isVideoFile(filename: string): boolean {
+    return VIDEO_EXTENSIONS.includes(getFileExtension(filename));
+  }
+
+  function isPdfFile(filename: string): boolean {
+    return PDF_EXTENSIONS.includes(getFileExtension(filename));
+  }
+
   function toggleExpand() {
     if (node.is_dir) {
       isExpanded = !isExpanded;
@@ -46,6 +77,16 @@
   async function handleClick() {
     if (node.is_dir) {
       toggleExpand();
+    } else if (isMediaFile(node.name)) {
+      // For media files, copy the wiki link to clipboard
+      const nameWithoutExt = node.name;
+      const wikiLink = `![[${nameWithoutExt}]]`;
+      try {
+        await navigator.clipboard.writeText(wikiLink);
+        console.log(`[FolderTree] Copied wiki link: ${wikiLink}`);
+      } catch (e) {
+        console.error("Failed to copy to clipboard:", e);
+      }
     } else {
       // Find the note ID from the path
       try {
@@ -388,8 +429,18 @@
         </span>
       {:else}
         <span class="chevron-placeholder"></span>
-        <span class="file-icon">
-          <File size={14} />
+        <span class="file-icon" class:is-image={isImageFile(node.name)} class:is-audio={isAudioFile(node.name)} class:is-video={isVideoFile(node.name)} class:is-pdf={isPdfFile(node.name)}>
+          {#if isImageFile(node.name)}
+            <Image size={14} />
+          {:else if isAudioFile(node.name)}
+            <FileAudio size={14} />
+          {:else if isVideoFile(node.name)}
+            <FileVideo size={14} />
+          {:else if isPdfFile(node.name)}
+            <FileText size={14} />
+          {:else}
+            <File size={14} />
+          {/if}
         </span>
       {/if}
       <span class="name">{node.name}</span>
@@ -522,6 +573,22 @@
 
   .folder-icon {
     color: var(--tree-folder-icon-color);
+  }
+
+  .file-icon.is-image {
+    color: #10b981; /* Green for images */
+  }
+
+  .file-icon.is-audio {
+    color: #8b5cf6; /* Purple for audio */
+  }
+
+  .file-icon.is-video {
+    color: #f59e0b; /* Amber for video */
+  }
+
+  .file-icon.is-pdf {
+    color: #ef4444; /* Red for PDF */
   }
 
   .name {

@@ -8,7 +8,15 @@
   import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
   import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
   import { editorStore } from "../stores";
-  import { wikiLinkCompletion, livePreview, markdownHighlight } from "../editor";
+  import {
+    wikiLinkCompletion,
+    livePreview,
+    markdownHighlight,
+    embedExtension,
+    linkHandlerExtension,
+    hoverPreviewExtension,
+    pasteHandlerExtension,
+  } from "../editor";
 
   interface Props {
     readonly?: boolean;
@@ -105,6 +113,14 @@
       wikiLinkCompletion(),
       // Live preview (hide markdown syntax on inactive lines)
       livePreview(),
+      // Embed rendering for ![[note]] and ![[image.png]]
+      embedExtension(),
+      // Ctrl/Cmd+Click link navigation
+      linkHandlerExtension(),
+      // Hover preview tooltips for wiki links
+      hoverPreviewExtension(),
+      // Image paste handling - saves pasted images and inserts embed
+      pasteHandlerExtension(),
     ];
 
     // Add readonly extension if readonly prop is true

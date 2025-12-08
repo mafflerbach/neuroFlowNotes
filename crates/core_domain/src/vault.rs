@@ -2,7 +2,7 @@
 
 use crate::watcher::FileWatcher;
 use core_fs::{hash_content, VaultFs};
-use core_index::markdown::parse;
+use core_index::markdown::{parse, update_wiki_links};
 use core_storage::{init_database, VaultRepository};
 use shared_types::{IndexCompletePayload, NoteListItem, VaultInfo};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -144,6 +144,11 @@ impl Vault {
     /// Get the filesystem handle.
     pub fn fs(&self) -> &VaultFs {
         &self.fs
+    }
+
+    /// Get the vault root path.
+    pub fn root_path(&self) -> &Path {
+        self.fs.root()
     }
 
     /// Subscribe to vault events.
@@ -330,12 +335,57 @@ impl Vault {
         Ok(note_id)
     }
 
-    /// Rename a note (file and database path).
+    /// Rename a note (file and database path), updating all references across the vault.
     #[instrument(skip(self))]
     pub async fn rename_note(&self, old_path: &str, new_path: &str) -> Result<i64> {
         // Check if target already exists
         if self.fs.exists(Path::new(new_path)).await {
             return Err(VaultError::FileAlreadyExists(new_path.to_string()));
+        }
+
+        // Get old and new note names for reference updating
+        let old_name = Path::new(old_path)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(old_path);
+        let new_name = Path::new(new_path)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(new_path);
+
+        // Get the note ID before renaming (for finding backlinks)
+        let note = self.repo.get_note_by_path(old_path).await?;
+        let note_id = note.id;
+
+        // Find all notes that link to this note
+        let linking_notes = self.repo.get_notes_linking_to(note_id).await?;
+        let mut updated_ids = vec![note_id];
+
+        // Update references in all linking notes
+        for linking_note in linking_notes {
+            // Read the linking note's content
+            let content = self.fs.read_file(Path::new(&linking_note.path)).await?;
+
+            // Update wiki links
+            let updated_content = update_wiki_links(&content, old_name, new_name);
+
+            // Only write if content changed
+            if updated_content != content {
+                debug!(
+                    "Updating references in {} ({} -> {})",
+                    linking_note.path, old_name, new_name
+                );
+
+                // Write updated content
+                self.fs
+                    .write_file(Path::new(&linking_note.path), &updated_content)
+                    .await?;
+
+                // Reindex the updated note
+                if let Ok(Some(_)) = self.index_file(Path::new(&linking_note.path)).await {
+                    updated_ids.push(linking_note.id);
+                }
+            }
         }
 
         // Rename the file on disk
@@ -344,12 +394,18 @@ impl Vault {
             .await?;
 
         // Update the database path
-        let note_id = self.repo.rename_note(old_path, new_path).await?;
+        self.repo.rename_note(old_path, new_path).await?;
 
-        // Emit event
-        let _ = self.event_tx.send(VaultEvent::NotesUpdated(vec![note_id]));
+        // Emit event for all updated notes
+        let _ = self.event_tx.send(VaultEvent::NotesUpdated(updated_ids.clone()));
 
-        info!("Renamed note {} -> {} (id={})", old_path, new_path, note_id);
+        info!(
+            "Renamed note {} -> {} (id={}), updated {} references",
+            old_path,
+            new_path,
+            note_id,
+            updated_ids.len() - 1
+        );
         Ok(note_id)
     }
 
@@ -476,5 +532,105 @@ impl Vault {
 
         info!("Deleted folder: {} ({} notes removed)", path, deleted_ids.len());
         Ok(deleted_ids)
+    }
+
+    /// Resolve a note name/path to its full path and ID.
+    /// Supports fuzzy matching by title or exact path matching.
+    pub async fn resolve_note(&self, target: &str) -> Option<(i64, String)> {
+        let notes = self.repo.list_notes().await.ok()?;
+
+        // Try exact path match first (with or without .md)
+        let target_path = if target.ends_with(".md") {
+            target.to_string()
+        } else {
+            format!("{}.md", target)
+        };
+
+        if let Some(note) = notes.iter().find(|n| n.path == target_path) {
+            return Some((note.id, note.path.clone()));
+        }
+
+        // Also try matching by just the filename (for notes in subdirectories)
+        if let Some(note) = notes.iter().find(|n| {
+            n.path.ends_with(&format!("/{}", target_path)) ||
+            n.path == target_path
+        }) {
+            return Some((note.id, note.path.clone()));
+        }
+
+        // Try title match (case-insensitive)
+        let target_lower = target.to_lowercase();
+        if let Some(note) = notes.iter().find(|n| {
+            n.title.as_ref().map(|t| t.to_lowercase() == target_lower).unwrap_or(false)
+        }) {
+            return Some((note.id, note.path.clone()));
+        }
+
+        // Try filename without extension match
+        let target_name = target.strip_suffix(".md").unwrap_or(target);
+        if let Some(note) = notes.iter().find(|n| {
+            let note_name = n.path
+                .rsplit('/')
+                .next()
+                .unwrap_or(&n.path)
+                .strip_suffix(".md")
+                .unwrap_or(&n.path);
+            note_name.eq_ignore_ascii_case(target_name)
+        }) {
+            return Some((note.id, note.path.clone()));
+        }
+
+        None
+    }
+
+    /// Resolve an asset path (image, etc.) to its full filesystem path.
+    /// Searches the vault directory for the file.
+    pub async fn resolve_asset_path(&self, target: &str) -> Option<PathBuf> {
+        let target_path = Path::new(target);
+
+        // If target is an absolute path within the vault, use it directly
+        let direct_path = self.fs.to_absolute(target_path);
+        if direct_path.exists() {
+            return Some(direct_path);
+        }
+
+        // Search for the file in the vault
+        // For now, just do a simple recursive search
+        if let Ok(found) = self.find_asset_recursive(self.fs.root(), target).await {
+            return found;
+        }
+
+        None
+    }
+
+    /// Recursively search for an asset file.
+    async fn find_asset_recursive(&self, dir: &Path, target: &str) -> std::io::Result<Option<PathBuf>> {
+        let target_name = Path::new(target)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(target);
+
+        let mut entries = tokio::fs::read_dir(dir).await?;
+
+        while let Some(entry) = entries.next_entry().await? {
+            let path = entry.path();
+            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+            // Skip hidden files/directories
+            if file_name.starts_with('.') {
+                continue;
+            }
+
+            if path.is_dir() {
+                // Recurse into subdirectory
+                if let Ok(Some(found)) = Box::pin(self.find_asset_recursive(&path, target)).await {
+                    return Ok(Some(found));
+                }
+            } else if file_name == target_name || path.ends_with(target) {
+                return Ok(Some(path));
+            }
+        }
+
+        Ok(None)
     }
 }
