@@ -63,8 +63,8 @@ async function navigateToNote(target: string, section?: string): Promise<void> {
     });
 
     if (note) {
-      // Open the note in the workspace
-      workspaceStore.openDoc({
+      // Follow the link - transitions to doc-finder mode (State C)
+      workspaceStore.followLink({
         path: note.path,
         id: note.id,
         title: note.title ?? note.path.replace(".md", ""),

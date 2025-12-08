@@ -20,6 +20,32 @@ import type { EmbedContent } from "../types";
 // Pattern for embeds: ![[target]] or ![[target#section]]
 const EMBED_PATTERN = /!\[\[([^\]#|]+)(?:#([^\]|]+))?(?:\|[^\]]+)?\]\]/g;
 
+// Media file extensions
+const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
+const AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "flac"];
+const VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "avi"];
+const PDF_EXTENSIONS = ["pdf"];
+
+function getFileExtension(filename: string): string {
+  return filename.split(".").pop()?.toLowerCase() ?? "";
+}
+
+function isImageFile(filename: string): boolean {
+  return IMAGE_EXTENSIONS.includes(getFileExtension(filename));
+}
+
+function isAudioFile(filename: string): boolean {
+  return AUDIO_EXTENSIONS.includes(getFileExtension(filename));
+}
+
+function isVideoFile(filename: string): boolean {
+  return VIDEO_EXTENSIONS.includes(getFileExtension(filename));
+}
+
+function isPdfFile(filename: string): boolean {
+  return PDF_EXTENSIONS.includes(getFileExtension(filename));
+}
+
 /**
  * Cache for resolved embeds to avoid repeated API calls
  */
@@ -95,7 +121,19 @@ class EmbedWidget extends WidgetType {
       if (content.error) {
         this.renderError(container, content.error);
       } else if (content.isImage && content.assetUrl) {
-        this.renderImage(container, content);
+        // It's a media file - determine type from target filename
+        if (isImageFile(this.target)) {
+          this.renderImage(container, content);
+        } else if (isAudioFile(this.target)) {
+          this.renderAudio(container, content);
+        } else if (isVideoFile(this.target)) {
+          this.renderVideo(container, content);
+        } else if (isPdfFile(this.target)) {
+          this.renderPdf(container, content);
+        } else {
+          // Unknown media type, try as image
+          this.renderImage(container, content);
+        }
       } else if (content.content) {
         this.renderNote(container, content);
       } else {
@@ -131,6 +169,111 @@ class EmbedWidget extends WidgetType {
     };
 
     container.appendChild(img);
+  }
+
+  private renderAudio(container: HTMLElement, content: EmbedContent): void {
+    container.classList.add("cm-embed-audio");
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "cm-embed-audio-wrapper";
+
+    const filename = document.createElement("div");
+    filename.className = "cm-embed-audio-filename";
+    filename.textContent = this.target.split("/").pop() || this.target;
+    wrapper.appendChild(filename);
+
+    // Get the asset URL directly - skip blob URL which has WebKit issues
+    const assetUrl = convertFileSrc(content.assetUrl!);
+
+    // Use <audio> element with source for better codec hints
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.preload = "metadata";
+    audio.style.width = "100%";
+    audio.style.maxWidth = "400px";
+
+    // Add source with type hint
+    const source = document.createElement("source");
+    source.src = assetUrl;
+
+    // Set MIME type based on extension
+    const ext = this.target.split(".").pop()?.toLowerCase() || "";
+    const mimeTypes: Record<string, string> = {
+      mp3: "audio/mpeg",
+      wav: "audio/wav",
+      ogg: "audio/ogg",
+      m4a: "audio/mp4",
+      flac: "audio/flac",
+      aac: "audio/aac",
+    };
+    source.type = mimeTypes[ext] || "audio/mpeg";
+    audio.appendChild(source);
+
+    // Prevent CodeMirror from capturing clicks on the controls
+    audio.addEventListener("mousedown", (e) => e.stopPropagation());
+    audio.addEventListener("click", (e) => e.stopPropagation());
+
+    audio.onerror = () => {
+      const error = audio.error;
+      console.error("[EmbedExtension] Audio playback error:", error?.code, error?.message);
+      // Show unsupported format message
+      const notice = document.createElement("div");
+      notice.className = "cm-embed-audio-notice";
+      notice.textContent = "Audio format not supported";
+      notice.style.cssText = "font-size: 11px; color: var(--text-muted); margin-top: 4px;";
+      wrapper.appendChild(notice);
+    };
+
+    wrapper.appendChild(audio);
+    container.appendChild(wrapper);
+  }
+
+  private renderVideo(container: HTMLElement, content: EmbedContent): void {
+    container.classList.add("cm-embed-video");
+
+    const video = document.createElement("video");
+    video.controls = true;
+    video.preload = "auto"; // Load full file for duration detection
+
+    // Use asset:// protocol
+    const videoUrl = convertFileSrc(content.assetUrl!);
+    video.src = videoUrl;
+
+    // Prevent CodeMirror from capturing clicks on the video controls
+    video.addEventListener("mousedown", (e) => e.stopPropagation());
+    video.addEventListener("click", (e) => e.stopPropagation());
+
+    video.onerror = () => {
+      console.error("[EmbedExtension] Video load error for:", videoUrl);
+      container.innerHTML = "";
+      this.renderError(container, `Failed to load video: ${this.target}`);
+    };
+
+    container.appendChild(video);
+  }
+
+  private renderPdf(container: HTMLElement, content: EmbedContent): void {
+    container.classList.add("cm-embed-pdf");
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "cm-embed-pdf-wrapper";
+
+    const filename = document.createElement("div");
+    filename.className = "cm-embed-pdf-filename";
+    filename.textContent = this.target.split("/").pop() || this.target;
+    wrapper.appendChild(filename);
+
+    const iframe = document.createElement("iframe");
+    iframe.src = convertFileSrc(content.assetUrl!);
+    iframe.title = this.target;
+
+    // Prevent CodeMirror from capturing clicks on the PDF
+    iframe.addEventListener("mousedown", (e) => e.stopPropagation());
+    iframe.addEventListener("click", (e) => e.stopPropagation());
+
+    wrapper.appendChild(iframe);
+
+    container.appendChild(wrapper);
   }
 
   private renderNote(container: HTMLElement, content: EmbedContent): void {

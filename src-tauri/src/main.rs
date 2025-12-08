@@ -4,6 +4,7 @@
 
 mod commands;
 mod state;
+mod stream;
 
 use state::AppState;
 use tracing::info;
@@ -20,6 +21,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .register_uri_scheme_protocol("stream", stream::handle_stream_protocol)
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
             // Vault

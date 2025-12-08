@@ -130,8 +130,14 @@ class WorkspaceStore {
     // Transition to doc-finder mode
     this.state = "doc-finder";
 
-    // Add to breadcrumb if not already the active doc
-    if (this.activeDoc?.path !== doc.path) {
+    // Check if doc is already in breadcrumb
+    const existingIndex = this.breadcrumb.findIndex((d) => d.path === doc.path);
+
+    if (existingIndex >= 0) {
+      // Doc already in breadcrumb - navigate to it (truncate after it)
+      this.breadcrumb = this.breadcrumb.slice(0, existingIndex + 1);
+    } else {
+      // Add new doc to breadcrumb
       this.breadcrumb = [...this.breadcrumb, doc];
     }
   }

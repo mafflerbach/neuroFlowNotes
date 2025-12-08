@@ -785,23 +785,33 @@ pub async fn resolve_embed(
     let vault_guard = state.vault.read().await;
     let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
 
-    // Check if target is an image
+    // Check if target is a media file (image, audio, video, pdf)
     let image_extensions = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
+    let audio_extensions = ["mp3", "wav", "ogg", "m4a", "flac"];
+    let video_extensions = ["mp4", "webm", "mov", "avi"];
+    let pdf_extensions = ["pdf"];
+
     let target_lower = request.target.to_lowercase();
     let is_image = image_extensions.iter().any(|ext| target_lower.ends_with(&format!(".{}", ext)));
+    let is_audio = audio_extensions.iter().any(|ext| target_lower.ends_with(&format!(".{}", ext)));
+    let is_video = video_extensions.iter().any(|ext| target_lower.ends_with(&format!(".{}", ext)));
+    let is_pdf = pdf_extensions.iter().any(|ext| target_lower.ends_with(&format!(".{}", ext)));
+    let is_media = is_image || is_audio || is_video || is_pdf;
 
-    if is_image {
-        // Resolve image path
-        let image_path = vault.resolve_asset_path(&request.target).await;
+    if is_media {
+        // Resolve media file path
+        info!("Resolving media path for target: {}", request.target);
+        let media_path = vault.resolve_asset_path(&request.target).await;
+        info!("Resolved media path: {:?}", media_path);
 
-        match image_path {
+        match media_path {
             Some(full_path) => {
                 // Return the full filesystem path - frontend will convert it using convertFileSrc
                 Ok(EmbedContent {
                     note_id: None,
                     path: request.target,
                     content: None,
-                    is_image: true,
+                    is_image: is_media, // Keep using is_image field for backwards compat (means "is media")
                     asset_url: Some(full_path.to_string_lossy().to_string()),
                     error: None,
                 })
@@ -810,9 +820,9 @@ pub async fn resolve_embed(
                 note_id: None,
                 path: request.target.clone(),
                 content: None,
-                is_image: true,
+                is_image: is_media,
                 asset_url: None,
-                error: Some(format!("Image not found: {}", request.target)),
+                error: Some(format!("Media not found: {}", request.target)),
             }),
         }
     } else {

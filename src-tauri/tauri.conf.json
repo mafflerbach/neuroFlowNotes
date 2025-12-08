@@ -24,10 +24,14 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' asset: http://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'",
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ipc: http://ipc.localhost stream: http://stream.localhost; img-src 'self' asset: http://asset.localhost blob: data:; media-src 'self' asset: http://asset.localhost stream: http://stream.localhost blob:; frame-src 'self' asset: http://asset.localhost; style-src 'self' 'unsafe-inline'",
       "assetProtocol": {
         "enable": true,
-        "scope": ["**/*"]
+        "scope": {
+          "allow": ["**", "$HOME/**", "$DOCUMENT/**", "$DOWNLOAD/**", "$AUDIO/**", "$VIDEO/**", "$PICTURE/**", "/Users/**", "/tmp/**"],
+          "deny": [],
+          "requireLiteralLeadingDot": false
+        }
       }
     }
   },

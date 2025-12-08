@@ -11,6 +11,7 @@ export { default as DocumentColumns } from "./DocumentColumns.svelte";
 // Editor
 export { default as FolderTree } from "./FolderTree.svelte";
 export { default as NoteEditor } from "./NoteEditor.svelte";
+export { default as ColumnEditor } from "./ColumnEditor.svelte";
 export { default as TodoPanel } from "./TodoPanel.svelte";
 export { default as PropertiesPanel } from "./PropertiesPanel.svelte";
 

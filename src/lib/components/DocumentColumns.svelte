@@ -1,12 +1,16 @@
 <script lang="ts">
   import { X, Eye } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
-  import NoteEditor from "./NoteEditor.svelte";
+  import ColumnEditor from "./ColumnEditor.svelte";
   import PropertiesPanel from "./PropertiesPanel.svelte";
 
   const visibleDocs = $derived(workspaceStore.visibleDocs);
   const activeDoc = $derived(workspaceStore.activeDoc);
   const multiColumnEditable = $derived(workspaceStore.multiColumnEditable);
+
+  function isMarkdownFile(path: string): boolean {
+    return path.toLowerCase().endsWith(".md");
+  }
 
   function isActiveColumn(path: string): boolean {
     return activeDoc?.path === path;
@@ -56,11 +60,11 @@
       <!-- Editor area -->
       <div class="column-content">
         <div class="editor-wrapper">
-          <NoteEditor readonly={!isEditable} />
+          <ColumnEditor path={doc.path} readonly={!isEditable} />
         </div>
 
-        <!-- Properties panel (only for active doc) -->
-        {#if isActive}
+        <!-- Properties panel for all markdown files -->
+        {#if isMarkdownFile(doc.path)}
           <PropertiesPanel noteId={doc.id} />
         {/if}
       </div>
