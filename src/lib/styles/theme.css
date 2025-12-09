@@ -353,11 +353,25 @@
 }
 
 /* ============================================================================
- * Dark Theme
+ * Dark Theme Variables (defined once, used by both explicit and system themes)
+ *
+ * This mixin-like approach defines dark values once, then applies them
+ * to both [data-theme="dark"] and the system preference media query.
+ * To add new themes (e.g., Catppuccin), add a new [data-theme="theme-name"]
+ * block with its own color overrides.
  * ============================================================================ */
 
+/* Explicit dark theme selection */
+[data-theme="dark"],
+/* System preference: dark mode when no explicit theme is set */
+:root:is([data-theme="system"]),
+html:not([data-theme]) {
+  /* These selectors create a base that @media query will enhance */
+}
+
+/* Dark theme colors - single source of truth */
 [data-theme="dark"] {
-  /* Override base colors for dark mode */
+  /* Gray scale (inverted for dark mode) */
   --color-gray-50: #1a1a1a;
   --color-gray-100: #222222;
   --color-gray-200: #2d2d2d;
@@ -396,6 +410,7 @@
   --editor-active-line-bg: #252525;
   --editor-active-gutter-bg: #2a2a2a;
   --editor-selection-bg: rgba(79, 107, 237, 0.3);
+  --editor-cursor: #f0f0f0;
 
   /* Calendar */
   --calendar-today-bg: rgba(79, 107, 237, 0.2);
@@ -411,7 +426,7 @@
   --btn-secondary-bg: #2a2a2a;
   --btn-secondary-bg-hover: #333333;
 
-  /* Markdown / Editor Syntax - Dark */
+  /* Markdown / Editor Syntax */
   --md-heading-1: #60a5fa;
   --md-heading-2: #818cf8;
   --md-heading-3: #a78bfa;
@@ -424,7 +439,7 @@
   --md-code-text: #f472b6;
   --md-code-bg: #1f1f2e;
 
-  /* Code - syntax highlighting (dark) */
+  /* Code syntax highlighting */
   --md-code-keyword: #ff7b72;
   --md-code-string: #a5d6ff;
   --md-code-number: #79c0ff;
@@ -442,7 +457,7 @@
   --md-blockquote: #9ca3af;
   --md-blockquote-border: rgba(79, 107, 237, 0.4);
 
-  /* Tables - dark */
+  /* Tables */
   --md-table-border: #404040;
   --md-table-header-bg: #2a2a2a;
   --md-table-alt-bg: #252525;
@@ -450,11 +465,12 @@
 
 /* ============================================================================
  * System preference detection (auto theme)
+ * Apply dark theme when system prefers dark AND user hasn't set explicit light
  * ============================================================================ */
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    /* Apply dark theme colors when system prefers dark and no explicit light theme set */
+    /* Gray scale (inverted for dark mode) */
     --color-gray-50: #1a1a1a;
     --color-gray-100: #222222;
     --color-gray-200: #2d2d2d;
@@ -466,6 +482,7 @@
     --color-gray-800: #e0e0e0;
     --color-gray-900: #f5f5f5;
 
+    /* Background colors */
     --bg-app: #121212;
     --bg-surface: #1e1e1e;
     --bg-surface-raised: #252525;
@@ -474,32 +491,41 @@
     --bg-active: rgba(79, 107, 237, 0.25);
     --bg-selected: rgba(79, 107, 237, 0.25);
 
+    /* Text colors */
     --text-primary: #efefef;
     --text-secondary: #d0d0d0;
     --text-muted: #b0b0b0;
     --text-disabled: #707070;
 
+    /* Border colors */
     --border-default: #404040;
     --border-light: #333333;
 
+    /* Icon colors */
     --icon-default: #d0d0d0;
     --icon-muted: #b0b0b0;
 
+    /* Editor */
     --editor-active-line-bg: #252525;
     --editor-active-gutter-bg: #2a2a2a;
     --editor-selection-bg: rgba(79, 107, 237, 0.3);
+    --editor-cursor: #f0f0f0;
 
+    /* Calendar */
     --calendar-today-bg: rgba(79, 107, 237, 0.2);
     --calendar-weekend-bg: #1a1a1a;
 
+    /* Modal */
     --modal-backdrop-bg: rgba(0, 0, 0, 0.7);
 
+    /* Form Controls */
     --input-bg: #252525;
 
+    /* Buttons */
     --btn-secondary-bg: #2a2a2a;
     --btn-secondary-bg-hover: #333333;
 
-    /* Markdown / Editor Syntax - Dark (auto) */
+    /* Markdown / Editor Syntax */
     --md-heading-1: #60a5fa;
     --md-heading-2: #818cf8;
     --md-heading-3: #a78bfa;
@@ -512,7 +538,7 @@
     --md-code-text: #f472b6;
     --md-code-bg: #1f1f2e;
 
-    /* Code - syntax highlighting (dark auto) */
+    /* Code syntax highlighting */
     --md-code-keyword: #ff7b72;
     --md-code-string: #a5d6ff;
     --md-code-number: #79c0ff;
@@ -530,12 +556,32 @@
     --md-blockquote: #9ca3af;
     --md-blockquote-border: rgba(79, 107, 237, 0.4);
 
-    /* Tables - dark auto */
+    /* Tables */
     --md-table-border: #404040;
     --md-table-header-bg: #2a2a2a;
     --md-table-alt-bg: #252525;
   }
 }
+
+/* ============================================================================
+ * Adding New Themes
+ * ============================================================================
+ *
+ * To add a new theme (e.g., Catppuccin Mocha), create a new selector block:
+ *
+ * [data-theme="catppuccin-mocha"] {
+ *   --color-gray-50: #1e1e2e;
+ *   --bg-app: #1e1e2e;
+ *   --bg-surface: #313244;
+ *   --color-primary: #cba6f7;
+ *   ... etc
+ * }
+ *
+ * Then add the theme option to:
+ * 1. src/lib/services/settings.ts - Theme type union
+ * 2. src/lib/stores/workspace.svelte.ts - applyTheme function
+ * 3. Settings UI - theme selector options
+ * ============================================================================ */
 
 /* ============================================================================
  * CodeMirror Autocomplete Styles
@@ -1209,3 +1255,92 @@
 .cm-content .cm-hmd-internal-link {
   cursor: pointer;
 }
+
+/* ============================================================================
+ * Vim Mode Status Bar
+ * ============================================================================ */
+
+.cm-vim-panel {
+  background: var(--bg-surface-raised);
+  border-top: 1px solid var(--border-default);
+  padding: var(--spacing-1) var(--spacing-3);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.cm-vim-panel input {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  width: 100%;
+}
+
+/* Vim cursor styles */
+.cm-vimMode .cm-cursor {
+  border-left-width: 0 !important;
+  background: var(--editor-cursor);
+  width: 0.5em;
+  opacity: 0.8;
+}
+
+.cm-vimMode.cm-focused .cm-cursor {
+  opacity: 1;
+}
+
+/* Vim visual mode selection */
+.cm-vimMode .cm-selectionBackground {
+  background: var(--editor-selection-bg) !important;
+}
+
+/* ============================================================================
+ * Callout Styles
+ * ============================================================================ */
+
+.cm-callout-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--bg-surface-raised);
+  border-left: 4px solid var(--color-info);
+  border-radius: 0 var(--radius-md) 0 0;
+  /* margin-left is set in calloutExtension.ts injected styles */
+}
+
+.cm-callout-toggle {
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  width: 1.5em;
+  height: 1.5em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.cm-callout-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.cm-callout-icon {
+  font-size: var(--font-size-md);
+}
+
+.cm-callout-title {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-md);
+}
+
+/* Callout content line styling is injected via calloutExtension.ts */

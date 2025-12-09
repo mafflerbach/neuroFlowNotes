@@ -168,6 +168,19 @@ class WorkspaceStore {
     });
   }
 
+  /** Update paths for all documents inside a renamed folder */
+  updateFolderPath(oldFolderPath: string, newFolderPath: string) {
+    const oldPrefix = oldFolderPath + "/";
+    const newPrefix = newFolderPath + "/";
+
+    this.breadcrumb = this.breadcrumb.map((doc) => {
+      if (doc.path.startsWith(oldPrefix)) {
+        return { ...doc, path: doc.path.replace(oldPrefix, newPrefix) };
+      }
+      return doc;
+    });
+  }
+
   /** Close all documents and return to calendar */
   closeAllDocs() {
     this.breadcrumb = [];
@@ -218,6 +231,27 @@ class WorkspaceStore {
   /** Initialize theme on app start */
   initTheme() {
     this.applyTheme(this.theme);
+  }
+
+  // ========================================================================
+  // Vim Mode
+  // ========================================================================
+
+  // Vim mode state (read from settings)
+  vimMode = $state(getSetting("vimMode"));
+
+  /** Toggle vim mode */
+  toggleVimMode() {
+    this.vimMode = !this.vimMode;
+    setSetting("vimMode", this.vimMode);
+    // Note: Editor needs to be recreated to apply vim mode change
+    // This will happen on next note load or reload
+  }
+
+  /** Set vim mode preference */
+  setVimMode(enabled: boolean) {
+    this.vimMode = enabled;
+    setSetting("vimMode", enabled);
   }
 }
 

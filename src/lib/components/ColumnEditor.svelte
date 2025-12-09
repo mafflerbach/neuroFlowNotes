@@ -6,23 +6,19 @@
    */
   import { onDestroy } from "svelte";
   import { EditorState } from "@codemirror/state";
-  import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
-  import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-  import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-  import { languages } from "@codemirror/language-data";
-  import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
-  import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+  import { EditorView } from "@codemirror/view";
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { getNoteContent, saveNote, resolveEmbed } from "../services/api";
+  import { createEditorExtensions, createSaveKeymap } from "../editor";
   import {
-    wikiLinkCompletion,
-    livePreview,
-    markdownHighlight,
-    embedExtension,
-    linkHandlerExtension,
-    hoverPreviewExtension,
-    pasteHandlerExtension,
-  } from "../editor";
+    isImageFile,
+    isAudioFile,
+    isVideoFile,
+    isPdfFile,
+    isMarkdownFile,
+    isMediaFile,
+    getAudioMimeType,
+  } from "../utils/fileTypes";
 
   interface Props {
     path: string;
@@ -30,40 +26,6 @@
   }
 
   let { path, readonly = false }: Props = $props();
-
-  // Media file extensions
-  const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
-  const AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "flac"];
-  const VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "avi"];
-  const PDF_EXTENSIONS = ["pdf"];
-
-  function getFileExtension(filePath: string): string {
-    return filePath.split(".").pop()?.toLowerCase() ?? "";
-  }
-
-  function isImageFile(filePath: string): boolean {
-    return IMAGE_EXTENSIONS.includes(getFileExtension(filePath));
-  }
-
-  function isAudioFile(filePath: string): boolean {
-    return AUDIO_EXTENSIONS.includes(getFileExtension(filePath));
-  }
-
-  function isVideoFile(filePath: string): boolean {
-    return VIDEO_EXTENSIONS.includes(getFileExtension(filePath));
-  }
-
-  function isPdfFile(filePath: string): boolean {
-    return PDF_EXTENSIONS.includes(getFileExtension(filePath));
-  }
-
-  function isMarkdownFile(filePath: string): boolean {
-    return getFileExtension(filePath) === "md";
-  }
-
-  function isMediaFile(filePath: string): boolean {
-    return isImageFile(filePath) || isAudioFile(filePath) || isVideoFile(filePath) || isPdfFile(filePath);
-  }
 
   let editorContainer: HTMLDivElement | undefined = $state();
   let view: EditorView | null = null;
@@ -75,64 +37,6 @@
   let mediaUrl = $state<string | null>(null);
   let mediaError = $state<string | null>(null);
   let fileType = $derived(isMarkdownFile(path) ? "markdown" : isImageFile(path) ? "image" : isAudioFile(path) ? "audio" : isVideoFile(path) ? "video" : isPdfFile(path) ? "pdf" : "unknown");
-
-  // Create a custom theme
-  const editorTheme = EditorView.theme({
-    "&": {
-      height: "100%",
-      fontSize: "var(--font-size-md)",
-      color: "var(--text-primary)",
-    },
-    ".cm-content": {
-      fontFamily: "var(--font-family-mono)",
-      padding: "var(--spacing-4) 0",
-      color: "var(--text-primary)",
-    },
-    ".cm-line": {
-      color: "var(--text-primary)",
-      padding: "0 var(--spacing-4)",
-    },
-    ".cm-gutters": {
-      background: "var(--editor-gutter-bg)",
-      border: "none",
-      color: "var(--editor-gutter-color)",
-    },
-    ".cm-activeLineGutter": {
-      background: "var(--editor-active-gutter-bg)",
-    },
-    ".cm-activeLine": {
-      background: "var(--editor-active-line-bg)",
-    },
-    "&.cm-focused .cm-cursor": {
-      borderLeftColor: "var(--editor-cursor)",
-    },
-    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
-      background: "var(--editor-selection-bg)",
-    },
-  });
-
-  // Update listener to track changes
-  function createUpdateListener() {
-    return EditorView.updateListener.of((update) => {
-      if (update.docChanged) {
-        content = update.state.doc.toString();
-        isDirty = true;
-      }
-    });
-  }
-
-  // Save on Cmd/Ctrl+S
-  function createSaveKeymap() {
-    return keymap.of([
-      {
-        key: "Mod-s",
-        run: () => {
-          handleSave();
-          return true;
-        },
-      },
-    ]);
-  }
 
   async function handleSave() {
     if (!isDirty || !currentPath) return;
@@ -160,7 +64,6 @@
 
       if (result.assetUrl) {
         // Use asset:// protocol for all media
-        // preload="auto" on audio/video elements will load the full file for duration detection
         mediaUrl = convertFileSrc(result.assetUrl);
       } else {
         mediaError = "Could not resolve media path";
@@ -186,34 +89,19 @@
       currentPath = path;
       isDirty = false;
 
-      const extensions = [
-        lineNumbers(),
-        highlightActiveLineGutter(),
-        highlightActiveLine(),
-        history(),
-        highlightSelectionMatches(),
-        markdown({
-          base: markdownLanguage,
-          codeLanguages: languages,
-        }),
-        markdownHighlight(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
-        createSaveKeymap(),
-        createUpdateListener(),
-        editorTheme,
-        EditorView.lineWrapping,
-        wikiLinkCompletion(),
-        livePreview(),
-        embedExtension(),
-        linkHandlerExtension(),
-        hoverPreviewExtension(),
-        pasteHandlerExtension(),
-      ];
+      // Update listener to track changes (local to this component)
+      const updateListener = EditorView.updateListener.of((update) => {
+        if (update.docChanged) {
+          content = update.state.doc.toString();
+          isDirty = true;
+        }
+      });
 
-      if (readonly) {
-        extensions.push(EditorState.readOnly.of(true));
-      }
+      const extensions = createEditorExtensions({
+        updateListener,
+        saveKeymap: createSaveKeymap(handleSave),
+        readonly,
+      });
 
       const state = EditorState.create({
         doc: content,
@@ -282,8 +170,7 @@
     <!-- Audio player -->
     <div class="media-viewer audio-viewer">
       {#if mediaUrl}
-        {@const ext = path.split(".").pop()?.toLowerCase() || ""}
-        {@const mimeType = { mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4", flac: "audio/flac", aac: "audio/aac" }[ext] || "audio/mpeg"}
+        {@const mimeType = getAudioMimeType(path)}
         <div class="audio-container">
           <p class="media-filename">{path.split("/").pop()}</p>
           <audio controls preload="metadata">

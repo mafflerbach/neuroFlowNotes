@@ -59,16 +59,10 @@ class VaultStore {
   }
 
   async refreshFolderTree() {
-    if (!this.isOpen) {
-      console.log("[VaultStore] refreshFolderTree: vault not open");
-      return;
-    }
+    if (!this.isOpen) return;
 
     try {
-      console.log("[VaultStore] refreshFolderTree: fetching...");
-      const tree = await api.getFolderTree();
-      console.log("[VaultStore] refreshFolderTree: got tree with", tree?.children?.length, "children");
-      this.folderTree = tree;
+      this.folderTree = await api.getFolderTree();
     } catch (e) {
       console.error("[VaultStore] Failed to refresh folder tree:", e);
     }

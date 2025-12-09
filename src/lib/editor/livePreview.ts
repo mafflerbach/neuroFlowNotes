@@ -40,9 +40,11 @@ function getActiveLines(state: EditorState): Set<number> {
  * Create decorations to hide markdown syntax on non-active lines
  */
 function createDecorations(view: EditorView): DecorationSet {
-  const builder = new RangeSetBuilder<Decoration>();
   const activeLines = getActiveLines(view.state);
   const doc = view.state.doc;
+
+  // Collect all decorations first, then sort and add to builder
+  const allDecorations: DecorationRange[] = [];
 
   // Process each visible line
   for (const { from, to } of view.visibleRanges) {
@@ -55,13 +57,20 @@ function createDecorations(view: EditorView): DecorationSet {
       // Skip active lines - show all syntax
       if (!activeLines.has(lineNum)) {
         const decorations = getLineDecorations(line.from, lineText);
-        for (const deco of decorations) {
-          builder.add(deco.from, deco.to, deco.decoration);
-        }
+        allDecorations.push(...decorations);
       }
 
       pos = line.to + 1;
     }
+  }
+
+  // Sort all decorations by position before adding to builder
+  allDecorations.sort((a, b) => a.from - b.from || a.to - b.to);
+
+  // Build the decoration set
+  const builder = new RangeSetBuilder<Decoration>();
+  for (const deco of allDecorations) {
+    builder.add(deco.from, deco.to, deco.decoration);
   }
 
   return builder.finish();
@@ -104,14 +113,15 @@ function getLineDecorations(
     });
   }
 
-  // Checkbox pattern: hide marker but show checkbox state visually
+  // Checkbox pattern: hide only the bullet marker, keep the checkbox visible
   const checkboxMatch = lineText.match(CHECKBOX_PATTERN);
   if (checkboxMatch) {
-    // Hide "- [ ] " but the checkbox CSS will style it
-    const markerEnd = checkboxMatch[1].length + checkboxMatch[2].length + 1;
+    // Keep indentation, only hide the bullet marker "- " before the checkbox
+    const indentLength = checkboxMatch[1].length;
+    const bulletMarkerLength = checkboxMatch[2].length + 1; // marker + space before [
     decorations.push({
-      from: lineStart,
-      to: lineStart + markerEnd,
+      from: lineStart + indentLength,
+      to: lineStart + indentLength + bulletMarkerLength,
       decoration: hideDecoration,
     });
   } else {

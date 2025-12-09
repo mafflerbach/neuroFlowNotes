@@ -71,7 +71,6 @@ async function handlePaste(view: EditorView, event: ClipboardEvent): Promise<boo
 
     // Save the image via Tauri command
     const savedPath = await savePastedImage(base64Data, extension);
-    console.log("[PasteHandler] Saved image to:", savedPath);
 
     // Insert embed link at cursor position
     const embedText = `![[${savedPath}]]`;

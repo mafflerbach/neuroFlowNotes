@@ -15,10 +15,6 @@
   let newItemName = $state("");
   let newItemInput = $state<HTMLInputElement | null>(null);
 
-  // Debug logging
-  $effect(() => {
-    console.log("[Sidebar] folderTree changed, children count:", treeChildren.length);
-  });
 
   async function handleOpenVault() {
     try {

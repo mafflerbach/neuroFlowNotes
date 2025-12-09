@@ -16,34 +16,62 @@ import type { EditorState } from "@codemirror/state";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { resolveEmbed } from "../services/api";
 import type { EmbedContent } from "../types";
+import {
+  isImageFile,
+  isAudioFile,
+  isVideoFile,
+  isPdfFile,
+  getAudioMimeType,
+} from "../utils/fileTypes";
 
-// Pattern for embeds: ![[target]] or ![[target#section]]
-const EMBED_PATTERN = /!\[\[([^\]#|]+)(?:#([^\]|]+))?(?:\|[^\]]+)?\]\]/g;
+// Pattern for embeds: ![[target]] or ![[target#section]] or ![[target|size]]
+// Size can be: 200, 200px, 50%, x100 (height only), 200x100
+const EMBED_PATTERN = /!\[\[([^\]#|]+)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g;
 
-// Media file extensions
-const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
-const AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "flac"];
-const VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "avi"];
-const PDF_EXTENSIONS = ["pdf"];
-
-function getFileExtension(filename: string): string {
-  return filename.split(".").pop()?.toLowerCase() ?? "";
+/**
+ * Parse size parameter from embed syntax
+ * Supports: 200, 200px, 50%, x100 (height only), 200x100
+ */
+interface ImageSize {
+  width?: string;
+  height?: string;
 }
 
-function isImageFile(filename: string): boolean {
-  return IMAGE_EXTENSIONS.includes(getFileExtension(filename));
-}
+function parseImageSize(sizeStr: string | undefined): ImageSize | undefined {
+  if (!sizeStr) return undefined;
 
-function isAudioFile(filename: string): boolean {
-  return AUDIO_EXTENSIONS.includes(getFileExtension(filename));
-}
+  const trimmed = sizeStr.trim();
+  if (!trimmed) return undefined;
 
-function isVideoFile(filename: string): boolean {
-  return VIDEO_EXTENSIONS.includes(getFileExtension(filename));
-}
+  // Check for WIDTHxHEIGHT format (e.g., "200x100")
+  const dimensionMatch = trimmed.match(/^(\d+)x(\d+)$/);
+  if (dimensionMatch) {
+    return {
+      width: `${dimensionMatch[1]}px`,
+      height: `${dimensionMatch[2]}px`,
+    };
+  }
 
-function isPdfFile(filename: string): boolean {
-  return PDF_EXTENSIONS.includes(getFileExtension(filename));
+  // Check for xHEIGHT format (e.g., "x100" for height only)
+  const heightOnlyMatch = trimmed.match(/^x(\d+)(px)?$/);
+  if (heightOnlyMatch) {
+    return {
+      height: `${heightOnlyMatch[1]}px`,
+    };
+  }
+
+  // Check for percentage (e.g., "50%")
+  if (trimmed.endsWith("%")) {
+    return { width: trimmed };
+  }
+
+  // Check for pixel value (e.g., "200" or "200px")
+  const pixelMatch = trimmed.match(/^(\d+)(px)?$/);
+  if (pixelMatch) {
+    return { width: `${pixelMatch[1]}px` };
+  }
+
+  return undefined;
 }
 
 /**
@@ -76,13 +104,17 @@ class EmbedWidget extends WidgetType {
   constructor(
     private target: string,
     private section: string | undefined,
-    private depth: number
+    private depth: number,
+    private size: ImageSize | undefined
   ) {
     super();
   }
 
   eq(other: EmbedWidget): boolean {
-    return this.target === other.target && this.section === other.section;
+    return this.target === other.target &&
+           this.section === other.section &&
+           this.size?.width === other.size?.width &&
+           this.size?.height === other.size?.height;
   }
 
   toDOM(_view: EditorView): HTMLElement {
@@ -163,6 +195,24 @@ class EmbedWidget extends WidgetType {
     img.src = convertFileSrc(content.assetUrl!);
     img.alt = this.target;
     img.loading = "lazy";
+
+    // Apply custom size if specified
+    if (this.size) {
+      if (this.size.width) {
+        img.style.width = this.size.width;
+      }
+      if (this.size.height) {
+        img.style.height = this.size.height;
+      }
+      // If only one dimension is set, maintain aspect ratio
+      if (this.size.width && !this.size.height) {
+        img.style.height = "auto";
+      }
+      if (this.size.height && !this.size.width) {
+        img.style.width = "auto";
+      }
+    }
+
     img.onerror = () => {
       container.innerHTML = "";
       this.renderError(container, `Failed to load image: ${this.target}`);
@@ -195,18 +245,7 @@ class EmbedWidget extends WidgetType {
     // Add source with type hint
     const source = document.createElement("source");
     source.src = assetUrl;
-
-    // Set MIME type based on extension
-    const ext = this.target.split(".").pop()?.toLowerCase() || "";
-    const mimeTypes: Record<string, string> = {
-      mp3: "audio/mpeg",
-      wav: "audio/wav",
-      ogg: "audio/ogg",
-      m4a: "audio/mp4",
-      flac: "audio/flac",
-      aac: "audio/aac",
-    };
-    source.type = mimeTypes[ext] || "audio/mpeg";
+    source.type = getAudioMimeType(this.target);
     audio.appendChild(source);
 
     // Prevent CodeMirror from capturing clicks on the controls
@@ -380,9 +419,11 @@ function createDecorations(view: EditorView, depth: number = 0): DecorationSet {
         while ((match = EMBED_PATTERN.exec(lineText)) !== null) {
           const target = match[1];
           const section = match[2];
+          const sizeParam = match[3];
+          const size = parseImageSize(sizeParam);
 
           // Create widget decoration (inline, not block)
-          const widget = new EmbedWidget(target, section, depth);
+          const widget = new EmbedWidget(target, section, depth, size);
           const deco = Decoration.replace({
             widget,
             inclusive: false,

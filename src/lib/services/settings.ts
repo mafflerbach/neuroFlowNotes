@@ -12,12 +12,14 @@ export interface AppSettings {
   lastVaultPath: string | null;
   defaultCalendarView: CalendarView;
   theme: Theme;
+  vimMode: boolean;
 }
 
 const defaultSettings: AppSettings = {
   lastVaultPath: null,
   defaultCalendarView: "weekly",
   theme: "system",
+  vimMode: false,
 };
 
 /**

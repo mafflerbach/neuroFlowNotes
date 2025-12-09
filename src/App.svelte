@@ -77,25 +77,16 @@
 
   // Fetch data for the current view
   async function fetchCalendarData() {
-    if (!vaultStore.isOpen) {
-      console.log("[App] fetchCalendarData: vault not open");
-      return;
-    }
+    if (!vaultStore.isOpen) return;
 
     try {
-      console.log("[App] fetchCalendarData: calendarView =", calendarView);
       // Always fetch DocList data for the selected date
       await fetchDocListData();
 
       if (calendarView === "weekly") {
         const { start, end } = getWeekRange(selectedDate);
-        console.log("[App] Fetching weekly data:", start, "to", end);
-        // Fetch schedule blocks for the week
         scheduleBlocks = await getScheduleBlocks(start, end);
-        console.log("[App] Got schedule blocks:", scheduleBlocks.length);
-        // Fetch notes for the week
         const notesData = await getNotesForDateRange(start, end);
-        console.log("[App] Got notes for week:", notesData.length, "days");
         const weekMap = new Map<string, NoteListItem[]>();
         for (const [dateStr, notes] of notesData) {
           weekMap.set(dateStr, notes.map((n) => n.note));
@@ -103,10 +94,7 @@
         notesForWeek = weekMap;
       } else if (calendarView === "monthly") {
         const { start, end } = getMonthRange(selectedDate);
-        console.log("[App] Fetching monthly data:", start, "to", end);
-        // Fetch notes for the month
         const notesData = await getNotesForDateRange(start, end);
-        console.log("[App] Got notes for month:", notesData.length, "days");
         const monthMap = new Map<string, NoteListItem[]>();
         for (const [dateStr, notes] of notesData) {
           monthMap.set(dateStr, notes.map((n) => n.note));
@@ -114,10 +102,7 @@
         notesForMonth = monthMap;
       } else if (calendarView === "daily") {
         const dateStr = formatDateKey(selectedDate);
-        console.log("[App] Fetching daily data:", dateStr);
-        // Fetch schedule blocks for the day
         scheduleBlocks = await getScheduleBlocks(dateStr, dateStr);
-        console.log("[App] Got schedule blocks:", scheduleBlocks.length);
       }
     } catch (e) {
       console.error("[App] Failed to fetch calendar data:", e);
@@ -185,8 +170,6 @@
   }
 
   async function handleBlockClick(block: ScheduleBlockDto) {
-    console.log("[App] handleBlockClick:", block);
-
     if (block.note_id) {
       // Open existing linked note
       try {
@@ -208,9 +191,7 @@
         const path = titleToFilename(title);
         const content = generateNoteContent(title);
 
-        console.log("[App] Creating note for block:", path);
         const noteId = await saveNote(path, content);
-        console.log("[App] Note created with id:", noteId);
 
         // Store metadata as properties in the database
         await setProperty({ note_id: noteId, key: "date", value: dateStr, property_type: "date" });
@@ -218,7 +199,6 @@
         if (block.label) {
           await setProperty({ note_id: noteId, key: "title", value: block.label, property_type: "text" });
         }
-        console.log("[App] Properties saved to database");
 
         // Update the block to link to this note
         await updateScheduleBlock({
@@ -231,7 +211,6 @@
           color: null,
           context: null,
         });
-        console.log("[App] Block updated with note_id");
 
         // Refresh data and open the note
         await vaultStore.refreshFolderTree();
@@ -263,16 +242,6 @@
     newEndTime: string
   ) {
     try {
-      console.log(
-        "[App] Moving block",
-        block.id,
-        "to",
-        newDate,
-        newStartTime,
-        "-",
-        newEndTime
-      );
-
       await updateScheduleBlock({
         id: block.id,
         note_id: block.note_id, // Keep existing
@@ -330,7 +299,6 @@
     color: string;
     context: string | null;
   }) {
-    console.log("[App] handleSaveBlock called with:", data);
     try {
       if (blockModalMode === "create") {
         // Auto-create note file for the schedule block (filename based on title, like Obsidian)
@@ -338,9 +306,7 @@
         const path = titleToFilename(data.label);
         const content = generateNoteContent(data.label);
 
-        console.log("[App] Creating note for schedule block:", path);
         const noteId = await saveNote(path, content);
-        console.log("[App] Note created with id:", noteId);
 
         // Store metadata as properties in the database
         await setProperty({ note_id: noteId, key: "date", value: data.date, property_type: "date" });
@@ -348,7 +314,7 @@
         await setProperty({ note_id: noteId, key: "title", value: data.label, property_type: "text" });
 
         // Create schedule block linked to the note
-        const request = {
+        await createScheduleBlock({
           note_id: noteId,
           date: data.date,
           start_time: data.start_time,
@@ -356,17 +322,13 @@
           label: data.label,
           color: data.color,
           context: data.context,
-        };
-        console.log("[App] Creating schedule block with:", request);
-        const blockId = await createScheduleBlock(request);
-        console.log("[App] Schedule block created with id:", blockId);
+        });
 
         // Refresh folder tree to show the new file
         await vaultStore.refreshFolderTree();
       } else if (blockModalBlock) {
         // If label changed and there's a linked note, sync the H1, title property, and rename file
         if (blockModalBlock.note_id && data.label !== blockModalBlock.label) {
-          console.log("[App] Label changed, syncing to linked note...");
           try {
             const note = await getNote(blockModalBlock.note_id);
             const noteContent = await getNoteContent(note.path);
@@ -376,14 +338,11 @@
             // Rename the file to match the new label
             const newPath = generatePathFromTitle(note.path, data.label);
             if (newPath !== note.path) {
-              console.log("[App] Renaming note:", note.path, "->", newPath);
               try {
                 await renameNote(note.path, newPath);
-                // Update workspace store's breadcrumb with new path
                 workspaceStore.updateDocPath(note.path, newPath, data.label);
-                console.log("[App] Note renamed successfully");
-              } catch (e) {
-                console.warn("[App] Could not rename file:", e);
+              } catch (_) {
+                // File might already exist with that name - continue silently
               }
             }
 
@@ -397,13 +356,12 @@
 
             // Refresh folder tree to show the renamed file
             await vaultStore.refreshFolderTree();
-            console.log("[App] Note H1 and title property synced");
           } catch (e) {
             console.error("[App] Failed to sync label to note:", e);
           }
         }
 
-        const request = {
+        await updateScheduleBlock({
           id: blockModalBlock.id,
           note_id: blockModalBlock.note_id, // Preserve existing note link
           date: data.date,
@@ -412,16 +370,10 @@
           label: data.label,
           color: data.color,
           context: data.context,
-        };
-        console.log("[App] Updating schedule block with:", request);
-        await updateScheduleBlock(request);
-        console.log("[App] Schedule block updated");
+        });
       }
       handleCloseBlockModal();
-      // Refresh calendar data
-      console.log("[App] Refreshing calendar data...");
       await fetchCalendarData();
-      console.log("[App] Calendar data refreshed");
     } catch (e) {
       console.error("[App] Failed to save schedule block:", e);
     }
@@ -453,25 +405,20 @@
 
     // Register callback for when editor updates schedule blocks
     editorStore.onScheduleBlocksUpdated = () => {
-      console.log("[App] Schedule blocks updated, refreshing calendar data");
       fetchCalendarData();
     };
 
     // Subscribe to backend events
     unlisteners.push(
-      await onNotesUpdated((payload) => {
-        console.log("Notes updated:", payload.note_ids);
+      await onNotesUpdated((_payload) => {
         vaultStore.refreshFolderTree();
-        // Also refresh calendar data since note titles may have changed
         fetchCalendarData();
       })
     );
 
     unlisteners.push(
       await onNotesDeleted((payload) => {
-        console.log("Notes deleted:", payload.note_ids);
         vaultStore.refreshFolderTree();
-        // Close editor if current note was deleted
         if (activeDoc && payload.note_ids.includes(activeDoc.id)) {
           workspaceStore.closeDoc(activeDoc.path);
         }
@@ -479,10 +426,8 @@
     );
 
     unlisteners.push(
-      await onIndexComplete((payload) => {
-        console.log(`Index complete: ${payload.notes_indexed} notes in ${payload.duration_ms}ms`);
+      await onIndexComplete((_payload) => {
         vaultStore.refresh();
-        // Refresh calendar data after indexing
         fetchCalendarData();
       })
     );

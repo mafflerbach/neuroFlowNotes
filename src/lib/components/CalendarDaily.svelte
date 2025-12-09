@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
   import { ChevronLeft, ChevronRight, Pencil } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import type { ScheduleBlockDto } from "../types";
@@ -45,7 +46,7 @@
   });
 
   function computeBlockStyle(block: ScheduleBlockDto, column: number, totalColumns: number): string {
-    return getBlockStyle(block, column, totalColumns, startHour, endHour);
+    return getBlockStyle(block, column, totalColumns, startHour, endHour, hourSlotHeight);
   }
 
   function goToPreviousDay() {
@@ -55,6 +56,23 @@
   function goToNextDay() {
     workspaceStore.selectDate(getNextDay(selectedDate));
   }
+
+  // Current time for red line indicator (updates every minute)
+  let currentTime = $state(new Date());
+  let timeUpdateInterval: ReturnType<typeof setInterval> | null = null;
+
+  onMount(() => {
+    // Update current time every minute
+    timeUpdateInterval = setInterval(() => {
+      currentTime = new Date();
+    }, 60000); // 60 seconds
+  });
+
+  onDestroy(() => {
+    if (timeUpdateInterval) {
+      clearInterval(timeUpdateInterval);
+    }
+  });
 
   // Drag & Drop state
   let draggedBlock = $state<ScheduleBlockDto | null>(null);
@@ -319,14 +337,13 @@
         {/each}
       </div>
 
-      <!-- Current time indicator -->
+      <!-- Current time indicator (updates every minute) -->
       {#if isToday(selectedDate)}
-        {@const now = new Date()}
-        {@const currentHour = now.getHours() + now.getMinutes() / 60}
+        {@const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60}
         {#if currentHour >= startHour && currentHour <= endHour}
           <div
             class="current-time-line"
-            style="top: {((currentHour - startHour) / (endHour - startHour)) * 100}%"
+            style="top: {(currentHour - startHour) * hourSlotHeight}px"
           >
             <div class="current-time-dot"></div>
           </div>

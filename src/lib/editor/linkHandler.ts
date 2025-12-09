@@ -6,10 +6,37 @@
 
 import { EditorView } from "@codemirror/view";
 import { workspaceStore } from "../stores/workspace.svelte";
-import { listNotes } from "../services/api";
+import { listNotes, saveNote } from "../services/api";
 
 // Pattern to match wiki links: [[target]] or [[target#section]] or [[target|display]]
 const WIKILINK_PATTERN = /\[\[([^\]#|]+)(?:#([^\]|]+))?(?:\|[^\]]+)?\]\]/g;
+
+/**
+ * Create a new note in the root directory and navigate to it
+ */
+async function createAndNavigateToNote(target: string): Promise<void> {
+  // Ensure the path ends with .md and is in the root
+  const filename = target.endsWith(".md") ? target : `${target}.md`;
+  // Remove any leading slashes or path components - always create in root
+  const cleanFilename = filename.split("/").pop() || filename;
+
+  // Create empty note with just a heading
+  const title = cleanFilename.replace(".md", "");
+  const initialContent = `# ${title}\n\n`;
+
+  try {
+    const noteId = await saveNote(cleanFilename, initialContent);
+
+    // Navigate to the newly created note
+    workspaceStore.followLink({
+      path: cleanFilename,
+      id: noteId,
+      title: title,
+    });
+  } catch (error) {
+    console.error("[LinkHandler] Failed to create note:", error);
+  }
+}
 
 /**
  * Find the wiki link at a given position in a line
@@ -39,7 +66,8 @@ function findWikiLinkAtPosition(
 /**
  * Navigate to a note by its name or path
  */
-async function navigateToNote(target: string, section?: string): Promise<void> {
+async function navigateToNote(target: string, _section?: string): Promise<void> {
+  // TODO: _section parameter will be used to scroll to section anchors
   try {
     const notes = await listNotes();
 
@@ -69,15 +97,9 @@ async function navigateToNote(target: string, section?: string): Promise<void> {
         id: note.id,
         title: note.title ?? note.path.replace(".md", ""),
       });
-
-      // TODO: If section is provided, scroll to the section anchor
-      // This would require coordination with the editor component
-      if (section) {
-        console.log(`[LinkHandler] Should scroll to section: ${section}`);
-      }
     } else {
-      console.warn(`[LinkHandler] Note not found: ${target}`);
-      // Could optionally prompt to create the note
+      // Note doesn't exist - create it in the root directory
+      await createAndNavigateToNote(target);
     }
   } catch (error) {
     console.error("[LinkHandler] Failed to navigate:", error);

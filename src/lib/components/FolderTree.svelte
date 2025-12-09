@@ -4,6 +4,7 @@
   import { editorStore, workspaceStore, vaultStore, dragStore } from "../stores";
   import { listNotes, renameNote, deleteNote, deleteFolder, renameFolder, createFolder, saveNote, getNoteContent } from "../services/api";
   import { replaceH1Title } from "../utils/docListUtils";
+  import { isImageFile, isAudioFile, isVideoFile, isPdfFile, isMediaFile } from "../utils/fileTypes";
   import { ask } from "@tauri-apps/plugin-dialog";
   import FolderTree from "./FolderTree.svelte";
   import TreeContextMenu from "./folder-tree/TreeContextMenu.svelte";
@@ -37,37 +38,6 @@
   let newItemName = $state("");
   let newItemInput = $state<HTMLInputElement | null>(null);
 
-  // Media file extensions
-  const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
-  const AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "flac"];
-  const VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "avi"];
-  const PDF_EXTENSIONS = ["pdf"];
-
-  function getFileExtension(filename: string): string {
-    return filename.split(".").pop()?.toLowerCase() ?? "";
-  }
-
-  function isMediaFile(filename: string): boolean {
-    const ext = getFileExtension(filename);
-    return [...IMAGE_EXTENSIONS, ...AUDIO_EXTENSIONS, ...VIDEO_EXTENSIONS, ...PDF_EXTENSIONS].includes(ext);
-  }
-
-  function isImageFile(filename: string): boolean {
-    return IMAGE_EXTENSIONS.includes(getFileExtension(filename));
-  }
-
-  function isAudioFile(filename: string): boolean {
-    return AUDIO_EXTENSIONS.includes(getFileExtension(filename));
-  }
-
-  function isVideoFile(filename: string): boolean {
-    return VIDEO_EXTENSIONS.includes(getFileExtension(filename));
-  }
-
-  function isPdfFile(filename: string): boolean {
-    return PDF_EXTENSIONS.includes(getFileExtension(filename));
-  }
-
   function toggleExpand() {
     if (node.is_dir) {
       isExpanded = !isExpanded;
@@ -79,13 +49,11 @@
       toggleExpand();
     } else if (isMediaFile(node.name)) {
       // For media files, copy the wiki link to clipboard
-      const nameWithoutExt = node.name;
-      const wikiLink = `![[${nameWithoutExt}]]`;
+      const wikiLink = `![[${node.name}]]`;
       try {
         await navigator.clipboard.writeText(wikiLink);
-        console.log(`[FolderTree] Copied wiki link: ${wikiLink}`);
       } catch (e) {
-        console.error("Failed to copy to clipboard:", e);
+        console.error("[FolderTree] Failed to copy to clipboard:", e);
       }
     } else {
       // Find the note ID from the path
@@ -155,15 +123,16 @@
         : "";
       const newPath = dir ? `${dir}/${newName}` : newName;
 
-      if (!node.is_dir) {
+      if (node.is_dir) {
+        await renameFolder(node.path, newPath);
+        workspaceStore.updateFolderPath(node.path, newPath);
+      } else {
         // First, update the H1 in the file content
-        console.log("[FolderTree] Updating H1 in file content...");
         const noteContent = await getNoteContent(node.path);
         const updatedContent = replaceH1Title(noteContent.content, renameValue);
         await saveNote(node.path, updatedContent);
 
         // Then rename the file
-        console.log("[FolderTree] Renaming file:", node.path, "->", newPath);
         await renameNote(node.path, newPath);
 
         // Update workspace if this file is open
@@ -216,7 +185,6 @@
 
     try {
       if (node.is_dir) {
-        console.log("[FolderTree] Deleting folder:", node.path);
         await deleteFolder(node.path);
         // Close any open docs that were in this folder
         const folderPrefix = node.path ? `${node.path}/` : "";
@@ -224,7 +192,6 @@
           workspaceStore.closeDoc(editorStore.currentPath);
         }
       } else {
-        console.log("[FolderTree] Deleting file:", node.path);
         await deleteNote(node.path);
         // Close if this file is open
         if (editorStore.currentPath === node.path) {
@@ -260,7 +227,6 @@
 
   async function confirmCreate() {
     if (!newItemName.trim()) {
-      console.log("[FolderTree] confirmCreate: empty name, cancelling");
       isCreatingNew = false;
       return;
     }
@@ -269,18 +235,12 @@
       const basePath = node.path || "";
       const newPath = basePath ? `${basePath}/${newItemName}` : newItemName;
 
-      console.log("[FolderTree] confirmCreate:", { type: newItemType, basePath, newPath });
-
       if (newItemType === "folder") {
-        console.log("[FolderTree] Creating folder:", newPath);
         await createFolder(newPath);
-        console.log("[FolderTree] Folder created successfully");
       } else {
         const filePath = newItemName.endsWith(".md") ? newPath : `${newPath}.md`;
         const content = `# ${newItemName.replace(/\.md$/, "")}\n\n`;
-        console.log("[FolderTree] Creating file:", filePath);
         await saveNote(filePath, content);
-        console.log("[FolderTree] File created successfully");
       }
       await vaultStore.refreshFolderTree();
     } catch (e) {
@@ -367,8 +327,8 @@
       }
 
       await vaultStore.refreshFolderTree();
-    } catch (err) {
-      console.error("[FolderTree] Move failed:", err);
+    } catch (e) {
+      console.error("[FolderTree] Failed to move:", e);
     }
 
     dragStore.endDrag();

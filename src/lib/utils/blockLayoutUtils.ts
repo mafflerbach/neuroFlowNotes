@@ -143,18 +143,21 @@ export function getBlockStyle(
   column: number = 0,
   totalColumns: number = 1,
   startHour: number = 6,
-  endHour: number = 22
+  _endHour: number = 22, // Kept for API compatibility, not used in pixel calculation
+  hourSlotHeight: number = 60
 ): string {
   const startTime = parseTime(block.start_time);
   const endTime = parseTime(block.end_time);
-  const top = ((startTime - startHour) / (endHour - startHour)) * 100;
-  const height = ((endTime - startTime) / (endHour - startHour)) * 100;
+
+  // Use pixel-based positioning for better precision on high-DPI displays
+  const top = (startTime - startHour) * hourSlotHeight;
+  const height = (endTime - startTime) * hourSlotHeight;
   const color = block.color || "#4f6bed";
 
   const width = 100 / totalColumns;
   const left = column * width;
 
-  return `top: ${top}%; height: ${height}%; left: ${left}%; width: ${width}%; background-color: ${color};`;
+  return `top: ${top}px; height: ${height}px; left: ${left}%; width: ${width}%; background-color: ${color};`;
 }
 
 /**

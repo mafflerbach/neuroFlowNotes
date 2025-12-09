@@ -70,7 +70,7 @@
   }
 
   function computeBlockStyle(block: ScheduleBlockDto, column: number, totalColumns: number): string {
-    return getBlockStyle(block, column, totalColumns, startHour, endHour);
+    return getBlockStyle(block, column, totalColumns, startHour, endHour, hourSlotHeight);
   }
 
   function handleDayClick(date: Date) {

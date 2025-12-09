@@ -82,7 +82,6 @@ function prefetchFiles(): void {
     .then((tree) => {
       filesCache = flattenFolderTree(tree);
       filesCacheTimestamp = Date.now();
-      console.log("[WikiLink] Prefetched", filesCache.length, "files");
       return filesCache;
     })
     .catch((error) => {

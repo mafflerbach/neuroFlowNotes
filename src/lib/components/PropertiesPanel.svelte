@@ -24,30 +24,17 @@
     }
   });
 
-  // Debug effect
-  $effect(() => {
-    console.log("[PropertiesPanel] State:", {
-      noteId,
-      propertiesCount: properties.length,
-      isAddingNew,
-      isLoading,
-    });
-  });
-
   // Fetch properties when noteId changes
   $effect(() => {
     if (noteId) {
-      console.log("[PropertiesPanel] noteId changed:", noteId);
       fetchProperties();
     }
   });
 
   async function fetchProperties() {
-    console.log("[PropertiesPanel] Fetching properties for noteId:", noteId);
     isLoading = true;
     try {
       properties = await getProperties(noteId);
-      console.log("[PropertiesPanel] Got properties:", properties);
     } catch (e) {
       console.error("[PropertiesPanel] Failed to fetch properties:", e);
     } finally {
@@ -70,22 +57,14 @@
   }
 
   async function handleAddProperty() {
-    console.log("[PropertiesPanel] handleAddProperty called", {
-      noteId,
-      newKey,
-      newValue,
-    });
     if (newKey.trim()) {
       try {
-        const request = {
+        await setProperty({
           note_id: noteId,
           key: newKey.trim(),
           value: newValue.trim() || null,
           property_type: null,
-        };
-        console.log("[PropertiesPanel] Calling setProperty with:", request);
-        const result = await setProperty(request);
-        console.log("[PropertiesPanel] setProperty returned:", result);
+        });
         newKey = "";
         newValue = "";
         isAddingNew = false;
@@ -93,8 +72,6 @@
       } catch (e) {
         console.error("[PropertiesPanel] Failed to add property:", e);
       }
-    } else {
-      console.log("[PropertiesPanel] newKey is empty, not adding");
     }
   }
 
@@ -116,9 +93,7 @@
   }
 
   function startAddingProperty() {
-    console.log("[PropertiesPanel] startAddingProperty called, current isAddingNew:", isAddingNew);
     isAddingNew = true;
-    console.log("[PropertiesPanel] isAddingNew set to:", isAddingNew);
   }
 
   function handleKeyDown(event: KeyboardEvent) {

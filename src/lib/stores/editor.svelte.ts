@@ -35,10 +35,7 @@ class EditorStore {
 
   async openNote(path: string) {
     // Don't reload if we're in the middle of a save/rename
-    if (this.isSaving) {
-      console.log("[EditorStore] Skipping openNote during save");
-      return;
-    }
+    if (this.isSaving) return;
 
     // Don't reload if already open (check by path)
     if (this.currentPath === path) return;
@@ -119,7 +116,6 @@ class EditorStore {
       if (currentFilename !== expectedFilename) {
         const oldPath = this.currentNote.path;
         const newPath = generatePathFromTitle(oldPath, h1Title);
-        console.log(`[EditorStore] Renaming note: ${oldPath} -> ${newPath}`);
 
         try {
           await api.renameNote(oldPath, newPath);
@@ -129,10 +125,8 @@ class EditorStore {
           workspaceStore.updateDocPath(oldPath, newPath, h1Title);
           // Refresh folder tree to show the renamed file
           await vaultStore.refreshFolderTree();
-          console.log(`[EditorStore] Note renamed successfully`);
         } catch (e) {
-          // File might already exist with that name, just log and continue
-          console.warn(`[EditorStore] Could not rename file:`, e);
+          // File might already exist with that name - continue silently
         }
       }
 
@@ -143,7 +137,6 @@ class EditorStore {
       let blocksUpdated = false;
       for (const block of blocks) {
         if (block.label !== h1Title) {
-          console.log(`[EditorStore] Syncing H1 "${h1Title}" to schedule block ${block.id}`);
           await api.updateScheduleBlock({
             id: block.id,
             note_id: block.note_id,

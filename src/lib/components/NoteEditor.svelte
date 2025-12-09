@@ -1,22 +1,9 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { EditorState } from "@codemirror/state";
-  import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
-  import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-  import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-  import { languages } from "@codemirror/language-data";
-  import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
-  import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+  import { EditorView } from "@codemirror/view";
   import { editorStore } from "../stores";
-  import {
-    wikiLinkCompletion,
-    livePreview,
-    markdownHighlight,
-    embedExtension,
-    linkHandlerExtension,
-    hoverPreviewExtension,
-    pasteHandlerExtension,
-  } from "../editor";
+  import { createEditorExtensions, createSaveKeymap } from "../editor";
 
   interface Props {
     readonly?: boolean;
@@ -28,41 +15,6 @@
   let view: EditorView | null = null;
   let currentNoteId: number | null = null;
 
-  // Create a custom theme
-  const editorTheme = EditorView.theme({
-    "&": {
-      height: "100%",
-      fontSize: "var(--font-size-md)",
-      color: "var(--text-primary)",
-    },
-    ".cm-content": {
-      fontFamily: "var(--font-family-mono)",
-      padding: "var(--spacing-4) 0",
-      color: "var(--text-primary)",
-    },
-    ".cm-line": {
-      color: "var(--text-primary)",
-      padding: "0 var(--spacing-4)",
-    },
-    ".cm-gutters": {
-      background: "var(--editor-gutter-bg)",
-      border: "none",
-      color: "var(--editor-gutter-color)",
-    },
-    ".cm-activeLineGutter": {
-      background: "var(--editor-active-gutter-bg)",
-    },
-    ".cm-activeLine": {
-      background: "var(--editor-active-line-bg)",
-    },
-    "&.cm-focused .cm-cursor": {
-      borderLeftColor: "var(--editor-cursor)",
-    },
-    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
-      background: "var(--editor-selection-bg)",
-    },
-  });
-
   // Update listener to sync changes to store
   const updateListener = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
@@ -71,16 +23,8 @@
     }
   });
 
-  // Save on Cmd/Ctrl+S
-  const saveKeymap = keymap.of([
-    {
-      key: "Mod-s",
-      run: () => {
-        editorStore.save();
-        return true;
-      },
-    },
-  ]);
+  // Save keymap using store's save method
+  const saveKeymap = createSaveKeymap(() => editorStore.save());
 
   function createEditor(content: string) {
     if (!editorContainer) return;
@@ -89,44 +33,11 @@
       view.destroy();
     }
 
-    const extensions = [
-      lineNumbers(),
-      highlightActiveLineGutter(),
-      highlightActiveLine(),
-      history(),
-      highlightSelectionMatches(),
-      // Markdown with code block language support for 100+ languages
-      markdown({
-        base: markdownLanguage,
-        codeLanguages: languages,
-      }),
-      // Custom markdown highlighting with theme-aware colors
-      markdownHighlight(),
-      // Default syntax highlighting as fallback for any missed tokens
-      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-      keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
-      saveKeymap,
+    const extensions = createEditorExtensions({
       updateListener,
-      editorTheme,
-      EditorView.lineWrapping,
-      // Wiki-link autocomplete ([[)
-      wikiLinkCompletion(),
-      // Live preview (hide markdown syntax on inactive lines)
-      livePreview(),
-      // Embed rendering for ![[note]] and ![[image.png]]
-      embedExtension(),
-      // Ctrl/Cmd+Click link navigation
-      linkHandlerExtension(),
-      // Hover preview tooltips for wiki links
-      hoverPreviewExtension(),
-      // Image paste handling - saves pasted images and inserts embed
-      pasteHandlerExtension(),
-    ];
-
-    // Add readonly extension if readonly prop is true
-    if (readonly) {
-      extensions.push(EditorState.readOnly.of(true));
-    }
+      saveKeymap,
+      readonly,
+    });
 
     const state = EditorState.create({
       doc: content,

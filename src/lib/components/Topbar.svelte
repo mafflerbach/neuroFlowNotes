@@ -15,25 +15,15 @@
   const isDaily = $derived(workspaceStore.calendarView === "daily");
 
   async function handleNewNote() {
-    if (!vaultStore.isOpen) {
-      console.log("[Topbar] handleNewNote: vault not open");
-      return;
-    }
+    if (!vaultStore.isOpen) return;
 
-    // Generate a new note path
     const timestamp = Date.now();
     const path = `new-${timestamp}.md`;
     const content = `# New Note\n\n`;
 
     try {
-      console.log("[Topbar] Creating new note:", path);
       const noteId = await api.saveNote(path, content);
-      console.log("[Topbar] Note created with id:", noteId);
-
-      console.log("[Topbar] Refreshing folder tree...");
       await vaultStore.refreshFolderTree();
-      console.log("[Topbar] Folder tree refreshed");
-
       workspaceStore.openDoc({
         path,
         id: noteId,
