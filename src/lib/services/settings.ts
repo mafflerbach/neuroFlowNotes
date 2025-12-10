@@ -6,7 +6,10 @@ import type { CalendarView } from "../stores/workspace.svelte";
 
 const STORAGE_KEY = "neuroflow-settings";
 
-export type Theme = "system" | "light" | "dark";
+// Theme is a string to allow dynamic themes from the themes directory
+// Built-in values: "system" (follows OS), "light", "dark"
+// Custom themes: any filename from src/lib/styles/themes/ without .css extension
+export type Theme = string;
 
 export interface AppSettings {
   lastVaultPath: string | null;

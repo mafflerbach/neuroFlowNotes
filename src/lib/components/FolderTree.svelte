@@ -48,13 +48,8 @@
     if (node.is_dir) {
       toggleExpand();
     } else if (isMediaFile(node.name)) {
-      // For media files, copy the wiki link to clipboard
-      const wikiLink = `![[${node.name}]]`;
-      try {
-        await navigator.clipboard.writeText(wikiLink);
-      } catch (e) {
-        console.error("[FolderTree] Failed to copy to clipboard:", e);
-      }
+      // Open media file in the viewer
+      workspaceStore.openMediaFile(node.path);
     } else {
       // Find the note ID from the path
       try {

@@ -2,6 +2,8 @@
   import { onMount, onDestroy } from "svelte";
   import { X } from "lucide-svelte";
   import "./lib/styles/theme.css";
+  // Import all theme files automatically
+  import "./lib/styles/themes";
   import {
     Sidebar,
     Topbar,
@@ -15,6 +17,7 @@
     SettingsModal,
     PropertiesPanel,
     ScheduleBlockModal,
+    MediaViewer,
   } from "./lib/components";
   import { vaultStore, editorStore, workspaceStore } from "./lib/stores";
   import {
@@ -55,6 +58,7 @@
   let blockModalDate = $state("");
   let blockModalHour = $state(9);
   let blockModalBlock = $state<ScheduleBlockDto | null>(null);
+  let blockModalLinkedNote = $state<NoteListItem | null>(null);
 
   // Workspace state
   const workspaceState = $derived(workspaceStore.state);
@@ -64,6 +68,7 @@
   const calendarVisible = $derived(workspaceStore.calendarVisible);
   const activeDoc = $derived(workspaceStore.activeDoc);
   const selectedDate = $derived(workspaceStore.selectedDate);
+  const openMedia = $derived(workspaceStore.openMedia);
 
   // Calendar data from backend
   let scheduleBlocks = $state<ScheduleBlockDto[]>([]);
@@ -183,21 +188,33 @@
         console.error("Failed to open note for block:", e);
       }
     } else {
-      // No note linked - create a new note and link it to this block
+      // No note linked - check if a note with this path already exists, otherwise create one
       try {
         const dateStr = block.date;
         const timeStr = block.start_time.slice(0, 5);
         const title = block.label || `Note for ${timeStr}`;
         const path = titleToFilename(title);
-        const content = generateNoteContent(title);
 
-        const noteId = await saveNote(path, content);
+        let noteId: number;
 
-        // Store metadata as properties in the database
-        await setProperty({ note_id: noteId, key: "date", value: dateStr, property_type: "date" });
-        await setProperty({ note_id: noteId, key: "time", value: timeStr, property_type: "time" });
-        if (block.label) {
-          await setProperty({ note_id: noteId, key: "title", value: block.label, property_type: "text" });
+        // Try to get existing note first
+        try {
+          const existing = await getNoteContent(path);
+          noteId = existing.id;
+        } catch {
+          // Note doesn't exist, create it
+          const content = generateNoteContent(title);
+          noteId = await saveNote(path, content);
+
+          // Store metadata as properties in the database
+          await setProperty({ note_id: noteId, key: "date", value: dateStr, property_type: "date" });
+          await setProperty({ note_id: noteId, key: "time", value: timeStr, property_type: "time" });
+          if (block.label) {
+            await setProperty({ note_id: noteId, key: "title", value: block.label, property_type: "text" });
+          }
+
+          // Refresh folder tree to show the new file
+          await vaultStore.refreshFolderTree();
         }
 
         // Update the block to link to this note
@@ -210,10 +227,10 @@
           label: null,
           color: null,
           context: null,
+          rrule: null,
         });
 
-        // Refresh data and open the note
-        await vaultStore.refreshFolderTree();
+        // Refresh calendar data
         await fetchCalendarData();
 
         workspaceStore.openDoc({
@@ -227,11 +244,29 @@
     }
   }
 
-  function handleBlockEdit(block: ScheduleBlockDto) {
+  async function handleBlockEdit(block: ScheduleBlockDto) {
     // Open the block for editing
     blockModalMode = "edit";
     blockModalDate = block.date;
     blockModalBlock = block;
+
+    // Fetch the linked note if one exists
+    if (block.note_id) {
+      try {
+        const note = await getNote(block.note_id);
+        blockModalLinkedNote = {
+          id: note.id,
+          path: note.path,
+          title: note.title,
+          pinned: note.pinned,
+        };
+      } catch {
+        blockModalLinkedNote = null;
+      }
+    } else {
+      blockModalLinkedNote = null;
+    }
+
     blockModalOpen = true;
   }
 
@@ -251,6 +286,7 @@
         label: block.label, // Keep existing
         color: block.color, // Keep existing
         context: block.context, // Keep existing
+        rrule: block.rrule, // Keep existing
       });
 
       // Refresh calendar data
@@ -289,6 +325,7 @@
   function handleCloseBlockModal() {
     blockModalOpen = false;
     blockModalBlock = null;
+    blockModalLinkedNote = null;
   }
 
   async function handleSaveBlock(data: {
@@ -298,34 +335,23 @@
     label: string;
     color: string;
     context: string | null;
+    rrule: string | null;
+    note_id: number | null;
   }) {
     try {
       if (blockModalMode === "create") {
-        // Auto-create note file for the schedule block (filename based on title, like Obsidian)
-        const timeStr = data.start_time.slice(0, 5);
-        const path = titleToFilename(data.label);
-        const content = generateNoteContent(data.label);
-
-        const noteId = await saveNote(path, content);
-
-        // Store metadata as properties in the database
-        await setProperty({ note_id: noteId, key: "date", value: data.date, property_type: "date" });
-        await setProperty({ note_id: noteId, key: "time", value: timeStr, property_type: "time" });
-        await setProperty({ note_id: noteId, key: "title", value: data.label, property_type: "text" });
-
-        // Create schedule block linked to the note
+        // Create schedule block with optional note link.
+        // If no note is linked, one will be created when clicking the block (see handleBlockClick).
         await createScheduleBlock({
-          note_id: noteId,
+          note_id: data.note_id,
           date: data.date,
           start_time: data.start_time,
           end_time: data.end_time,
           label: data.label,
           color: data.color,
           context: data.context,
+          rrule: data.rrule,
         });
-
-        // Refresh folder tree to show the new file
-        await vaultStore.refreshFolderTree();
       } else if (blockModalBlock) {
         // If label changed and there's a linked note, sync the H1, title property, and rename file
         if (blockModalBlock.note_id && data.label !== blockModalBlock.label) {
@@ -363,13 +389,14 @@
 
         await updateScheduleBlock({
           id: blockModalBlock.id,
-          note_id: blockModalBlock.note_id, // Preserve existing note link
+          note_id: data.note_id, // Use the note from the modal (may be changed or cleared)
           date: data.date,
           start_time: data.start_time,
           end_time: data.end_time,
           label: data.label,
           color: data.color,
           context: data.context,
+          rrule: data.rrule,
         });
       }
       handleCloseBlockModal();
@@ -534,7 +561,14 @@
           {/if}
 
           <div class="doc-panel" class:full-width={!calendarVisible}>
-            {#if activeDoc}
+            {#if openMedia}
+              <!-- Media Viewer -->
+              <MediaViewer
+                path={openMedia.path}
+                vaultPath={vaultStore.info?.path || ""}
+                onClose={() => workspaceStore.closeMedia()}
+              />
+            {:else if activeDoc}
               <div class="doc-header">
                 <span class="doc-title">{activeDoc.title || activeDoc.path}</span>
                 <button
@@ -573,6 +607,7 @@
     date={blockModalDate}
     initialHour={blockModalHour}
     block={blockModalBlock}
+    linkedNote={blockModalLinkedNote}
     onSave={handleSaveBlock}
     onDelete={handleDeleteBlock}
     onClose={handleCloseBlockModal}

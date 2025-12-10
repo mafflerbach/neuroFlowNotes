@@ -1,7 +1,18 @@
 <script lang="ts">
-  import { X, Calendar, Check } from "lucide-svelte";
+  import { X, Calendar, Check, Repeat, Link } from "lucide-svelte";
   import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR, getBlockColor } from "../constants/colors";
-  import type { ScheduleBlockDto } from "../types";
+  import type { ScheduleBlockDto, NoteListItem } from "../types";
+  import NoteAutocomplete from "./shared/NoteAutocomplete.svelte";
+
+  // Common recurrence patterns with their RRULE strings
+  const RECURRENCE_OPTIONS = [
+    { value: "", label: "Does not repeat" },
+    { value: "FREQ=DAILY", label: "Daily" },
+    { value: "FREQ=WEEKLY", label: "Weekly" },
+    { value: "FREQ=WEEKLY;INTERVAL=2", label: "Every 2 weeks" },
+    { value: "FREQ=MONTHLY", label: "Monthly" },
+    { value: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", label: "Weekdays" },
+  ] as const;
 
   interface Props {
     open: boolean;
@@ -9,6 +20,7 @@
     date: string; // YYYY-MM-DD
     initialHour?: number;
     block?: ScheduleBlockDto | null;
+    linkedNote?: NoteListItem | null; // The currently linked note (for edit mode)
     onSave: (data: {
       date: string;
       start_time: string;
@@ -16,6 +28,8 @@
       label: string;
       color: string;
       context: string | null;
+      rrule: string | null;
+      note_id: number | null;
     }) => void;
     onDelete?: () => void;
     onClose: () => void;
@@ -27,6 +41,7 @@
     date,
     initialHour = 9,
     block = null,
+    linkedNote = null,
     onSave,
     onDelete,
     onClose,
@@ -38,6 +53,8 @@
   let label = $state("");
   let selectedColor = $state(DEFAULT_BLOCK_COLOR.hex);
   let context = $state("");
+  let recurrence = $state("");
+  let selectedNote = $state<NoteListItem | null>(null);
 
   // Initialize form when block changes or modal opens
   $effect(() => {
@@ -48,6 +65,8 @@
         label = block.label || "";
         selectedColor = block.color || DEFAULT_BLOCK_COLOR.hex;
         context = block.context || "";
+        recurrence = block.rrule || "";
+        selectedNote = linkedNote;
       } else {
         // Create mode
         startTime = `${initialHour.toString().padStart(2, "0")}:00`;
@@ -55,6 +74,8 @@
         label = "";
         selectedColor = DEFAULT_BLOCK_COLOR.hex;
         context = "";
+        recurrence = "";
+        selectedNote = null;
       }
     }
   });
@@ -72,8 +93,26 @@
       label: trimmedLabel,
       color: selectedColor,
       context: context.trim() || null,
+      rrule: recurrence || null,
+      note_id: selectedNote?.id ?? null,
     });
   }
+
+  function handleNoteSelect(note: NoteListItem | null) {
+    selectedNote = note;
+    // If a note is selected and label is empty, use the note's title
+    if (note && !label.trim()) {
+      label = note.title || note.path.replace(/\.md$/, "").split("/").pop() || "";
+    }
+  }
+
+  // Check if this is an occurrence (not the master recurring block)
+  const isOccurrence = $derived(block?.is_occurrence ?? false);
+
+  // Get display label for current recurrence
+  const recurrenceLabel = $derived(
+    RECURRENCE_OPTIONS.find(opt => opt.value === recurrence)?.label || "Custom"
+  );
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
@@ -175,6 +214,45 @@
             />
           </div>
 
+          <!-- Link to existing note -->
+          <div class="form-group">
+            <label>
+              <Link size={14} class="inline-icon" />
+              Link to note (optional)
+            </label>
+            <NoteAutocomplete
+              selectedNote={selectedNote}
+              onSelect={handleNoteSelect}
+              placeholder="Search for a note to link..."
+            />
+            <p class="field-hint">
+              Link an existing note, or leave empty to create one when clicking the block.
+            </p>
+          </div>
+
+          <!-- Recurrence -->
+          <div class="form-group">
+            <label for="block-recurrence">
+              <Repeat size={14} class="inline-icon" />
+              Repeat
+            </label>
+            {#if isOccurrence}
+              <p class="occurrence-notice">
+                This is an occurrence of a recurring event. Edit the master event to change recurrence.
+              </p>
+            {:else}
+              <select
+                id="block-recurrence"
+                bind:value={recurrence}
+                class="recurrence-select"
+              >
+                {#each RECURRENCE_OPTIONS as option (option.value)}
+                  <option value={option.value}>{option.label}</option>
+                {/each}
+              </select>
+            {/if}
+          </div>
+
           <!-- Color picker -->
           <div class="form-group">
             <span class="field-label">Color</span>
@@ -210,6 +288,12 @@
               {/if}
               {#if context}
                 <span class="preview-context">{context}</span>
+              {/if}
+              {#if recurrence}
+                <span class="preview-recurrence">
+                  <Repeat size={12} />
+                  {recurrenceLabel}
+                </span>
               {/if}
             </div>
           </div>
@@ -326,6 +410,12 @@
 
   .required {
     color: var(--color-error);
+  }
+
+  .field-hint {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin: var(--spacing-1) 0 0 0;
   }
 
   .form-group input {
@@ -467,5 +557,47 @@
 
   .delete-btn:hover {
     background: var(--color-error-hover);
+  }
+
+  /* Recurrence styles */
+  .recurrence-select {
+    width: 100%;
+    padding: var(--spacing-3);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-md);
+    background: var(--input-bg);
+    color: var(--input-text);
+    cursor: pointer;
+  }
+
+  .recurrence-select:focus {
+    outline: none;
+    border-color: var(--input-border-focus);
+    box-shadow: var(--shadow-focus);
+  }
+
+  .occurrence-notice {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    margin: 0;
+    padding: var(--spacing-2);
+    background: var(--bg-surface-raised);
+    border-radius: var(--radius-md);
+  }
+
+  .preview-recurrence {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    font-size: var(--font-size-xs);
+    opacity: 0.85;
+    margin-top: var(--spacing-1);
+  }
+
+  :global(.inline-icon) {
+    display: inline;
+    vertical-align: middle;
+    margin-right: var(--spacing-1);
   }
 </style>

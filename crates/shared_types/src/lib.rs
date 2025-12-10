@@ -84,6 +84,12 @@ pub struct ScheduleBlockDto {
     pub label: Option<String>,
     pub color: Option<String>,
     pub context: Option<String>,
+    /// RFC 5545 recurrence rule (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR").
+    pub rrule: Option<String>,
+    /// True if this is an occurrence of a recurring block (not the master).
+    /// Occurrences have the same id as their master but different dates.
+    #[serde(default)]
+    pub is_occurrence: bool,
 }
 
 /// Request to create a new schedule block.
@@ -97,6 +103,8 @@ pub struct CreateScheduleBlockRequest {
     pub label: Option<String>,
     pub color: Option<String>,
     pub context: Option<String>,
+    /// RFC 5545 recurrence rule (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR").
+    pub rrule: Option<String>,
 }
 
 /// Request to update an existing schedule block.
@@ -111,6 +119,9 @@ pub struct UpdateScheduleBlockRequest {
     pub label: Option<String>,
     pub color: Option<String>,
     pub context: Option<String>,
+    /// RFC 5545 recurrence rule (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR").
+    /// Set to empty string to clear recurrence.
+    pub rrule: Option<String>,
 }
 
 // ============================================================================

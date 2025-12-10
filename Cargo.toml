@@ -39,6 +39,10 @@ xxhash-rust = { version = "0.8", features = ["xxh3"] }
 
 # Date/time
 chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.10"
+
+# Recurrence rules (RFC 5545)
+rrule = "0.14"
 
 # Regex for wikilinks/tags
 regex = "1.11"

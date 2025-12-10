@@ -2,6 +2,7 @@
   import { Modal } from "./shared";
   import { workspaceStore, type CalendarView } from "../stores/workspace.svelte";
   import type { Theme } from "../services/settings";
+  import { getAvailableThemes } from "../services/themes";
 
   interface Props {
     open: boolean;
@@ -9,6 +10,9 @@
   }
 
   let { open, onClose }: Props = $props();
+
+  // Get available themes
+  const availableThemes = getAvailableThemes();
 
   // Local state for settings
   let multiColumnEditable = $state(workspaceStore.multiColumnEditable);
@@ -50,9 +54,9 @@
       </div>
       <div class="setting-control">
         <select class="select-control" bind:value={theme}>
-          <option value="system">System</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
+          {#each availableThemes as themeOption}
+            <option value={themeOption.id}>{themeOption.name}</option>
+          {/each}
         </select>
       </div>
     </div>

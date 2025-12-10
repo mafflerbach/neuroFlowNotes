@@ -627,6 +627,7 @@ pub async fn create_schedule_block(
             request.label.as_deref(),
             request.color.as_deref(),
             request.context.as_deref(),
+            request.rrule.as_deref(),
         )
         .await
         .map_err(|e| CommandError::Vault(e.to_string()))
@@ -702,6 +703,7 @@ pub async fn update_schedule_block(
             request.label.as_deref(),
             request.color.as_deref(),
             request.context.as_deref(),
+            request.rrule.as_deref(),
         )
         .await
         .map_err(|e| CommandError::Vault(e.to_string()))

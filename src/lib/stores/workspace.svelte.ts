@@ -17,6 +17,11 @@ interface OpenDoc {
   title: string | null;
 }
 
+interface OpenMedia {
+  path: string;
+  filename: string;
+}
+
 class WorkspaceStore {
   // Current workspace state
   state = $state<WorkspaceState>("calendar-only");
@@ -24,6 +29,9 @@ class WorkspaceStore {
   // Calendar settings - initialized from saved settings
   calendarView = $state<CalendarView>(getSetting("defaultCalendarView"));
   selectedDate = $state<Date>(new Date());
+
+  // Currently open media file (if any)
+  openMedia = $state<OpenMedia | null>(null);
 
   // Folder view visibility
   folderViewVisible = $state(true);
@@ -107,6 +115,9 @@ class WorkspaceStore {
 
   /** Open a document from folder view or calendar */
   openDoc(doc: OpenDoc) {
+    // Close any open media file
+    this.openMedia = null;
+
     // If in State A, transition to State B
     if (this.state === "calendar-only") {
       this.state = "calendar-with-doc";
@@ -122,6 +133,30 @@ class WorkspaceStore {
       if (this.activeDoc?.path !== doc.path) {
         this.breadcrumb = [...this.breadcrumb, doc];
       }
+    }
+  }
+
+  /** Open a media file (image, audio, video) */
+  openMediaFile(path: string) {
+    const filename = path.split("/").pop() || path;
+
+    // Close any open documents
+    this.breadcrumb = [];
+    this.openMedia = { path, filename };
+
+    // Transition to calendar-with-doc state (reusing it for media)
+    if (this.state === "calendar-only") {
+      this.state = "calendar-with-doc";
+    } else if (this.state === "doc-finder") {
+      this.state = "calendar-with-doc";
+    }
+  }
+
+  /** Close the currently open media file */
+  closeMedia() {
+    this.openMedia = null;
+    if (this.breadcrumb.length === 0) {
+      this.state = "calendar-only";
     }
   }
 

@@ -13,6 +13,10 @@ export interface ScheduleBlockDto {
   label: string | null;
   color: string | null;
   context: string | null;
+  /** RFC 5545 recurrence rule (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR") */
+  rrule: string | null;
+  /** True if this is an occurrence of a recurring block (not the master) */
+  is_occurrence: boolean;
 }
 
 export interface CreateScheduleBlockRequest {
@@ -23,6 +27,8 @@ export interface CreateScheduleBlockRequest {
   label: string | null;
   color: string | null;
   context: string | null;
+  /** RFC 5545 recurrence rule (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR") */
+  rrule: string | null;
 }
 
 export interface UpdateScheduleBlockRequest {
@@ -34,6 +40,8 @@ export interface UpdateScheduleBlockRequest {
   label: string | null;
   color: string | null;
   context: string | null;
+  /** RFC 5545 recurrence rule. Set to empty string to clear recurrence. */
+  rrule: string | null;
 }
 
 export interface NoteForDate {

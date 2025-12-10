@@ -146,6 +146,7 @@ class EditorStore {
             label: h1Title,
             color: null,
             context: null,
+            rrule: null,
           });
           blocksUpdated = true;
         }

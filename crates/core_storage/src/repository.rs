@@ -1,11 +1,12 @@
 //! Repository layer for vault database operations.
 
 use crate::{Result, StorageError};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
 use core_index::{NoteAnalysis, ParsedTodo};
+use rrule::{RRuleSet, Tz as RRuleTz};
 use shared_types::{BacklinkDto, NoteDto, NoteForDate, NoteListItem, PropertyDto, ScheduleBlockDto, SearchResult, TagDto, TodoDto};
 use sqlx::SqlitePool;
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, warn};
 
 /// Repository for vault database operations.
 #[derive(Clone)]
@@ -452,11 +453,12 @@ impl VaultRepository {
         label: Option<&str>,
         color: Option<&str>,
         context: Option<&str>,
+        rrule: Option<&str>,
     ) -> Result<i64> {
         let id = sqlx::query_scalar::<_, i64>(
             r#"
-            INSERT INTO schedule_blocks (note_id, date, start_time, end_time, label, color, context)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO schedule_blocks (note_id, date, start_time, end_time, label, color, context, rrule)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             "#,
         )
@@ -467,29 +469,31 @@ impl VaultRepository {
         .bind(label)
         .bind(color)
         .bind(context)
+        .bind(rrule)
         .fetch_one(&self.pool)
         .await?;
 
         Ok(id)
     }
 
-    /// Get schedule blocks for a date range.
+    /// Get schedule blocks for a date range, expanding recurring blocks.
     pub async fn get_schedule_blocks_for_range(
         &self,
         start_date: &str,
         end_date: &str,
     ) -> Result<Vec<ScheduleBlockDto>> {
-        let rows = sqlx::query_as::<_, (i64, Option<i64>, String, String, String, Option<String>, Option<String>, Option<String>)>(
-            "SELECT id, note_id, date, start_time, end_time, label, color, context FROM schedule_blocks WHERE date >= ? AND date <= ? ORDER BY date, start_time",
+        // First get non-recurring blocks in the range
+        let non_recurring_rows = sqlx::query_as::<_, (i64, Option<i64>, String, String, String, Option<String>, Option<String>, Option<String>, Option<String>)>(
+            "SELECT id, note_id, date, start_time, end_time, label, color, context, rrule FROM schedule_blocks WHERE (rrule IS NULL OR rrule = '') AND date >= ? AND date <= ? ORDER BY date, start_time",
         )
         .bind(start_date)
         .bind(end_date)
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(rows
+        let mut blocks: Vec<ScheduleBlockDto> = non_recurring_rows
             .into_iter()
-            .filter_map(|(id, note_id, date, start_time, end_time, label, color, context)| {
+            .filter_map(|(id, note_id, date, start_time, end_time, label, color, context, rrule)| {
                 let date = date.parse().ok()?;
                 let start_time = start_time.parse().ok()?;
                 let end_time = end_time.parse().ok()?;
@@ -502,9 +506,87 @@ impl VaultRepository {
                     label,
                     color,
                     context,
+                    rrule,
+                    is_occurrence: false,
                 })
             })
-            .collect())
+            .collect();
+
+        // Now get recurring blocks and expand them
+        // Filter by base date <= end_date since recurring events can't produce occurrences before their start
+        let recurring_rows = sqlx::query_as::<_, (i64, Option<i64>, String, String, String, Option<String>, Option<String>, Option<String>, Option<String>)>(
+            "SELECT id, note_id, date, start_time, end_time, label, color, context, rrule FROM schedule_blocks WHERE rrule IS NOT NULL AND rrule != '' AND date <= ?",
+        )
+        .bind(end_date)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let start = start_date.parse::<NaiveDate>().ok();
+        let end = end_date.parse::<NaiveDate>().ok();
+
+        if let (Some(start), Some(end)) = (start, end) {
+            for (id, note_id, date_str, start_time_str, end_time_str, label, color, context, rrule_opt) in recurring_rows {
+                if let Some(rrule_str) = rrule_opt {
+                    let base_date: NaiveDate = match date_str.parse() {
+                        Ok(d) => d,
+                        Err(_) => continue,
+                    };
+                    let start_time: NaiveTime = match start_time_str.parse() {
+                        Ok(t) => t,
+                        Err(_) => continue,
+                    };
+                    let end_time: NaiveTime = match end_time_str.parse() {
+                        Ok(t) => t,
+                        Err(_) => continue,
+                    };
+
+                    // Expand rrule occurrences within the date range
+                    match expand_rrule(&rrule_str, base_date, start_time, start, end) {
+                        Ok(occurrences) => {
+                            for occ_date in occurrences {
+                                blocks.push(ScheduleBlockDto {
+                                    id,
+                                    note_id,
+                                    date: occ_date,
+                                    start_time,
+                                    end_time,
+                                    label: label.clone(),
+                                    color: color.clone(),
+                                    context: context.clone(),
+                                    rrule: Some(rrule_str.clone()),
+                                    is_occurrence: occ_date != base_date,
+                                });
+                            }
+                        }
+                        Err(e) => {
+                            warn!("Failed to expand rrule for block {}: {}", id, e);
+                            // Still include the base block if its date is in range
+                            if base_date >= start && base_date <= end {
+                                blocks.push(ScheduleBlockDto {
+                                    id,
+                                    note_id,
+                                    date: base_date,
+                                    start_time,
+                                    end_time,
+                                    label,
+                                    color,
+                                    context,
+                                    rrule: Some(rrule_str),
+                                    is_occurrence: false,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort by date and time
+        blocks.sort_by(|a, b| {
+            a.date.cmp(&b.date).then_with(|| a.start_time.cmp(&b.start_time))
+        });
+
+        Ok(blocks)
     }
 
     /// Delete a schedule block.
@@ -527,6 +609,7 @@ impl VaultRepository {
         label: Option<&str>,
         color: Option<&str>,
         context: Option<&str>,
+        rrule: Option<&str>,
     ) -> Result<()> {
         // Build dynamic update query
         let mut updates = vec![];
@@ -537,6 +620,7 @@ impl VaultRepository {
         updates.push("label = ?");
         updates.push("color = ?");
         updates.push("context = ?");
+        updates.push("rrule = ?");
 
         let query = format!(
             "UPDATE schedule_blocks SET {} WHERE id = ?",
@@ -551,6 +635,7 @@ impl VaultRepository {
         q = q.bind(label);
         q = q.bind(color);
         q = q.bind(context);
+        q = q.bind(rrule);
         q = q.bind(id);
 
         q.execute(&self.pool).await?;
@@ -559,14 +644,14 @@ impl VaultRepository {
 
     /// Get a schedule block by ID.
     pub async fn get_schedule_block(&self, id: i64) -> Result<Option<ScheduleBlockDto>> {
-        let row = sqlx::query_as::<_, (i64, Option<i64>, String, String, String, Option<String>, Option<String>, Option<String>)>(
-            "SELECT id, note_id, date, start_time, end_time, label, color, context FROM schedule_blocks WHERE id = ?",
+        let row = sqlx::query_as::<_, (i64, Option<i64>, String, String, String, Option<String>, Option<String>, Option<String>, Option<String>)>(
+            "SELECT id, note_id, date, start_time, end_time, label, color, context, rrule FROM schedule_blocks WHERE id = ?",
         )
         .bind(id)
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.and_then(|(id, note_id, date, start_time, end_time, label, color, context)| {
+        Ok(row.and_then(|(id, note_id, date, start_time, end_time, label, color, context, rrule)| {
             let date = date.parse().ok()?;
             let start_time = start_time.parse().ok()?;
             let end_time = end_time.parse().ok()?;
@@ -579,6 +664,8 @@ impl VaultRepository {
                 label,
                 color,
                 context,
+                rrule,
+                is_occurrence: false,
             })
         }))
     }
@@ -590,8 +677,8 @@ impl VaultRepository {
 
     /// Get schedule blocks linked to a specific note.
     pub async fn get_schedule_blocks_for_note(&self, note_id: i64) -> Result<Vec<ScheduleBlockDto>> {
-        let rows = sqlx::query_as::<_, (i64, Option<i64>, String, String, String, Option<String>, Option<String>, Option<String>)>(
-            "SELECT id, note_id, date, start_time, end_time, label, color, context FROM schedule_blocks WHERE note_id = ? ORDER BY date, start_time",
+        let rows = sqlx::query_as::<_, (i64, Option<i64>, String, String, String, Option<String>, Option<String>, Option<String>, Option<String>)>(
+            "SELECT id, note_id, date, start_time, end_time, label, color, context, rrule FROM schedule_blocks WHERE note_id = ? ORDER BY date, start_time",
         )
         .bind(note_id)
         .fetch_all(&self.pool)
@@ -599,7 +686,7 @@ impl VaultRepository {
 
         Ok(rows
             .into_iter()
-            .filter_map(|(id, note_id, date, start_time, end_time, label, color, context)| {
+            .filter_map(|(id, note_id, date, start_time, end_time, label, color, context, rrule)| {
                 let date = date.parse().ok()?;
                 let start_time = start_time.parse().ok()?;
                 let end_time = end_time.parse().ok()?;
@@ -612,6 +699,8 @@ impl VaultRepository {
                     label,
                     color,
                     context,
+                    rrule,
+                    is_occurrence: false,
                 })
             })
             .collect())
@@ -719,47 +808,33 @@ impl VaultRepository {
     pub async fn get_notes_for_date(&self, date: &str) -> Result<Vec<NoteForDate>> {
         let mut results = Vec::new();
 
-        // 1. Notes with schedule blocks on this date
-        let scheduled_rows = sqlx::query_as::<_, (i64, String, Option<String>, i32, i64, String, String, Option<String>, Option<String>, Option<String>)>(
-            r#"
-            SELECT n.id, n.path, n.title, n.pinned, sb.id, sb.start_time, sb.end_time, sb.label, sb.color, sb.context
-            FROM notes n
-            JOIN schedule_blocks sb ON n.id = sb.note_id
-            WHERE sb.date = ?
-            ORDER BY sb.start_time
-            "#,
-        )
-        .bind(date)
-        .fetch_all(&self.pool)
-        .await?;
+        // 1. Notes with schedule blocks on this date (including recurring block occurrences)
+        // Use get_schedule_blocks_for_date which handles RRULE expansion
+        let blocks = self.get_schedule_blocks_for_date(date).await?;
 
-        for (id, path, title, pinned, sb_id, start_time, end_time, label, color, context) in scheduled_rows {
-            let date_parsed = date.parse().ok();
-            let start_parsed = start_time.parse().ok();
-            let end_parsed = end_time.parse().ok();
-
-            if let (Some(d), Some(st), Some(et)) = (date_parsed, start_parsed, end_parsed) {
-                results.push(NoteForDate {
-                    note: NoteListItem {
-                        id,
-                        path,
-                        title,
-                        pinned: pinned != 0,
-                    },
-                    source: "scheduled".to_string(),
-                    schedule_block: Some(ScheduleBlockDto {
-                        id: sb_id,
-                        note_id: Some(id),
-                        date: d,
-                        start_time: st,
-                        end_time: et,
-                        label,
-                        color,
-                        context,
-                    }),
-                });
+        for block in blocks {
+            // Only include blocks that have a linked note
+            if let Some(note_id) = block.note_id {
+                if let Ok(note) = self.get_note(note_id).await {
+                    results.push(NoteForDate {
+                        note: NoteListItem {
+                            id: note.id,
+                            path: note.path,
+                            title: note.title,
+                            pinned: note.pinned,
+                        },
+                        source: "scheduled".to_string(),
+                        schedule_block: Some(block),
+                    });
+                }
             }
         }
+
+        // Collect note IDs already included from schedule blocks
+        let scheduled_note_ids: std::collections::HashSet<i64> = results
+            .iter()
+            .map(|r| r.note.id)
+            .collect();
 
         // 2. Notes with journal_date property matching this date
         let journal_rows = sqlx::query_as::<_, (i64, String, Option<String>, i32)>(
@@ -768,15 +843,23 @@ impl VaultRepository {
             FROM notes n
             JOIN properties p ON n.id = p.note_id
             WHERE p.key = 'journal_date' AND p.value = ?
-            AND n.id NOT IN (SELECT note_id FROM schedule_blocks WHERE date = ?)
             "#,
         )
-        .bind(date)
         .bind(date)
         .fetch_all(&self.pool)
         .await?;
 
+        // Collect journal note IDs first (before consuming the iterator)
+        let journal_note_ids: std::collections::HashSet<i64> = journal_rows
+            .iter()
+            .map(|(id, _, _, _)| *id)
+            .collect();
+
         for (id, path, title, pinned) in journal_rows {
+            // Skip if already included from schedule blocks
+            if scheduled_note_ids.contains(&id) {
+                continue;
+            }
             results.push(NoteForDate {
                 note: NoteListItem {
                     id,
@@ -792,20 +875,20 @@ impl VaultRepository {
         // 3. Notes created on this date (using created_date for local timezone accuracy)
         let created_rows = sqlx::query_as::<_, (i64, String, Option<String>, i32)>(
             r#"
-            SELECT n.id, n.path, n.title, n.pinned
-            FROM notes n
-            WHERE n.created_date = ?
-            AND n.id NOT IN (SELECT note_id FROM schedule_blocks WHERE date = ?)
-            AND n.id NOT IN (SELECT note_id FROM properties WHERE key = 'journal_date' AND value = ?)
+            SELECT id, path, title, pinned
+            FROM notes
+            WHERE created_date = ?
             "#,
         )
-        .bind(date)
-        .bind(date)
         .bind(date)
         .fetch_all(&self.pool)
         .await?;
 
         for (id, path, title, pinned) in created_rows {
+            // Skip if already included from schedule blocks or journal
+            if scheduled_note_ids.contains(&id) || journal_note_ids.contains(&id) {
+                continue;
+            }
             results.push(NoteForDate {
                 note: NoteListItem {
                     id,
@@ -995,4 +1078,62 @@ impl VaultRepository {
         debug!("Indexed note {} (id={})", path, note_id);
         Ok(note_id)
     }
+}
+
+/// Expand an RRULE to get occurrences within a date range.
+fn expand_rrule(
+    rrule_str: &str,
+    base_date: NaiveDate,
+    base_time: NaiveTime,
+    range_start: NaiveDate,
+    range_end: NaiveDate,
+) -> std::result::Result<Vec<NaiveDate>, String> {
+    // Build the full RRULE string with DTSTART in UTC format
+    let dtstart = format!(
+        "DTSTART:{}T{:02}{:02}{:02}Z",
+        base_date.format("%Y%m%d"),
+        base_time.hour(),
+        base_time.minute(),
+        base_time.second()
+    );
+
+    let full_rrule = format!("{}\nRRULE:{}", dtstart, rrule_str);
+
+    // Parse the RRULE
+    let rruleset: RRuleSet = full_rrule.parse().map_err(|e| format!("Invalid rrule: {}", e))?;
+
+    // Convert range to chrono-tz datetimes for the rrule crate
+    let after = RRuleTz::UTC.with_ymd_and_hms(
+        range_start.year(),
+        range_start.month(),
+        range_start.day(),
+        0, 0, 0
+    ).single().ok_or("Invalid start date")?;
+
+    let before = RRuleTz::UTC.with_ymd_and_hms(
+        range_end.year(),
+        range_end.month(),
+        range_end.day(),
+        23, 59, 59
+    ).single().ok_or("Invalid end date")?;
+
+    // Get occurrences in range (limit to 500 to prevent runaway)
+    let occurrences = rruleset
+        .after(after)
+        .before(before)
+        .all(500);
+
+    // Check if there was a limit error
+    if occurrences.limited {
+        warn!("RRULE expansion hit limit of 500 occurrences");
+    }
+
+    // Extract dates
+    let dates: Vec<NaiveDate> = occurrences
+        .dates
+        .into_iter()
+        .map(|dt| NaiveDate::from_ymd_opt(dt.year(), dt.month(), dt.day()).unwrap())
+        .collect();
+
+    Ok(dates)
 }

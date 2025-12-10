@@ -11,3 +11,5 @@ sqlx.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 chrono.workspace = true
+chrono-tz.workspace = true
+rrule.workspace = true

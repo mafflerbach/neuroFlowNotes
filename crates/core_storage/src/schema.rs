@@ -139,6 +139,9 @@ pub async fn init_database(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     // Migration: Add created_date column for local date storage
     migrate_created_date(pool).await?;
 
+    // Migration: Add rrule column for recurring schedule blocks
+    migrate_schedule_blocks_rrule(pool).await?;
+
     info!("Database schema initialized");
     Ok(())
 }
@@ -337,6 +340,39 @@ async fn migrate_properties(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     } else {
         debug!("properties table already has UNIQUE(note_id, key) constraint");
     }
+
+    Ok(())
+}
+
+/// Migrate schedule_blocks table to add rrule column for recurring events.
+async fn migrate_schedule_blocks_rrule(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    // Check if rrule column exists
+    let columns: Vec<(i64, String, String, i64, Option<String>, i64)> = sqlx::query_as(
+        "SELECT cid, name, type, `notnull`, dflt_value, pk FROM pragma_table_info('schedule_blocks')"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let has_rrule = columns.iter().any(|(_, name, _, _, _, _)| name == "rrule");
+
+    if !has_rrule {
+        info!("Migrating schedule_blocks table: adding rrule column");
+
+        // Add the rrule column (RFC 5545 recurrence rule string)
+        sqlx::query("ALTER TABLE schedule_blocks ADD COLUMN rrule TEXT")
+            .execute(pool)
+            .await?;
+
+        info!("schedule_blocks table migration complete: added rrule column");
+    } else {
+        debug!("schedule_blocks.rrule column already exists");
+    }
+
+    // Add index on rrule for faster recurring block queries
+    // This helps with "WHERE rrule IS NOT NULL AND rrule != ''" queries
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_schedule_blocks_rrule ON schedule_blocks(rrule)")
+        .execute(pool)
+        .await?;
 
     Ok(())
 }

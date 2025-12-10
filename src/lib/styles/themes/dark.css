@@ -1,0 +1,97 @@
+/**
+ * Dark Theme
+ * Default dark theme for NeuroFlow Notes
+ */
+
+:root[data-theme="dark"] {
+  /* Gray scale (inverted for dark mode) */
+  --color-gray-50: #1a1a1a;
+  --color-gray-100: #222222;
+  --color-gray-200: #2d2d2d;
+  --color-gray-300: #3d3d3d;
+  --color-gray-400: #6a6a6a;
+  --color-gray-500: #9a9a9a;
+  --color-gray-600: #b0b0b0;
+  --color-gray-700: #c8c8c8;
+  --color-gray-800: #e0e0e0;
+  --color-gray-900: #f5f5f5;
+
+  /* Background colors */
+  --bg-app: #121212;
+  --bg-surface: #1e1e1e;
+  --bg-surface-raised: #252525;
+  --bg-surface-sunken: #171717;
+  --bg-hover: #2a2a2a;
+  --bg-active: rgba(79, 107, 237, 0.25);
+  --bg-selected: rgba(79, 107, 237, 0.25);
+
+  /* Text colors */
+  --text-primary: #efefef;
+  --text-secondary: #d0d0d0;
+  --text-muted: #b0b0b0;
+  --text-disabled: #707070;
+
+  /* Border colors */
+  --border-default: #404040;
+  --border-light: #333333;
+
+  /* Icon colors */
+  --icon-default: #d0d0d0;
+  --icon-muted: #b0b0b0;
+
+  /* Editor */
+  --editor-active-line-bg: #252525;
+  --editor-active-gutter-bg: #2a2a2a;
+  --editor-selection-bg: rgba(79, 107, 237, 0.3);
+  --editor-cursor: #f0f0f0;
+
+  /* Calendar */
+  --calendar-today-bg: rgba(79, 107, 237, 0.2);
+  --calendar-weekend-bg: #1a1a1a;
+
+  /* Modal */
+  --modal-backdrop-bg: rgba(0, 0, 0, 0.7);
+
+  /* Form Controls */
+  --input-bg: #252525;
+
+  /* Buttons */
+  --btn-secondary-bg: #2a2a2a;
+  --btn-secondary-bg-hover: #333333;
+
+  /* Markdown / Editor Syntax */
+  --md-heading-1: #60a5fa;
+  --md-heading-2: #818cf8;
+  --md-heading-3: #a78bfa;
+  --md-heading-4: #c4b5fd;
+  --md-heading-5: #d8b4fe;
+  --md-heading-6: #e9d5ff;
+
+  --md-wiki-link: #a78bfa;
+
+  --md-code-text: #f472b6;
+  --md-code-bg: #1f1f2e;
+
+  /* Code syntax highlighting */
+  --md-code-keyword: #ff7b72;
+  --md-code-string: #a5d6ff;
+  --md-code-number: #79c0ff;
+  --md-code-comment: #8b949e;
+  --md-code-function: #d2a8ff;
+  --md-code-variable: #ffa657;
+  --md-code-operator: #ff7b72;
+  --md-code-punctuation: #c9d1d9;
+  --md-code-bracket: #c9d1d9;
+  --md-code-class: #f0883e;
+  --md-code-property: #79c0ff;
+  --md-code-boolean: #79c0ff;
+  --md-code-null: #79c0ff;
+
+  --md-blockquote: #9ca3af;
+  --md-blockquote-border: rgba(79, 107, 237, 0.4);
+
+  /* Tables */
+  --md-table-border: #404040;
+  --md-table-header-bg: #2a2a2a;
+  --md-table-alt-bg: #252525;
+}

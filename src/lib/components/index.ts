@@ -14,6 +14,7 @@ export { default as NoteEditor } from "./NoteEditor.svelte";
 export { default as ColumnEditor } from "./ColumnEditor.svelte";
 export { default as TodoPanel } from "./TodoPanel.svelte";
 export { default as PropertiesPanel } from "./PropertiesPanel.svelte";
+export { default as MediaViewer } from "./MediaViewer.svelte";
 
 // Calendar
 export { default as CalendarMonthly } from "./CalendarMonthly.svelte";

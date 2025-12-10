@@ -249,8 +249,10 @@ impl Vault {
         // Check if file changed
         let existing_hash = self.repo.get_note_hash(&path_str).await?;
         if existing_hash.as_ref() == Some(&hash) {
-            debug!("File unchanged, skipping: {}", path_str);
-            return Ok(None);
+            debug!("File unchanged, returning existing note ID: {}", path_str);
+            // Return existing note ID even though content unchanged
+            let existing_note = self.repo.get_note_by_path(&path_str).await?;
+            return Ok(Some(existing_note.id));
         }
 
         // Parse markdown
