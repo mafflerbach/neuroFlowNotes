@@ -17,6 +17,13 @@
     getBlockStyle,
     formatTimeShort,
   } from "../utils/blockLayoutUtils";
+  import {
+    calculateDropTimes,
+    calculateResizeTimes,
+    getColumnY,
+    getYFromElement,
+    type TimeConfig,
+  } from "../utils/calendarDragDrop";
   import { CALENDAR_CONFIG, getCalendarHours } from "../constants/calendar";
 
   interface Props {
@@ -42,6 +49,7 @@
   // Configuration from constants
   const { START_HOUR: startHour, END_HOUR: endHour, HOUR_SLOT_HEIGHT_WEEKLY: hourSlotHeight } = CALENDAR_CONFIG;
   const hours = getCalendarHours();
+  const timeConfig: TimeConfig = { startHour, endHour, hourSlotHeight };
 
   const selectedDate = $derived(workspaceStore.selectedDate);
   const weekDates = $derived(() => getWeekDates(selectedDate));
@@ -128,38 +136,11 @@
       return;
     }
 
-    // Calculate new time from mouse position
-    const target = e.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-
-    // Calculate hour and minute (snap to 15 min intervals)
-    const rawHour = y / hourSlotHeight + startHour;
-    const hour = Math.floor(rawHour);
-    const minuteFraction = rawHour - hour;
-    const minute = Math.floor(minuteFraction * 4) * 15; // 0, 15, 30, 45
-
-    // Calculate block duration
-    const [origStartH, origStartM] = draggedBlock.start_time.split(":").map(Number);
-    const [origEndH, origEndM] = draggedBlock.end_time.split(":").map(Number);
-    const durationMinutes = (origEndH * 60 + origEndM) - (origStartH * 60 + origStartM);
-
-    // Calculate new times and clamp to valid range
-    const newStartMinutes = hour * 60 + minute;
-    const clampedStart = Math.max(startHour * 60, Math.min((endHour - 1) * 60, newStartMinutes));
-    const clampedEnd = Math.min(endHour * 60, clampedStart + durationMinutes);
-
-    const newStartHour = Math.floor(clampedStart / 60);
-    const newStartMin = clampedStart % 60;
-    const newEndHour = Math.floor(clampedEnd / 60);
-    const newEndMin = clampedEnd % 60;
-
-    const newStartTime = `${newStartHour.toString().padStart(2, "0")}:${newStartMin.toString().padStart(2, "0")}:00`;
-    const newEndTime = `${newEndHour.toString().padStart(2, "0")}:${newEndMin.toString().padStart(2, "0")}:00`;
+    const y = getYFromElement(e, e.currentTarget as HTMLElement);
+    const { newStartTime, newEndTime } = calculateDropTimes(draggedBlock, y, timeConfig);
     const newDate = formatDateKey(date);
 
     onBlockMove(draggedBlock, newDate, newStartTime, newEndTime);
-
     handleBlockDragEnd();
   }
 
@@ -190,63 +171,19 @@
       return;
     }
 
-    // Find the day column to get the Y offset
-    const dayColumns = document.querySelectorAll(".day-column");
-    let columnRect: DOMRect | null = null;
-
-    for (const col of dayColumns) {
-      const rect = col.getBoundingClientRect();
-      if (e.clientX >= rect.left && e.clientX <= rect.right) {
-        columnRect = rect;
-        break;
-      }
-    }
-
-    if (!columnRect) {
+    const y = getColumnY(e, ".day-column");
+    if (y === null) {
       cleanupResize();
       return;
     }
 
-    const y = e.clientY - columnRect.top;
-
-    // Calculate new time (snap to 15 min intervals)
-    const rawHour = y / hourSlotHeight + startHour;
-    const hour = Math.floor(rawHour);
-    const minuteFraction = rawHour - hour;
-    const minute = Math.floor(minuteFraction * 4) * 15; // 0, 15, 30, 45
-
-    const newMinutes = hour * 60 + minute;
-    const clampedMinutes = Math.max(startHour * 60, Math.min(endHour * 60, newMinutes));
-
-    const newHour = Math.floor(clampedMinutes / 60);
-    const newMin = clampedMinutes % 60;
-    const newTime = `${newHour.toString().padStart(2, "0")}:${newMin.toString().padStart(2, "0")}:00`;
-
-    // Calculate the other time (the one not being resized)
-    let newStartTime: string;
-    let newEndTime: string;
-
-    if (resizeEdge === "top") {
-      newStartTime = newTime;
-      newEndTime = resizingBlock.end_time;
-      // Ensure start is before end
-      const [endH, endM] = newEndTime.split(":").map(Number);
-      if (clampedMinutes >= endH * 60 + endM) {
-        cleanupResize();
-        return;
-      }
-    } else {
-      newStartTime = resizingBlock.start_time;
-      newEndTime = newTime;
-      // Ensure end is after start
-      const [startH, startM] = newStartTime.split(":").map(Number);
-      if (clampedMinutes <= startH * 60 + startM) {
-        cleanupResize();
-        return;
-      }
+    const result = calculateResizeTimes(resizingBlock, y, resizeEdge, timeConfig);
+    if (!result) {
+      cleanupResize();
+      return;
     }
 
-    onBlockMove(resizingBlock, resizingBlock.date, newStartTime, newEndTime);
+    onBlockMove(resizingBlock, resizingBlock.date, result.newStartTime, result.newEndTime);
     cleanupResize();
   }
 

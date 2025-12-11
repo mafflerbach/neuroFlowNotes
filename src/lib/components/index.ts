@@ -27,3 +27,6 @@ export { default as DocList } from "./DocList.svelte";
 // Modals
 export { default as SettingsModal } from "./SettingsModal.svelte";
 export { default as ScheduleBlockModal } from "./ScheduleBlockModal.svelte";
+
+// Shared
+export { default as Toast } from "./shared/Toast.svelte";

@@ -19,6 +19,7 @@
     ScheduleBlockModal,
     MediaViewer,
     QueryBuilder,
+    Toast,
   } from "./lib/components";
   import { vaultStore, editorStore, workspaceStore } from "./lib/stores";
   import {
@@ -630,6 +631,9 @@
     onDelete={handleDeleteBlock}
     onClose={handleCloseBlockModal}
   />
+
+  <!-- Global Toast Notifications -->
+  <Toast />
 </div>
 
 <style>

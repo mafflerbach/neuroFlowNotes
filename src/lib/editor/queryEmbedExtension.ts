@@ -33,6 +33,7 @@ import type { EditorState } from "@codemirror/state";
 import { executeQueryEmbed } from "../services/api";
 import type { QueryEmbedResponse, QueryResultItem, QueryViewConfig } from "../types";
 import { workspaceStore } from "../stores/workspace.svelte";
+import { EditorCache } from "./cache";
 
 // Pattern to match query code block start
 const QUERY_BLOCK_START = /^```query\s*$/;
@@ -86,22 +87,17 @@ function findQueryBlocks(state: EditorState): QueryBlock[] {
 /**
  * Cache for query results to avoid re-fetching on every keystroke
  */
-const queryResultCache = new Map<string, {
-  response: QueryEmbedResponse;
-  timestamp: number;
-}>();
-
-const CACHE_TTL = 5000; // 5 seconds
+const queryResultCache = new EditorCache<QueryEmbedResponse>(5000); // 5 seconds TTL
 
 async function getQueryResults(yamlContent: string): Promise<QueryEmbedResponse> {
   const cached = queryResultCache.get(yamlContent);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.response;
+  if (cached) {
+    return cached;
   }
 
   try {
     const response = await executeQueryEmbed(yamlContent);
-    queryResultCache.set(yamlContent, { response, timestamp: Date.now() });
+    queryResultCache.set(yamlContent, response);
     return response;
   } catch (e) {
     return {

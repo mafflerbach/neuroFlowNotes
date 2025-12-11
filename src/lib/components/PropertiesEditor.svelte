@@ -14,6 +14,7 @@
     mergePropertyKeys,
     deletePropertyKey,
   } from "../services/api/properties";
+  import { notifications } from "../stores";
   import type { PropertyKeyInfo, PropertyValueInfo, NoteWithPropertyValue } from "../types";
 
   // State
@@ -26,7 +27,6 @@
   let loading = $state(true);
   let loadingValues = $state(false);
   let loadingNotes = $state(false);
-  let message = $state<{ type: "success" | "error"; text: string } | null>(null);
 
   // Edit state
   let editingKey = $state<string | null>(null);
@@ -74,7 +74,7 @@
       propertyKeys = await getPropertyKeys();
     } catch (e) {
       console.error("Failed to load property keys:", e);
-      showMessage("error", "Failed to load properties");
+      notifications.error("Failed to load properties");
     } finally {
       loading = false;
     }
@@ -86,7 +86,7 @@
       propertyValues = await getPropertyValuesWithCounts(key);
     } catch (e) {
       console.error("Failed to load property values:", e);
-      showMessage("error", "Failed to load values");
+      notifications.error("Failed to load values");
     } finally {
       loadingValues = false;
     }
@@ -114,12 +114,6 @@
     }
   }
 
-  function showMessage(type: "success" | "error", text: string) {
-    message = { type, text };
-    setTimeout(() => {
-      message = null;
-    }, 3000);
-  }
 
   // Key operations
   function startEditKey(key: string) {
@@ -144,8 +138,7 @@
         old_key: editingKey,
         new_key: editKeyValue.trim(),
       });
-      showMessage(
-        "success",
+      notifications.success(
         `Renamed "${editingKey}" to "${editKeyValue.trim()}" (${result.notes_affected} notes)`
       );
       if (selectedKey === editingKey) {
@@ -155,7 +148,7 @@
       await loadPropertyKeys();
     } catch (e) {
       console.error("Failed to rename key:", e);
-      showMessage("error", "Failed to rename property key");
+      notifications.error("Failed to rename property key");
     }
   }
 
@@ -166,14 +159,14 @@
 
     try {
       const result = await deletePropertyKey({ key });
-      showMessage("success", `Deleted "${key}" from ${result.notes_affected} notes`);
+      notifications.success(`Deleted "${key}" from ${result.notes_affected} notes`);
       if (selectedKey === key) {
         selectedKey = null;
       }
       await loadPropertyKeys();
     } catch (e) {
       console.error("Failed to delete key:", e);
-      showMessage("error", "Failed to delete property key");
+      notifications.error("Failed to delete property key");
     }
   }
 
@@ -201,8 +194,7 @@
         old_value: editingValue,
         new_value: editValueValue.trim(),
       });
-      showMessage(
-        "success",
+      notifications.success(
         `Renamed "${editingValue}" to "${editValueValue.trim()}" (${result.notes_affected} notes)`
       );
       if (selectedValue === editingValue) {
@@ -212,7 +204,7 @@
       await loadPropertyValues(selectedKey);
     } catch (e) {
       console.error("Failed to rename value:", e);
-      showMessage("error", "Failed to rename property value");
+      notifications.error("Failed to rename property value");
     }
   }
 
@@ -253,8 +245,7 @@
         source_key: mergeSourceKey,
         target_key: mergeTargetKey,
       });
-      showMessage(
-        "success",
+      notifications.success(
         `Merged "${mergeSourceKey}" into "${mergeTargetKey}" (${result.notes_affected} notes)`
       );
       if (selectedKey === mergeSourceKey) {
@@ -264,7 +255,7 @@
       await loadPropertyKeys();
     } catch (e) {
       console.error("Failed to merge keys:", e);
-      showMessage("error", "Failed to merge property keys");
+      notifications.error("Failed to merge property keys");
     }
   }
 
@@ -296,13 +287,6 @@
 </script>
 
 <div class="properties-editor">
-  <!-- Header with message -->
-  {#if message}
-    <div class="message message-{message.type}">
-      {message.text}
-    </div>
-  {/if}
-
   <div class="columns">
     <!-- Property Keys Column -->
     <div class="column keys-column">
@@ -498,22 +482,6 @@
     gap: var(--spacing-3);
     min-height: 400px;
     height: 450px;
-  }
-
-  .message {
-    padding: var(--spacing-2) var(--spacing-3);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-  }
-
-  .message-success {
-    background: var(--color-success-light);
-    color: var(--color-success);
-  }
-
-  .message-error {
-    background: var(--color-error-light);
-    color: var(--color-error);
   }
 
   .columns {

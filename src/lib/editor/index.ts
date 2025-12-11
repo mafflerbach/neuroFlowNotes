@@ -10,6 +10,9 @@ export {
   type EditorExtensionOptions,
 } from "./editorConfig";
 
+// Utilities
+export { EditorCache } from "./cache";
+
 // Individual extensions (for advanced use cases)
 export { wikiLinkCompletion, invalidateNotesCache } from "./wikiLinkCompletion";
 export { livePreview } from "./livePreview";

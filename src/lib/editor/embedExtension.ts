@@ -23,6 +23,7 @@ import {
   isPdfFile,
   getAudioMimeType,
 } from "../utils/fileTypes";
+import { EditorCache } from "./cache";
 
 // Pattern for embeds: ![[target]] or ![[target#section]] or ![[target|size]]
 // Size can be: 200, 200px, 50%, x100 (height only), 200x100
@@ -77,8 +78,7 @@ function parseImageSize(sizeStr: string | undefined): ImageSize | undefined {
 /**
  * Cache for resolved embeds to avoid repeated API calls
  */
-const embedCache = new Map<string, { content: EmbedContent; timestamp: number }>();
-const CACHE_TTL = 30000; // 30 seconds
+const embedCache = new EditorCache<EmbedContent>(30000); // 30 seconds TTL
 
 function getCacheKey(target: string, section?: string): string {
   return section ? `${target}#${section}` : target;
@@ -86,15 +86,7 @@ function getCacheKey(target: string, section?: string): string {
 
 async function resolveEmbedCached(target: string, section?: string, depth: number = 0): Promise<EmbedContent> {
   const key = getCacheKey(target, section);
-  const cached = embedCache.get(key);
-
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.content;
-  }
-
-  const content = await resolveEmbed({ target, section, depth });
-  embedCache.set(key, { content, timestamp: Date.now() });
-  return content;
+  return embedCache.getOrFetch(key, () => resolveEmbed({ target, section, depth }));
 }
 
 /**
@@ -479,14 +471,10 @@ export function embedExtension() {
  */
 export function invalidateEmbedCache(target?: string): void {
   if (target) {
-    // Invalidate specific target
-    for (const key of embedCache.keys()) {
-      if (key === target || key.startsWith(`${target}#`)) {
-        embedCache.delete(key);
-      }
-    }
-  } else {
-    // Invalidate all
-    embedCache.clear();
+    // Invalidate specific target and any section variants
+    embedCache.delete(target);
+    embedCache.delete(`${target}#`); // Delete any section variants requires iterating
   }
+  // Always clear all for now - simpler and safer
+  embedCache.clear();
 }
