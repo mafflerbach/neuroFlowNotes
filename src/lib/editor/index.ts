@@ -20,3 +20,4 @@ export { hoverPreviewExtension, invalidatePreviewCache } from "./hoverPreview";
 export { pasteHandlerExtension } from "./pasteHandler";
 export { vimExtension, isVimModeEnabled } from "./vimExtension";
 export { calloutExtension } from "./calloutExtension";
+export { queryEmbedExtension, invalidateQueryCache } from "./queryEmbedExtension";

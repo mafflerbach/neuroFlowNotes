@@ -56,6 +56,12 @@ pub struct TodoDto {
     pub description: String,
     pub completed: bool,
     pub heading_path: Option<String>,
+    /// GTD context (e.g., "home", "work", "phone", "computer").
+    pub context: Option<String>,
+    /// Priority level ("high", "medium", "low").
+    pub priority: Option<String>,
+    /// Due date as YYYY-MM-DD string.
+    pub due_date: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
 }
@@ -66,6 +72,40 @@ pub struct TodoDto {
 pub struct TodoToggleRequest {
     pub todo_id: i64,
     pub completed: bool,
+}
+
+/// A task (todo) with enriched context from its parent note.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct TaskWithContext {
+    /// The todo item.
+    pub todo: TodoDto,
+    /// Path to the note containing this task.
+    pub note_path: String,
+    /// Title of the note containing this task.
+    pub note_title: Option<String>,
+    /// Properties inherited from the parent note (e.g., project, area).
+    pub note_properties: Vec<PropertyDto>,
+}
+
+/// Query parameters for filtering tasks.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct TaskQuery {
+    /// Filter by completion status (None = all, Some(true) = completed, Some(false) = incomplete).
+    pub completed: Option<bool>,
+    /// Filter by context (e.g., "home", "work").
+    pub context: Option<String>,
+    /// Filter by priority ("high", "medium", "low").
+    pub priority: Option<String>,
+    /// Filter by due date range start (inclusive, YYYY-MM-DD).
+    pub due_from: Option<String>,
+    /// Filter by due date range end (inclusive, YYYY-MM-DD).
+    pub due_to: Option<String>,
+    /// Filter by note property (key=value).
+    pub property_filter: Option<String>,
+    /// Maximum number of results.
+    pub limit: Option<i32>,
 }
 
 // ============================================================================
@@ -321,4 +361,379 @@ pub struct HeadingInfo {
     pub text: String,
     /// URL-safe slug for linking (e.g., "my-section").
     pub slug: String,
+}
+
+// ============================================================================
+// Query Builder Types
+// ============================================================================
+
+/// Operator for property filters.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum PropertyOperator {
+    /// Property exists (any value)
+    Exists,
+    /// Property does not exist
+    NotExists,
+    /// Property equals exact value
+    Equals,
+    /// Property does not equal value
+    NotEquals,
+    /// Property contains substring
+    Contains,
+    /// Property starts with prefix
+    StartsWith,
+    /// Property ends with suffix
+    EndsWith,
+}
+
+/// A single property filter condition.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PropertyFilter {
+    /// The property key to filter on.
+    pub key: String,
+    /// The comparison operator.
+    pub operator: PropertyOperator,
+    /// The value to compare against (not used for Exists/NotExists).
+    pub value: Option<String>,
+}
+
+/// How to match multiple filter conditions.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum FilterMatchMode {
+    /// All conditions must match (AND).
+    All,
+    /// Any condition can match (OR).
+    Any,
+}
+
+/// What type of results to return.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum QueryResultType {
+    /// Return tasks from matching notes.
+    Tasks,
+    /// Return matching notes.
+    Notes,
+    /// Return both tasks and notes.
+    Both,
+}
+
+/// Request to run a query.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct QueryRequest {
+    /// Property filters to apply.
+    pub filters: Vec<PropertyFilter>,
+    /// How to match filters (All = AND, Any = OR).
+    pub match_mode: FilterMatchMode,
+    /// What type of results to return.
+    pub result_type: QueryResultType,
+    /// Include completed tasks (only for Tasks/Both result types).
+    pub include_completed: bool,
+    /// Maximum number of results.
+    pub limit: Option<i32>,
+}
+
+/// A single query result item (can be a task or a note).
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct QueryResultItem {
+    /// The type of result ("task" or "note").
+    pub item_type: String,
+    /// Task data (if item_type is "task").
+    pub task: Option<TaskWithContext>,
+    /// Note data (if item_type is "note").
+    pub note: Option<NoteListItem>,
+    /// Properties of the note (for display in results).
+    pub properties: Vec<PropertyDto>,
+}
+
+/// Response from running a query.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct QueryResponse {
+    /// The results matching the query.
+    pub results: Vec<QueryResultItem>,
+    /// Total count of matching items (may be > results.len() if limited).
+    pub total_count: i64,
+}
+
+/// Information about a property key used in the vault.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PropertyKeyInfo {
+    /// The property key name.
+    pub key: String,
+    /// Number of notes using this property.
+    pub usage_count: i64,
+    /// Sample values for this property (up to 10).
+    pub sample_values: Vec<String>,
+}
+
+// ============================================================================
+// Property Management Types (bulk operations)
+// ============================================================================
+
+/// Request to rename a property key across all notes.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct RenamePropertyKeyRequest {
+    /// The current key name.
+    pub old_key: String,
+    /// The new key name.
+    pub new_key: String,
+}
+
+/// Request to rename a property value across all notes with that key.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct RenamePropertyValueRequest {
+    /// The property key.
+    pub key: String,
+    /// The current value.
+    pub old_value: String,
+    /// The new value.
+    pub new_value: String,
+}
+
+/// Request to merge two property keys (rename source to target, merging if target exists).
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MergePropertyKeysRequest {
+    /// The property key to merge from (will be deleted).
+    pub source_key: String,
+    /// The property key to merge into (will keep all values).
+    pub target_key: String,
+}
+
+/// Request to delete a property key from all notes.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct DeletePropertyKeyRequest {
+    /// The property key to delete.
+    pub key: String,
+}
+
+/// Response for bulk property operations.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PropertyOperationResult {
+    /// Number of properties affected.
+    pub affected_count: i64,
+    /// Number of notes affected.
+    pub notes_affected: i64,
+}
+
+/// Information about a property value used in the vault.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PropertyValueInfo {
+    /// The property value.
+    pub value: String,
+    /// Number of notes using this value.
+    pub usage_count: i64,
+}
+
+/// A note that uses a specific property, including the value.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct NoteWithPropertyValue {
+    /// The note ID.
+    pub note_id: i64,
+    /// The note path.
+    pub path: String,
+    /// The note title (if any).
+    pub title: Option<String>,
+    /// The property value in this note.
+    pub value: Option<String>,
+}
+
+// ============================================================================
+// Query Embed Types (for inline ```query``` blocks)
+// ============================================================================
+
+/// View type for displaying query results.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum QueryViewType {
+    /// Display as a table with columns.
+    Table,
+    /// Display as a simple list.
+    List,
+}
+
+impl Default for QueryViewType {
+    fn default() -> Self {
+        QueryViewType::Table
+    }
+}
+
+/// Sort direction for query results.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum SortDirection {
+    Asc,
+    Desc,
+}
+
+impl Default for SortDirection {
+    fn default() -> Self {
+        SortDirection::Asc
+    }
+}
+
+/// Sort configuration for query results.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct QuerySort {
+    /// Property to sort by (e.g., "due_date", "priority", "note_title").
+    pub property: String,
+    /// Sort direction.
+    pub direction: SortDirection,
+}
+
+/// View configuration for query embed.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct QueryViewConfig {
+    /// View type (table or list).
+    #[serde(default)]
+    pub view_type: QueryViewType,
+    /// Columns to display (for table view). If empty, use defaults.
+    #[serde(default)]
+    pub columns: Vec<String>,
+    /// Sort configuration.
+    pub sort: Option<QuerySort>,
+}
+
+impl Default for QueryViewConfig {
+    fn default() -> Self {
+        Self {
+            view_type: QueryViewType::Table,
+            columns: vec![],
+            sort: None,
+        }
+    }
+}
+
+/// A single query tab definition.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct QueryTab {
+    /// Display name for this tab.
+    pub name: String,
+    /// Property filters to apply for this tab.
+    #[serde(default)]
+    pub filters: Vec<PropertyFilter>,
+    /// How to match filters (All = AND, Any = OR). Defaults to All.
+    #[serde(default = "default_match_mode")]
+    pub match_mode: FilterMatchMode,
+    /// What type of results to return. Defaults to Tasks.
+    #[serde(default = "default_result_type")]
+    pub result_type: QueryResultType,
+    /// Include completed tasks. Defaults to false.
+    #[serde(default)]
+    pub include_completed: bool,
+    /// Maximum number of results. Defaults to 50.
+    #[serde(default = "default_limit")]
+    pub limit: i32,
+    /// View configuration for this tab.
+    #[serde(default)]
+    pub view: QueryViewConfig,
+}
+
+/// A complete query embed definition (parsed from YAML in ```query``` blocks).
+/// Supports both single-query mode and multi-tab mode.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct QueryEmbed {
+    /// Property filters to apply (for single-query mode).
+    #[serde(default)]
+    pub filters: Vec<PropertyFilter>,
+    /// How to match filters (All = AND, Any = OR). Defaults to All.
+    #[serde(default = "default_match_mode")]
+    pub match_mode: FilterMatchMode,
+    /// What type of results to return. Defaults to Tasks.
+    #[serde(default = "default_result_type")]
+    pub result_type: QueryResultType,
+    /// Include completed tasks. Defaults to false.
+    #[serde(default)]
+    pub include_completed: bool,
+    /// Maximum number of results. Defaults to 50.
+    #[serde(default = "default_limit")]
+    pub limit: i32,
+    /// View configuration.
+    #[serde(default)]
+    pub view: QueryViewConfig,
+    /// Optional tabs for multi-query mode. If present, overrides single-query fields.
+    #[serde(default)]
+    pub tabs: Vec<QueryTab>,
+}
+
+fn default_match_mode() -> FilterMatchMode {
+    FilterMatchMode::All
+}
+
+fn default_result_type() -> QueryResultType {
+    QueryResultType::Tasks
+}
+
+fn default_limit() -> i32 {
+    50
+}
+
+impl Default for QueryEmbed {
+    fn default() -> Self {
+        Self {
+            filters: vec![],
+            match_mode: FilterMatchMode::All,
+            result_type: QueryResultType::Tasks,
+            include_completed: false,
+            limit: 50,
+            view: QueryViewConfig::default(),
+            tabs: vec![],
+        }
+    }
+}
+
+/// Request to execute a query embed (YAML string).
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ExecuteQueryEmbedRequest {
+    /// The YAML content of the query block.
+    pub yaml_content: String,
+}
+
+/// Results for a single tab.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct TabResult {
+    /// Tab name.
+    pub name: String,
+    /// The results for this tab.
+    pub results: Vec<QueryResultItem>,
+    /// Total count of matching items for this tab.
+    pub total_count: i64,
+    /// View configuration for this tab.
+    pub view: QueryViewConfig,
+}
+
+/// Response from executing a query embed.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct QueryEmbedResponse {
+    /// The parsed query configuration.
+    pub query: QueryEmbed,
+    /// The results matching the query (for single-query mode).
+    pub results: Vec<QueryResultItem>,
+    /// Total count of matching items (for single-query mode).
+    pub total_count: i64,
+    /// Results per tab (for multi-tab mode). Empty if not using tabs.
+    #[serde(default)]
+    pub tab_results: Vec<TabResult>,
+    /// Error message if parsing or execution failed.
+    pub error: Option<String>,
 }

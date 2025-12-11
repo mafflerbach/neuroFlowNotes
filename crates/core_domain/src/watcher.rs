@@ -49,7 +49,7 @@ impl FileWatcher {
 
     /// Start watching for file changes.
     pub async fn start(&self) {
-        let (stop_tx, mut stop_rx) = mpsc::channel::<()>(1);
+        let (_stop_tx, mut stop_rx) = mpsc::channel::<()>(1);
         let (event_tx, mut event_rx) = mpsc::channel::<Vec<notify_debouncer_mini::DebouncedEvent>>(100);
 
         // Create the debouncer
@@ -121,7 +121,7 @@ impl FileWatcher {
 
 /// Process a batch of file system events.
 async fn process_events(
-    root: &PathBuf,
+    _root: &PathBuf,
     repo: &VaultRepository,
     fs: &VaultFs,
     event_tx: &broadcast::Sender<VaultEvent>,

@@ -3,4 +3,9 @@
 /**
  * Request to update an existing schedule block.
  */
-export type UpdateScheduleBlockRequest = { id: bigint, note_id: bigint | null, date: string | null, start_time: string | null, end_time: string | null, label: string | null, color: string | null, context: string | null, };
+export type UpdateScheduleBlockRequest = { id: bigint, note_id: bigint | null, date: string | null, start_time: string | null, end_time: string | null, label: string | null, color: string | null, context: string | null, 
+/**
+ * RFC 5545 recurrence rule (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR").
+ * Set to empty string to clear recurrence.
+ */
+rrule: string | null, };

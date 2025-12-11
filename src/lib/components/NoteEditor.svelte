@@ -2,7 +2,7 @@
   import { onDestroy } from "svelte";
   import { EditorState } from "@codemirror/state";
   import { EditorView } from "@codemirror/view";
-  import { editorStore } from "../stores";
+  import { editorStore, workspaceStore } from "../stores";
   import { createEditorExtensions, createSaveKeymap } from "../editor";
 
   interface Props {
@@ -14,6 +14,64 @@
   let editorContainer: HTMLDivElement | undefined = $state();
   let view: EditorView | null = null;
   let currentNoteId: number | null = null;
+
+  /**
+   * Convert heading text to slug (must match backend slugify function)
+   */
+  function slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "") // Remove non-word chars except spaces and dashes
+      .replace(/[\s_]+/g, "-") // Replace spaces/underscores with dashes
+      .replace(/-+/g, "-") // Collapse multiple dashes
+      .replace(/^-|-$/g, ""); // Trim dashes from ends
+  }
+
+  /**
+   * Find the line number of a heading by its slug
+   */
+  function findHeadingLine(content: string, targetSlug: string): number | null {
+    const lines = content.split("\n");
+    const headingPattern = /^(#{1,6})\s+(.+)$/;
+
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].match(headingPattern);
+      if (match) {
+        const headingText = match[2].trim();
+        const slug = slugify(headingText);
+        if (slug === targetSlug) {
+          return i;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Scroll to a section by its slug
+   */
+  function scrollToSection(slug: string) {
+    if (!view || !editorStore.currentNote) return;
+
+    const lineNumber = findHeadingLine(editorStore.currentNote.content, slug);
+    if (lineNumber === null) {
+      console.warn(`[NoteEditor] Section not found: ${slug}`);
+      return;
+    }
+
+    // Get the position at the start of the line
+    const line = view.state.doc.line(lineNumber + 1); // CodeMirror lines are 1-indexed
+    const pos = line.from;
+
+    // Scroll the heading into view and place cursor there
+    view.dispatch({
+      selection: { anchor: pos },
+      effects: EditorView.scrollIntoView(pos, { y: "start", yMargin: 50 }),
+    });
+
+    // Focus the editor
+    view.focus();
+  }
 
   // Update listener to sync changes to store
   const updateListener = EditorView.updateListener.of((update) => {
@@ -61,6 +119,18 @@
       view.destroy();
       view = null;
       currentNoteId = null;
+    }
+  });
+
+  // Handle pending section scroll (when navigating to [[note#section]])
+  $effect(() => {
+    const pending = workspaceStore.pendingScroll;
+    if (pending && currentNoteId === pending.noteId && view) {
+      // Small delay to ensure editor is fully rendered
+      requestAnimationFrame(() => {
+        scrollToSection(pending.section);
+        workspaceStore.clearPendingScroll();
+      });
     }
   });
 

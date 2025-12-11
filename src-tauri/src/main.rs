@@ -43,6 +43,8 @@ fn main() {
             commands::get_todos_for_note,
             commands::toggle_todo,
             commands::get_incomplete_todos,
+            commands::query_tasks,
+            commands::get_task_contexts,
             // Tags & Backlinks
             commands::list_tags,
             commands::get_backlinks,
@@ -69,8 +71,22 @@ fn main() {
             commands::get_note_headings,
             // Assets
             commands::save_pasted_image,
+            // Query Builder
+            commands::get_property_keys,
+            commands::get_property_values,
+            commands::run_query,
+            // Query Embeds
+            commands::execute_query_embed,
+            // Property Management
+            commands::rename_property_key,
+            commands::rename_property_value,
+            commands::merge_property_keys,
+            commands::delete_property_key,
+            commands::get_property_values_with_counts,
+            commands::get_notes_with_property,
+            commands::get_notes_with_property_value,
         ])
-        .setup(|app| {
+        .setup(|_app| {
             info!("Tauri app setup complete");
             Ok(())
         })

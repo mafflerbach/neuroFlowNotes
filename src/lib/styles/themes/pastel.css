@@ -1,0 +1,283 @@
+/**
+ * Pastel Theme
+ * A soft, dreamy theme with pastel pink and blue accents
+ *
+ * Base colors:
+ * - Thistle: #cdb4db (purple-pink)
+ * - Pastel Petal: #ffc8dd (light pink)
+ * - Baby Pink: #ffafcc (pink)
+ * - Icy Blue: #bde0fe (light blue)
+ * - Sky Blue: #a2d2ff (blue)
+ */
+
+:root[data-theme="pastel"] {
+  /* ============================================================================
+   * Base Palette
+   * ============================================================================ */
+  --pastel-thistle: #cdb4db;
+  --pastel-petal: #ffc8dd;
+  --pastel-baby-pink: #ffafcc;
+  --pastel-icy-blue: #bde0fe;
+  --pastel-sky-blue: #a2d2ff;
+
+  /* Derived colors - darker versions for text/contrast */
+  --pastel-thistle-dark: #9a7bab;
+  --pastel-pink-dark: #d4789a;
+  --pastel-blue-dark: #5a9fd4;
+
+  /* ============================================================================
+   * Gray Scale - Warm tinted grays
+   * ============================================================================ */
+  --color-gray-50: #fdfbfc;
+  --color-gray-100: #f8f5f7;
+  --color-gray-200: #f0ebee;
+  --color-gray-300: #e5dde2;
+  --color-gray-400: #c9bfc5;
+  --color-gray-500: #a89aa2;
+  --color-gray-600: #7a6d75;
+  --color-gray-700: #5c5058;
+  --color-gray-800: #3d353a;
+  --color-gray-900: #1f1a1d;
+
+  /* ============================================================================
+   * Primary Colors
+   * ============================================================================ */
+  --color-primary: #d4789a;
+  --color-primary-hover: #c45f85;
+  --color-primary-light: rgba(255, 175, 204, 0.3);
+  --color-primary-dark: #b34d72;
+
+  /* ============================================================================
+   * Semantic Colors
+   * ============================================================================ */
+  --color-success: #6bb38a;
+  --color-success-light: #e8f5ed;
+  --color-success-hover: #c8e6d3;
+
+  --color-error: #e07a7a;
+  --color-error-light: #fceaea;
+  --color-error-hover: #f5cece;
+
+  --color-warning: #e5a860;
+  --color-warning-light: #fef5e7;
+
+  --color-info: #5a9fd4;
+  --color-info-light: #e8f4fc;
+
+  /* ============================================================================
+   * Background Colors
+   * ============================================================================ */
+  --bg-app: #fdf8fa;
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #fefbfc;
+  --bg-surface-sunken: #f8f3f5;
+  --bg-hover: rgba(205, 180, 219, 0.15);
+  --bg-active: rgba(255, 175, 204, 0.25);
+  --bg-selected: rgba(189, 224, 254, 0.3);
+
+  /* ============================================================================
+   * Text Colors
+   * ============================================================================ */
+  --text-primary: #3d353a;
+  --text-secondary: #5c5058;
+  --text-muted: #7a6d75;
+  --text-disabled: #a89aa2;
+  --text-inverse: #ffffff;
+  --text-link: #5a9fd4;
+  --text-link-hover: #4589c0;
+
+  /* ============================================================================
+   * Border Colors
+   * ============================================================================ */
+  --border-default: #e5dde2;
+  --border-light: #f0ebee;
+  --border-focus: var(--pastel-baby-pink);
+
+  /* ============================================================================
+   * Icon Colors
+   * ============================================================================ */
+  --icon-default: #7a6d75;
+  --icon-muted: #a89aa2;
+  --icon-active: var(--pastel-pink-dark);
+
+  /* ============================================================================
+   * Button Colors
+   * ============================================================================ */
+  --btn-primary-bg: var(--pastel-baby-pink);
+  --btn-primary-bg-hover: var(--pastel-pink-dark);
+  --btn-primary-text: #3d353a;
+
+  --btn-secondary-bg: #fefbfc;
+  --btn-secondary-bg-hover: rgba(205, 180, 219, 0.2);
+  --btn-secondary-text: #5c5058;
+  --btn-secondary-border: #e5dde2;
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(205, 180, 219, 0.15);
+  --btn-ghost-text: #5c5058;
+
+  --btn-danger-bg: #e07a7a;
+  --btn-danger-bg-hover: #d15f5f;
+  --btn-danger-text: #ffffff;
+
+  /* ============================================================================
+   * Topbar
+   * ============================================================================ */
+  --topbar-bg: #ffffff;
+  --topbar-border: #e5dde2;
+
+  /* ============================================================================
+   * Sidebar
+   * ============================================================================ */
+  --sidebar-bg: #fefbfc;
+  --sidebar-border: #e5dde2;
+  --sidebar-header-bg: #fefbfc;
+
+  /* ============================================================================
+   * Editor
+   * ============================================================================ */
+  --editor-bg: #ffffff;
+  --editor-header-bg: #fefbfc;
+  --editor-gutter-bg: #fefbfc;
+  --editor-gutter-color: #a89aa2;
+  --editor-active-line-bg: rgba(255, 200, 221, 0.1);
+  --editor-active-gutter-bg: rgba(255, 200, 221, 0.2);
+  --editor-selection-bg: rgba(189, 224, 254, 0.4);
+  --editor-cursor: var(--pastel-pink-dark);
+
+  /* ============================================================================
+   * Calendar
+   * ============================================================================ */
+  --calendar-bg: #ffffff;
+  --calendar-header-bg: #fefbfc;
+  --calendar-border: #f0ebee;
+  --calendar-today-bg: rgba(255, 175, 204, 0.2);
+  --calendar-selected-bg: var(--pastel-baby-pink);
+  --calendar-selected-text: #3d353a;
+  --calendar-other-month-text: #a89aa2;
+  --calendar-weekend-bg: #f8f3f5;
+
+  /* ============================================================================
+   * Modal
+   * ============================================================================ */
+  --modal-backdrop-bg: rgba(61, 53, 58, 0.4);
+  --modal-bg: #ffffff;
+  --modal-header-bg: #fefbfc;
+  --modal-border: #e5dde2;
+
+  /* ============================================================================
+   * Form Controls
+   * ============================================================================ */
+  --input-bg: #ffffff;
+  --input-border: #e5dde2;
+  --input-border-focus: var(--pastel-baby-pink);
+  --input-text: #3d353a;
+  --input-placeholder: #a89aa2;
+
+  /* ============================================================================
+   * Panel
+   * ============================================================================ */
+  --panel-bg: #ffffff;
+  --panel-header-bg: #fefbfc;
+  --panel-border: #e5dde2;
+
+  /* ============================================================================
+   * Context Menu
+   * ============================================================================ */
+  --context-menu-bg: #ffffff;
+  --context-menu-border: #e5dde2;
+  --context-menu-item-hover-bg: rgba(205, 180, 219, 0.15);
+  --context-menu-separator: #f0ebee;
+
+  /* ============================================================================
+   * Folder Tree
+   * ============================================================================ */
+  --tree-item-hover-bg: rgba(205, 180, 219, 0.15);
+  --tree-item-selected-bg: rgba(189, 224, 254, 0.3);
+  --tree-icon-color: #a89aa2;
+  --tree-folder-icon-color: var(--pastel-thistle-dark);
+  --tree-file-icon-color: #7a6d75;
+
+  /* ============================================================================
+   * Autocomplete
+   * ============================================================================ */
+  --autocomplete-bg: #ffffff;
+  --autocomplete-border: #e5dde2;
+  --autocomplete-item-hover-bg: rgba(205, 180, 219, 0.15);
+  --autocomplete-item-selected-bg: rgba(189, 224, 254, 0.3);
+  --autocomplete-item-text: #3d353a;
+  --autocomplete-item-detail: #7a6d75;
+  --autocomplete-match-text: var(--pastel-pink-dark);
+
+  /* ============================================================================
+   * Markdown / Editor Syntax
+   * ============================================================================ */
+  /* Headings - using the pastel palette */
+  --md-heading-1: #9a7bab;
+  --md-heading-2: #b388b5;
+  --md-heading-3: #d4789a;
+  --md-heading-4: #5a9fd4;
+  --md-heading-5: #6bb38a;
+  --md-heading-6: #7a6d75;
+
+  /* Formatting */
+  --md-bold: #3d353a;
+  --md-italic: #5c5058;
+  --md-strikethrough: #a89aa2;
+
+  /* Links */
+  --md-link: #5a9fd4;
+  --md-link-url: #a89aa2;
+  --md-wiki-link: #9a7bab;
+
+  /* Code - inline */
+  --md-code-text: #d4789a;
+  --md-code-bg: rgba(205, 180, 219, 0.15);
+
+  /* Code - syntax highlighting */
+  --md-code-keyword: #d4789a;
+  --md-code-string: #6bb38a;
+  --md-code-number: #5a9fd4;
+  --md-code-comment: #a89aa2;
+  --md-code-function: #9a7bab;
+  --md-code-variable: #5c5058;
+  --md-code-operator: #d4789a;
+  --md-code-punctuation: #5c5058;
+  --md-code-bracket: #5c5058;
+  --md-code-class: #9a7bab;
+  --md-code-property: #5a9fd4;
+  --md-code-boolean: #5a9fd4;
+  --md-code-null: #a89aa2;
+
+  /* Lists & Quotes */
+  --md-list-marker: var(--pastel-pink-dark);
+  --md-blockquote: #7a6d75;
+  --md-blockquote-border: var(--pastel-thistle);
+
+  /* Tables */
+  --md-table-border: #e5dde2;
+  --md-table-header-bg: rgba(205, 180, 219, 0.1);
+  --md-table-alt-bg: #f8f3f5;
+
+  /* Syntax markers */
+  --md-syntax-marker: #a89aa2;
+
+  /* ============================================================================
+   * Block Colors - Soft pastel palette
+   * ============================================================================ */
+  --block-text: #3d353a;
+  --block-color-blue: #a2d2ff;
+  --block-color-sapphire: #7ec8e3;
+  --block-color-sky: #bde0fe;
+  --block-color-teal: #99d5cf;
+  --block-color-green: #a8dda8;
+  --block-color-yellow: #fff3b0;
+  --block-color-peach: #ffc8a2;
+  --block-color-maroon: #e8b4b8;
+  --block-color-red: #ffafcc;
+  --block-color-mauve: #cdb4db;
+  --block-color-pink: #ffc8dd;
+  --block-color-flamingo: #ffd7d7;
+  --block-color-rosewater: #ffe5e5;
+  --block-color-lavender: #c8c8ff;
+}

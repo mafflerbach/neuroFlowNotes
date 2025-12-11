@@ -3,4 +3,8 @@
 /**
  * Request to create a new schedule block.
  */
-export type CreateScheduleBlockRequest = { note_id: bigint | null, date: string, start_time: string, end_time: string, label: string | null, color: string | null, context: string | null, };
+export type CreateScheduleBlockRequest = { note_id: bigint | null, date: string, start_time: string, end_time: string, label: string | null, color: string | null, context: string | null, 
+/**
+ * RFC 5545 recurrence rule (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR").
+ */
+rrule: string | null, };

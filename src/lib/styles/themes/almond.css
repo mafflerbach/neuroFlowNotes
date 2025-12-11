@@ -1,0 +1,283 @@
+/**
+ * Almond Theme (Light)
+ * A soft, warm neutral theme with almond and cream tones
+ *
+ * Base colors:
+ * - Almond Silk: #d3ab9e (warm almond)
+ * - Almond Silk 2: #eac9c1 (light almond)
+ * - Powder Petal: #ebd8d0 (soft blush)
+ * - Snow: #fffbff (warm white)
+ * - White: #fefeff (pure white)
+ */
+
+:root[data-theme="almond"] {
+  /* ============================================================================
+   * Base Palette
+   * ============================================================================ */
+  --almond-silk: #d3ab9e;
+  --almond-silk-light: #eac9c1;
+  --almond-powder-petal: #ebd8d0;
+  --almond-snow: #fffbff;
+  --almond-white: #fefeff;
+
+  /* Derived colors - darker versions for text/accents */
+  --almond-dark: #a67d6e;
+  --almond-darker: #8a6355;
+  --almond-darkest: #6b4c40;
+
+  /* ============================================================================
+   * Gray Scale - Warm almond-tinted
+   * ============================================================================ */
+  --color-gray-50: #fffbff;
+  --color-gray-100: #faf6f5;
+  --color-gray-200: #f2ebe8;
+  --color-gray-300: #e6dbd6;
+  --color-gray-400: #d3c4bc;
+  --color-gray-500: #b09a90;
+  --color-gray-600: #8a7268;
+  --color-gray-700: #6b5a52;
+  --color-gray-800: #4d413b;
+  --color-gray-900: #2f2825;
+
+  /* ============================================================================
+   * Primary Colors
+   * ============================================================================ */
+  --color-primary: #a67d6e;
+  --color-primary-hover: #8a6355;
+  --color-primary-light: rgba(211, 171, 158, 0.3);
+  --color-primary-dark: #6b4c40;
+
+  /* ============================================================================
+   * Semantic Colors
+   * ============================================================================ */
+  --color-success: #6b9e7a;
+  --color-success-light: #eef5f0;
+  --color-success-hover: #d5e8da;
+
+  --color-error: #c47070;
+  --color-error-light: #f9eeee;
+  --color-error-hover: #f0dada;
+
+  --color-warning: #c4a055;
+  --color-warning-light: #faf5eb;
+
+  --color-info: #7090a5;
+  --color-info-light: #eef3f6;
+
+  /* ============================================================================
+   * Background Colors
+   * ============================================================================ */
+  --bg-app: #faf6f5;
+  --bg-surface: #fefeff;
+  --bg-surface-raised: #fffbff;
+  --bg-surface-sunken: #f2ebe8;
+  --bg-hover: rgba(211, 171, 158, 0.15);
+  --bg-active: rgba(211, 171, 158, 0.25);
+  --bg-selected: rgba(234, 201, 193, 0.4);
+
+  /* ============================================================================
+   * Text Colors
+   * ============================================================================ */
+  --text-primary: #4d413b;
+  --text-secondary: #6b5a52;
+  --text-muted: #8a7268;
+  --text-disabled: #b09a90;
+  --text-inverse: #fffbff;
+  --text-link: #7090a5;
+  --text-link-hover: #5a7a8f;
+
+  /* ============================================================================
+   * Border Colors
+   * ============================================================================ */
+  --border-default: #e6dbd6;
+  --border-light: #f2ebe8;
+  --border-focus: var(--almond-silk);
+
+  /* ============================================================================
+   * Icon Colors
+   * ============================================================================ */
+  --icon-default: #8a7268;
+  --icon-muted: #b09a90;
+  --icon-active: var(--almond-dark);
+
+  /* ============================================================================
+   * Button Colors
+   * ============================================================================ */
+  --btn-primary-bg: var(--almond-dark);
+  --btn-primary-bg-hover: var(--almond-darker);
+  --btn-primary-text: #fffbff;
+
+  --btn-secondary-bg: #fffbff;
+  --btn-secondary-bg-hover: rgba(211, 171, 158, 0.2);
+  --btn-secondary-text: #6b5a52;
+  --btn-secondary-border: #e6dbd6;
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(211, 171, 158, 0.15);
+  --btn-ghost-text: #6b5a52;
+
+  --btn-danger-bg: #c47070;
+  --btn-danger-bg-hover: #b05a5a;
+  --btn-danger-text: #fffbff;
+
+  /* ============================================================================
+   * Topbar
+   * ============================================================================ */
+  --topbar-bg: #fefeff;
+  --topbar-border: #e6dbd6;
+
+  /* ============================================================================
+   * Sidebar
+   * ============================================================================ */
+  --sidebar-bg: #fffbff;
+  --sidebar-border: #e6dbd6;
+  --sidebar-header-bg: #fffbff;
+
+  /* ============================================================================
+   * Editor
+   * ============================================================================ */
+  --editor-bg: #fefeff;
+  --editor-header-bg: #fffbff;
+  --editor-gutter-bg: #fffbff;
+  --editor-gutter-color: #b09a90;
+  --editor-active-line-bg: rgba(234, 201, 193, 0.2);
+  --editor-active-gutter-bg: rgba(234, 201, 193, 0.3);
+  --editor-selection-bg: rgba(211, 171, 158, 0.3);
+  --editor-cursor: var(--almond-darker);
+
+  /* ============================================================================
+   * Calendar
+   * ============================================================================ */
+  --calendar-bg: #fefeff;
+  --calendar-header-bg: #fffbff;
+  --calendar-border: #f2ebe8;
+  --calendar-today-bg: rgba(211, 171, 158, 0.25);
+  --calendar-selected-bg: var(--almond-dark);
+  --calendar-selected-text: #fffbff;
+  --calendar-other-month-text: #b09a90;
+  --calendar-weekend-bg: #f2ebe8;
+
+  /* ============================================================================
+   * Modal
+   * ============================================================================ */
+  --modal-backdrop-bg: rgba(77, 65, 59, 0.35);
+  --modal-bg: #fefeff;
+  --modal-header-bg: #fffbff;
+  --modal-border: #e6dbd6;
+
+  /* ============================================================================
+   * Form Controls
+   * ============================================================================ */
+  --input-bg: #fefeff;
+  --input-border: #e6dbd6;
+  --input-border-focus: var(--almond-silk);
+  --input-text: #4d413b;
+  --input-placeholder: #b09a90;
+
+  /* ============================================================================
+   * Panel
+   * ============================================================================ */
+  --panel-bg: #fefeff;
+  --panel-header-bg: #fffbff;
+  --panel-border: #e6dbd6;
+
+  /* ============================================================================
+   * Context Menu
+   * ============================================================================ */
+  --context-menu-bg: #fefeff;
+  --context-menu-border: #e6dbd6;
+  --context-menu-item-hover-bg: rgba(211, 171, 158, 0.15);
+  --context-menu-separator: #f2ebe8;
+
+  /* ============================================================================
+   * Folder Tree
+   * ============================================================================ */
+  --tree-item-hover-bg: rgba(211, 171, 158, 0.15);
+  --tree-item-selected-bg: rgba(234, 201, 193, 0.4);
+  --tree-icon-color: #b09a90;
+  --tree-folder-icon-color: var(--almond-dark);
+  --tree-file-icon-color: #8a7268;
+
+  /* ============================================================================
+   * Autocomplete
+   * ============================================================================ */
+  --autocomplete-bg: #fefeff;
+  --autocomplete-border: #e6dbd6;
+  --autocomplete-item-hover-bg: rgba(211, 171, 158, 0.15);
+  --autocomplete-item-selected-bg: rgba(234, 201, 193, 0.4);
+  --autocomplete-item-text: #4d413b;
+  --autocomplete-item-detail: #8a7268;
+  --autocomplete-match-text: var(--almond-dark);
+
+  /* ============================================================================
+   * Markdown / Editor Syntax
+   * ============================================================================ */
+  /* Headings - warm earth tones */
+  --md-heading-1: #6b4c40;
+  --md-heading-2: #7a5c4e;
+  --md-heading-3: #8a6355;
+  --md-heading-4: #7090a5;
+  --md-heading-5: #6b9e7a;
+  --md-heading-6: #8a7268;
+
+  /* Formatting */
+  --md-bold: #4d413b;
+  --md-italic: #6b5a52;
+  --md-strikethrough: #b09a90;
+
+  /* Links */
+  --md-link: #7090a5;
+  --md-link-url: #b09a90;
+  --md-wiki-link: #a67d6e;
+
+  /* Code - inline */
+  --md-code-text: #8a6355;
+  --md-code-bg: rgba(235, 216, 208, 0.5);
+
+  /* Code - syntax highlighting */
+  --md-code-keyword: #a67d6e;
+  --md-code-string: #6b9e7a;
+  --md-code-number: #7090a5;
+  --md-code-comment: #b09a90;
+  --md-code-function: #8a6355;
+  --md-code-variable: #6b5a52;
+  --md-code-operator: #c47070;
+  --md-code-punctuation: #6b5a52;
+  --md-code-bracket: #6b5a52;
+  --md-code-class: #6b4c40;
+  --md-code-property: #7090a5;
+  --md-code-boolean: #7090a5;
+  --md-code-null: #b09a90;
+
+  /* Lists & Quotes */
+  --md-list-marker: var(--almond-dark);
+  --md-blockquote: #8a7268;
+  --md-blockquote-border: var(--almond-silk-light);
+
+  /* Tables */
+  --md-table-border: #e6dbd6;
+  --md-table-header-bg: rgba(235, 216, 208, 0.4);
+  --md-table-alt-bg: #f2ebe8;
+
+  /* Syntax markers */
+  --md-syntax-marker: #b09a90;
+
+  /* ============================================================================
+   * Block Colors - Warm almond & cream palette
+   * ============================================================================ */
+  --block-text: #4d413b;
+  --block-color-blue: #7090a5;
+  --block-color-sapphire: #85a5b5;
+  --block-color-sky: #a5c0cc;
+  --block-color-teal: #8ab5ad;
+  --block-color-green: #6b9e7a;
+  --block-color-yellow: #d4b87a;
+  --block-color-peach: #d3ab9e;
+  --block-color-maroon: #c47070;
+  --block-color-red: #d08888;
+  --block-color-mauve: #a67d6e;
+  --block-color-pink: #eac9c1;
+  --block-color-flamingo: #ebd8d0;
+  --block-color-rosewater: #f5e8e0;
+  --block-color-lavender: #9090b5;
+}

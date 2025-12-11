@@ -94,4 +94,23 @@
   --md-table-border: var(--border-default);
   --md-table-header-bg: var(--bg-surface-raised);
   --md-table-alt-bg: var(--bg-surface-sunken);
+
+  /* ============================================================================
+   * Block Colors - Standard Catppuccin Latte style (darker for light theme)
+   * ============================================================================ */
+  --block-text: #ffffff;
+  --block-color-blue: #1e66f5;
+  --block-color-sapphire: #209fb5;
+  --block-color-sky: #04a5e5;
+  --block-color-teal: #179299;
+  --block-color-green: #40a02b;
+  --block-color-yellow: #df8e1d;
+  --block-color-peach: #fe640b;
+  --block-color-maroon: #e64553;
+  --block-color-red: #d20f39;
+  --block-color-mauve: #8839ef;
+  --block-color-pink: #ea76cb;
+  --block-color-flamingo: #dd7878;
+  --block-color-rosewater: #dc8a78;
+  --block-color-lavender: #7287fd;
 }

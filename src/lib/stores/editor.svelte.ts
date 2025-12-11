@@ -7,6 +7,7 @@ import * as api from "../services/api";
 import { extractH1Title, generatePathFromTitle, titleToFilename } from "../utils/docListUtils";
 import { workspaceStore } from "./workspace.svelte";
 import { vaultStore } from "./vault.svelte";
+import { logger } from "../utils/logger";
 
 class EditorStore {
   currentNote = $state<NoteContent | null>(null);
@@ -66,7 +67,7 @@ class EditorStore {
     try {
       this.todos = await api.getTodosForNote(this.currentId);
     } catch (e) {
-      console.error("Failed to refresh todos:", e);
+      logger.error("EditorStore", "Failed to refresh todos:", e);
     }
   }
 
@@ -165,7 +166,7 @@ class EditorStore {
         this.onScheduleBlocksUpdated();
       }
     } catch (e) {
-      console.error("[EditorStore] Failed to sync title:", e);
+      logger.error("EditorStore", "Failed to sync title:", e);
     }
   }
 
@@ -178,7 +179,7 @@ class EditorStore {
         await this.refreshTodos();
       }
     } catch (e) {
-      console.error("Failed to toggle todo:", e);
+      logger.error("EditorStore", "Failed to toggle todo:", e);
     }
   }
 

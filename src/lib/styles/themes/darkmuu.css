@@ -94,4 +94,23 @@
   --md-table-border: #404040;
   --md-table-header-bg: #2a2a2a;
   --md-table-alt-bg: #252525;
+
+  /* ============================================================================
+   * Block Colors - Standard Catppuccin Mocha style (same as dark theme)
+   * ============================================================================ */
+  --block-text: #1e1e2e;
+  --block-color-blue: #89b4fa;
+  --block-color-sapphire: #74c7ec;
+  --block-color-sky: #89dceb;
+  --block-color-teal: #94e2d5;
+  --block-color-green: #a6e3a1;
+  --block-color-yellow: #f9e2af;
+  --block-color-peach: #fab387;
+  --block-color-maroon: #eba0ac;
+  --block-color-red: #f38ba8;
+  --block-color-mauve: #cba6f7;
+  --block-color-pink: #f5c2e7;
+  --block-color-flamingo: #f2cdcd;
+  --block-color-rosewater: #f5e0dc;
+  --block-color-lavender: #b4befe;
 }

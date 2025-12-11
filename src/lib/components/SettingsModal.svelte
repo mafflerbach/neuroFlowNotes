@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Modal } from "./shared";
+  import PropertiesEditor from "./PropertiesEditor.svelte";
   import { workspaceStore, type CalendarView } from "../stores/workspace.svelte";
   import type { Theme } from "../services/settings";
   import { getAvailableThemes } from "../services/themes";
@@ -10,6 +11,9 @@
   }
 
   let { open, onClose }: Props = $props();
+
+  // Track active section for tabs
+  let activeSection = $state<"settings" | "properties">("settings");
 
   // Get available themes
   const availableThemes = getAvailableThemes();
@@ -25,6 +29,7 @@
       multiColumnEditable = workspaceStore.multiColumnEditable;
       defaultCalendarView = workspaceStore.getDefaultCalendarView();
       theme = workspaceStore.getTheme();
+      activeSection = "settings";
     }
   });
 
@@ -42,99 +47,195 @@
   }
 </script>
 
-<Modal {open} title="Settings" onClose={handleCancel}>
-  <!-- Appearance Section -->
-  <section class="settings-section">
-    <h3 class="section-title">Appearance</h3>
+<Modal {open} title="Settings" onClose={handleCancel} maxWidth={activeSection === "properties" ? "800px" : "580px"}>
+  <div class="settings-layout">
+    <!-- Vertical Navigation -->
+    <nav class="settings-nav">
+      <button
+        class="nav-item"
+        class:active={activeSection === "settings"}
+        onclick={() => (activeSection = "settings")}
+      >
+        Settings
+      </button>
+      <button
+        class="nav-item"
+        class:active={activeSection === "properties"}
+        onclick={() => (activeSection = "properties")}
+      >
+        Properties
+      </button>
+    </nav>
 
-    <div class="setting-row">
-      <div class="setting-info">
-        <span class="setting-label">Theme</span>
-        <p class="setting-description">Choose your preferred color theme.</p>
-      </div>
-      <div class="setting-control">
-        <select class="select-control" bind:value={theme}>
-          {#each availableThemes as themeOption}
-            <option value={themeOption.id}>{themeOption.name}</option>
-          {/each}
-        </select>
-      </div>
+    <!-- Content Area -->
+    <div class="settings-content">
+      {#if activeSection === "settings"}
+        <!-- Appearance Section -->
+        <section class="settings-section">
+          <h3 class="section-title">Appearance</h3>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Theme</span>
+              <p class="setting-description">Choose your preferred color theme.</p>
+            </div>
+            <div class="setting-control">
+              <select class="select-control" bind:value={theme}>
+                {#each availableThemes as themeOption}
+                  <option value={themeOption.id}>{themeOption.name}</option>
+                {/each}
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Editor Settings Section -->
+        <section class="settings-section">
+          <h3 class="section-title">Editor</h3>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <label for="multi-column-editable" class="setting-label">
+                Multi-column editing
+              </label>
+              <p class="setting-description">
+                When enabled, all visible document columns are editable. When disabled, only the active column is editable.
+              </p>
+            </div>
+            <div class="setting-control">
+              <label class="toggle">
+                <input
+                  type="checkbox"
+                  id="multi-column-editable"
+                  bind:checked={multiColumnEditable}
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Calendar Settings Section -->
+        <section class="settings-section">
+          <h3 class="section-title">Calendar</h3>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Default view</span>
+              <p class="setting-description">The calendar view to show when opening the app.</p>
+            </div>
+            <div class="setting-control">
+              <select class="select-control" bind:value={defaultCalendarView}>
+                <option value="monthly">Monthly</option>
+                <option value="weekly">Weekly</option>
+                <option value="daily">Daily</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Vault Settings Section -->
+        <section class="settings-section">
+          <h3 class="section-title">Vault</h3>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Vault path</span>
+              <p class="setting-description">The current vault location.</p>
+            </div>
+            <div class="setting-control">
+              <button class="action-btn">Change vault</button>
+            </div>
+          </div>
+        </section>
+      {:else if activeSection === "properties"}
+        <section class="settings-section properties-section">
+          <h3 class="section-title">Property Management</h3>
+          <p class="section-description">
+            Manage property keys and values across your vault. Rename keys to fix typos,
+            normalize casing, or merge similar properties.
+          </p>
+          <PropertiesEditor />
+        </section>
+      {/if}
     </div>
-  </section>
-
-  <!-- Editor Settings Section -->
-  <section class="settings-section">
-    <h3 class="section-title">Editor</h3>
-
-    <div class="setting-row">
-      <div class="setting-info">
-        <label for="multi-column-editable" class="setting-label">
-          Multi-column editing
-        </label>
-        <p class="setting-description">
-          When enabled, all visible document columns are editable. When disabled, only the active column is editable.
-        </p>
-      </div>
-      <div class="setting-control">
-        <label class="toggle">
-          <input
-            type="checkbox"
-            id="multi-column-editable"
-            bind:checked={multiColumnEditable}
-          />
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-    </div>
-  </section>
-
-  <!-- Calendar Settings Section -->
-  <section class="settings-section">
-    <h3 class="section-title">Calendar</h3>
-
-    <div class="setting-row">
-      <div class="setting-info">
-        <span class="setting-label">Default view</span>
-        <p class="setting-description">The calendar view to show when opening the app.</p>
-      </div>
-      <div class="setting-control">
-        <select class="select-control" bind:value={defaultCalendarView}>
-          <option value="monthly">Monthly</option>
-          <option value="weekly">Weekly</option>
-          <option value="daily">Daily</option>
-        </select>
-      </div>
-    </div>
-  </section>
-
-  <!-- Vault Settings Section -->
-  <section class="settings-section">
-    <h3 class="section-title">Vault</h3>
-
-    <div class="setting-row">
-      <div class="setting-info">
-        <span class="setting-label">Vault path</span>
-        <p class="setting-description">The current vault location.</p>
-      </div>
-      <div class="setting-control">
-        <button class="action-btn">Change vault</button>
-      </div>
-    </div>
-  </section>
+  </div>
 
   {#snippet footer()}
-    <button class="btn btn-secondary" onclick={handleCancel}>Cancel</button>
-    <button class="btn btn-primary" onclick={handleSave}>Save changes</button>
+    {#if activeSection === "settings"}
+      <button class="btn btn-secondary" onclick={handleCancel}>Cancel</button>
+      <button class="btn btn-primary" onclick={handleSave}>Save changes</button>
+    {:else}
+      <button class="btn btn-secondary" onclick={handleCancel}>Close</button>
+    {/if}
   {/snippet}
 </Modal>
 
 <style>
+  .settings-layout {
+    display: flex;
+    gap: var(--spacing-4);
+    min-height: 400px;
+  }
+
+  .settings-nav {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    padding-right: var(--spacing-4);
+    border-right: 1px solid var(--border-light);
+    min-width: 140px;
+  }
+
+  .nav-item {
+    padding: var(--spacing-2) var(--spacing-3);
+    text-align: left;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+  }
+
+  .nav-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .nav-item.active {
+    background: var(--bg-selected);
+    color: var(--text-primary);
+  }
+
+  .settings-content {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+  }
+
   .settings-section {
     margin-bottom: var(--spacing-6);
   }
 
   .settings-section:last-child {
     margin-bottom: 0;
+  }
+
+  .section-description {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-4) 0;
+    line-height: var(--line-height-normal);
+  }
+
+  .properties-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .section-title {

@@ -1,0 +1,284 @@
+/**
+ * Amethyst Theme (Dark)
+ * A deep, rich purple theme with amethyst and violet accents
+ *
+ * Base colors:
+ * - Dark Amethyst: #10002b (deepest purple-black)
+ * - Dark Amethyst 2: #240046 (deep purple)
+ * - Indigo Ink: #3c096c (dark indigo)
+ * - Indigo Velvet: #5a189a (rich indigo)
+ * - Royal Violet: #7b2cbf (vibrant violet)
+ * - Lavender Purple: #9d4edd (bright purple)
+ * - Mauve Magic: #c77dff (light purple)
+ * - Mauve: #e0aaff (soft lavender)
+ */
+
+:root[data-theme="amethyst"] {
+  /* ============================================================================
+   * Base Palette
+   * ============================================================================ */
+  --amethyst-darkest: #10002b;
+  --amethyst-dark: #240046;
+  --amethyst-indigo-ink: #3c096c;
+  --amethyst-indigo-velvet: #5a189a;
+  --amethyst-royal-violet: #7b2cbf;
+  --amethyst-lavender: #9d4edd;
+  --amethyst-mauve-magic: #c77dff;
+  --amethyst-mauve: #e0aaff;
+
+  /* ============================================================================
+   * Gray Scale - Purple-tinted darks
+   * ============================================================================ */
+  --color-gray-50: #10002b;
+  --color-gray-100: #1a0038;
+  --color-gray-200: #240046;
+  --color-gray-300: #300057;
+  --color-gray-400: #5a189a;
+  --color-gray-500: #7b2cbf;
+  --color-gray-600: #9d4edd;
+  --color-gray-700: #c77dff;
+  --color-gray-800: #e0aaff;
+  --color-gray-900: #f3daff;
+
+  /* ============================================================================
+   * Primary Colors
+   * ============================================================================ */
+  --color-primary: #9d4edd;
+  --color-primary-hover: #c77dff;
+  --color-primary-light: rgba(157, 78, 221, 0.25);
+  --color-primary-dark: #7b2cbf;
+
+  /* ============================================================================
+   * Semantic Colors
+   * ============================================================================ */
+  --color-success: #6bcc8e;
+  --color-success-light: rgba(107, 204, 142, 0.15);
+  --color-success-hover: rgba(107, 204, 142, 0.25);
+
+  --color-error: #ff6b8a;
+  --color-error-light: rgba(255, 107, 138, 0.15);
+  --color-error-hover: rgba(255, 107, 138, 0.25);
+
+  --color-warning: #ffb86b;
+  --color-warning-light: rgba(255, 184, 107, 0.15);
+
+  --color-info: #8be9fd;
+  --color-info-light: rgba(139, 233, 253, 0.15);
+
+  /* ============================================================================
+   * Background Colors
+   * ============================================================================ */
+  --bg-app: #10002b;
+  --bg-surface: #1a0038;
+  --bg-surface-raised: #240046;
+  --bg-surface-sunken: #0d0020;
+  --bg-hover: rgba(157, 78, 221, 0.15);
+  --bg-active: rgba(199, 125, 255, 0.2);
+  --bg-selected: rgba(224, 170, 255, 0.15);
+
+  /* ============================================================================
+   * Text Colors
+   * ============================================================================ */
+  --text-primary: #f3daff;
+  --text-secondary: #e0aaff;
+  --text-muted: #c77dff;
+  --text-disabled: #7b2cbf;
+  --text-inverse: #10002b;
+  --text-link: #c77dff;
+  --text-link-hover: #e0aaff;
+
+  /* ============================================================================
+   * Border Colors
+   * ============================================================================ */
+  --border-default: #3c096c;
+  --border-light: #300057;
+  --border-focus: var(--amethyst-lavender);
+
+  /* ============================================================================
+   * Icon Colors
+   * ============================================================================ */
+  --icon-default: #c77dff;
+  --icon-muted: #9d4edd;
+  --icon-active: #e0aaff;
+
+  /* ============================================================================
+   * Button Colors
+   * ============================================================================ */
+  --btn-primary-bg: var(--amethyst-lavender);
+  --btn-primary-bg-hover: var(--amethyst-mauve-magic);
+  --btn-primary-text: #10002b;
+
+  --btn-secondary-bg: #240046;
+  --btn-secondary-bg-hover: #3c096c;
+  --btn-secondary-text: #e0aaff;
+  --btn-secondary-border: #3c096c;
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(157, 78, 221, 0.15);
+  --btn-ghost-text: #e0aaff;
+
+  --btn-danger-bg: #ff6b8a;
+  --btn-danger-bg-hover: #ff8fa8;
+  --btn-danger-text: #10002b;
+
+  /* ============================================================================
+   * Topbar
+   * ============================================================================ */
+  --topbar-bg: #1a0038;
+  --topbar-border: #3c096c;
+
+  /* ============================================================================
+   * Sidebar
+   * ============================================================================ */
+  --sidebar-bg: #1a0038;
+  --sidebar-border: #3c096c;
+  --sidebar-header-bg: #240046;
+
+  /* ============================================================================
+   * Editor
+   * ============================================================================ */
+  --editor-bg: #1a0038;
+  --editor-header-bg: #240046;
+  --editor-gutter-bg: #1a0038;
+  --editor-gutter-color: #7b2cbf;
+  --editor-active-line-bg: rgba(60, 9, 108, 0.5);
+  --editor-active-gutter-bg: rgba(90, 24, 154, 0.4);
+  --editor-selection-bg: rgba(157, 78, 221, 0.35);
+  --editor-cursor: #e0aaff;
+
+  /* ============================================================================
+   * Calendar
+   * ============================================================================ */
+  --calendar-bg: #1a0038;
+  --calendar-header-bg: #240046;
+  --calendar-border: #3c096c;
+  --calendar-today-bg: rgba(157, 78, 221, 0.25);
+  --calendar-selected-bg: var(--amethyst-lavender);
+  --calendar-selected-text: #10002b;
+  --calendar-other-month-text: #7b2cbf;
+  --calendar-weekend-bg: #0d0020;
+
+  /* ============================================================================
+   * Modal
+   * ============================================================================ */
+  --modal-backdrop-bg: rgba(16, 0, 43, 0.8);
+  --modal-bg: #1a0038;
+  --modal-header-bg: #240046;
+  --modal-border: #3c096c;
+
+  /* ============================================================================
+   * Form Controls
+   * ============================================================================ */
+  --input-bg: #240046;
+  --input-border: #3c096c;
+  --input-border-focus: var(--amethyst-lavender);
+  --input-text: #f3daff;
+  --input-placeholder: #7b2cbf;
+
+  /* ============================================================================
+   * Panel
+   * ============================================================================ */
+  --panel-bg: #1a0038;
+  --panel-header-bg: #240046;
+  --panel-border: #3c096c;
+
+  /* ============================================================================
+   * Context Menu
+   * ============================================================================ */
+  --context-menu-bg: #240046;
+  --context-menu-border: #3c096c;
+  --context-menu-item-hover-bg: rgba(157, 78, 221, 0.2);
+  --context-menu-separator: #3c096c;
+
+  /* ============================================================================
+   * Folder Tree
+   * ============================================================================ */
+  --tree-item-hover-bg: rgba(157, 78, 221, 0.15);
+  --tree-item-selected-bg: rgba(224, 170, 255, 0.15);
+  --tree-icon-color: #9d4edd;
+  --tree-folder-icon-color: #c77dff;
+  --tree-file-icon-color: #9d4edd;
+
+  /* ============================================================================
+   * Autocomplete
+   * ============================================================================ */
+  --autocomplete-bg: #240046;
+  --autocomplete-border: #3c096c;
+  --autocomplete-item-hover-bg: rgba(157, 78, 221, 0.2);
+  --autocomplete-item-selected-bg: rgba(224, 170, 255, 0.2);
+  --autocomplete-item-text: #f3daff;
+  --autocomplete-item-detail: #c77dff;
+  --autocomplete-match-text: #e0aaff;
+
+  /* ============================================================================
+   * Markdown / Editor Syntax
+   * ============================================================================ */
+  /* Headings - gradient from bright to soft */
+  --md-heading-1: #e0aaff;
+  --md-heading-2: #c77dff;
+  --md-heading-3: #9d4edd;
+  --md-heading-4: #8be9fd;
+  --md-heading-5: #6bcc8e;
+  --md-heading-6: #ffb86b;
+
+  /* Formatting */
+  --md-bold: #f3daff;
+  --md-italic: #e0aaff;
+  --md-strikethrough: #7b2cbf;
+
+  /* Links */
+  --md-link: #8be9fd;
+  --md-link-url: #7b2cbf;
+  --md-wiki-link: #c77dff;
+
+  /* Code - inline */
+  --md-code-text: #ff6b8a;
+  --md-code-bg: rgba(60, 9, 108, 0.5);
+
+  /* Code - syntax highlighting */
+  --md-code-keyword: #ff6b8a;
+  --md-code-string: #6bcc8e;
+  --md-code-number: #ffb86b;
+  --md-code-comment: #7b2cbf;
+  --md-code-function: #c77dff;
+  --md-code-variable: #e0aaff;
+  --md-code-operator: #ff6b8a;
+  --md-code-punctuation: #c77dff;
+  --md-code-bracket: #c77dff;
+  --md-code-class: #8be9fd;
+  --md-code-property: #e0aaff;
+  --md-code-boolean: #ffb86b;
+  --md-code-null: #7b2cbf;
+
+  /* Lists & Quotes */
+  --md-list-marker: #c77dff;
+  --md-blockquote: #9d4edd;
+  --md-blockquote-border: #5a189a;
+
+  /* Tables */
+  --md-table-border: #3c096c;
+  --md-table-header-bg: #240046;
+  --md-table-alt-bg: rgba(60, 9, 108, 0.3);
+
+  /* Syntax markers */
+  --md-syntax-marker: #7b2cbf;
+
+  /* ============================================================================
+   * Block Colors - Rich purple & violet palette
+   * ============================================================================ */
+  --block-text: #10002b;
+  --block-color-blue: #8be9fd;
+  --block-color-sapphire: #6dd3e8;
+  --block-color-sky: #a8e6f0;
+  --block-color-teal: #6bccb0;
+  --block-color-green: #6bcc8e;
+  --block-color-yellow: #ffb86b;
+  --block-color-peach: #ff9f7a;
+  --block-color-maroon: #ff7aa5;
+  --block-color-red: #ff6b8a;
+  --block-color-mauve: #c77dff;
+  --block-color-pink: #e0aaff;
+  --block-color-flamingo: #f3daff;
+  --block-color-rosewater: #f7e5ff;
+  --block-color-lavender: #9d4edd;
+}

@@ -5,6 +5,7 @@
 import type { VaultInfo, FolderNode } from "../types";
 import * as api from "../services/api";
 import { getSetting, setSetting } from "../services/settings";
+import { logger } from "../utils/logger";
 
 class VaultStore {
   info = $state<VaultInfo | null>(null);
@@ -41,7 +42,7 @@ class VaultStore {
         await this.open(lastPath);
         return true;
       } catch (e) {
-        console.warn("[VaultStore] Failed to open last vault:", e);
+        logger.warn("VaultStore", "Failed to open last vault:", e);
         // Clear the invalid path
         setSetting("lastVaultPath", null);
       }
@@ -64,7 +65,7 @@ class VaultStore {
     try {
       this.folderTree = await api.getFolderTree();
     } catch (e) {
-      console.error("[VaultStore] Failed to refresh folder tree:", e);
+      logger.error("VaultStore", "Failed to refresh folder tree:", e);
     }
   }
 
@@ -75,7 +76,7 @@ class VaultStore {
       this.info = await api.getVaultInfo();
       await this.refreshFolderTree();
     } catch (e) {
-      console.error("Failed to refresh vault:", e);
+      logger.error("VaultStore", "Failed to refresh vault:", e);
     }
   }
 }

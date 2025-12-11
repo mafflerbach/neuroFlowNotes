@@ -12,3 +12,4 @@ export * from "./search";
 export * from "./properties";
 export * from "./calendar";
 export * from "./embeds";
+export * from "./query";

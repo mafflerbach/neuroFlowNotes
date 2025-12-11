@@ -19,6 +19,7 @@ import type { ViewUpdate } from "@codemirror/view";
 import { Prec, EditorState } from "@codemirror/state";
 import { listNotes, getNoteHeadings, getFolderTree } from "../services/api";
 import type { NoteListItem, HeadingInfo, FolderNode } from "../types";
+import { logger } from "../utils/logger";
 
 // Cache for notes list (for section completion - need note IDs)
 let notesCache: NoteListItem[] = [];
@@ -85,7 +86,7 @@ function prefetchFiles(): void {
       return filesCache;
     })
     .catch((error) => {
-      console.error("Failed to fetch files for autocomplete:", error);
+      logger.error("WikiLink", "Failed to fetch files for autocomplete:", error);
       return filesCache;
     })
     .finally(() => {
@@ -115,7 +116,7 @@ function prefetchNotes(): void {
       notesCacheTimestamp = Date.now();
     })
     .catch((error) => {
-      console.error("Failed to fetch notes for autocomplete:", error);
+      logger.error("WikiLink", "Failed to fetch notes for autocomplete:", error);
     });
 }
 
@@ -141,7 +142,7 @@ async function getCachedHeadings(notePath: string): Promise<HeadingInfo[]> {
     headingsCache.set(notePath, { headings, timestamp: Date.now() });
     return headings;
   } catch (error) {
-    console.error("[WikiLink] Failed to fetch headings for", notePath, error);
+    logger.error("WikiLink", "Failed to fetch headings for " + notePath, error);
     return [];
   }
 }

@@ -105,12 +105,18 @@ pub async fn init_database(pool: &SqlitePool) -> Result<(), sqlx::Error> {
             description TEXT NOT NULL,
             completed INTEGER NOT NULL DEFAULT 0,
             heading_path TEXT,
+            context TEXT,
+            priority TEXT,
+            due_date TEXT,
             created_at TEXT,
             completed_at TEXT
         );
 
         CREATE INDEX IF NOT EXISTS idx_todos_note_id ON todos(note_id);
         CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(completed);
+        CREATE INDEX IF NOT EXISTS idx_todos_due_date ON todos(due_date);
+        CREATE INDEX IF NOT EXISTS idx_todos_context ON todos(context);
+        CREATE INDEX IF NOT EXISTS idx_todos_priority ON todos(priority);
         "#,
     )
     .execute(pool)
@@ -141,6 +147,9 @@ pub async fn init_database(pool: &SqlitePool) -> Result<(), sqlx::Error> {
 
     // Migration: Add rrule column for recurring schedule blocks
     migrate_schedule_blocks_rrule(pool).await?;
+
+    // Migration: Add GTD columns to todos table
+    migrate_todos_gtd(pool).await?;
 
     info!("Database schema initialized");
     Ok(())
@@ -373,6 +382,68 @@ async fn migrate_schedule_blocks_rrule(pool: &SqlitePool) -> Result<(), sqlx::Er
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_schedule_blocks_rrule ON schedule_blocks(rrule)")
         .execute(pool)
         .await?;
+
+    Ok(())
+}
+
+/// Migrate todos table to add GTD columns (context, priority, due_date).
+async fn migrate_todos_gtd(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    info!("Checking todos table for GTD columns...");
+
+    // Check if context column exists
+    let columns: Vec<(i64, String, String, i64, Option<String>, i64)> = sqlx::query_as(
+        "SELECT cid, name, type, `notnull`, dflt_value, pk FROM pragma_table_info('todos')"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    debug!("Existing todos columns: {:?}", columns.iter().map(|(_, name, _, _, _, _)| name).collect::<Vec<_>>());
+
+    let has_context = columns.iter().any(|(_, name, _, _, _, _)| name == "context");
+    let has_priority = columns.iter().any(|(_, name, _, _, _, _)| name == "priority");
+    let has_due_date = columns.iter().any(|(_, name, _, _, _, _)| name == "due_date");
+
+    debug!("has_context: {}, has_priority: {}, has_due_date: {}", has_context, has_priority, has_due_date);
+
+    if !has_context {
+        info!("Migrating todos table: adding context column");
+        sqlx::query("ALTER TABLE todos ADD COLUMN context TEXT")
+            .execute(pool)
+            .await?;
+    }
+
+    if !has_priority {
+        info!("Migrating todos table: adding priority column");
+        sqlx::query("ALTER TABLE todos ADD COLUMN priority TEXT")
+            .execute(pool)
+            .await?;
+    }
+
+    if !has_due_date {
+        info!("Migrating todos table: adding due_date column");
+        sqlx::query("ALTER TABLE todos ADD COLUMN due_date TEXT")
+            .execute(pool)
+            .await?;
+    }
+
+    // Create indexes (these are idempotent due to IF NOT EXISTS)
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_todos_due_date ON todos(due_date)")
+        .execute(pool)
+        .await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_todos_context ON todos(context)")
+        .execute(pool)
+        .await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_todos_priority ON todos(priority)")
+        .execute(pool)
+        .await?;
+
+    if !has_context || !has_priority || !has_due_date {
+        info!("todos table migration complete: added GTD columns");
+    } else {
+        debug!("todos GTD columns already exist");
+    }
 
     Ok(())
 }

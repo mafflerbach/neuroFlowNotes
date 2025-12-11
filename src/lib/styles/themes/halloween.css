@@ -1,0 +1,297 @@
+/**
+ * Halloween Theme (Dark)
+ * A festive dark theme with pumpkin orange and deep purple
+ *
+ * Orange accent colors:
+ * - Pumpkin Spice: #ff6d00 (deep orange)
+ * - Harvest Orange: #ff7900 (bright orange)
+ * - Princeton Orange: #ff8500 (medium orange)
+ * - Deep Saffron: #ff9100 (golden orange)
+ * - Amber Glow: #ff9e00 (amber)
+ *
+ * Purple background colors:
+ * - Dark Amethyst: #240046 (deep purple)
+ * - Indigo Ink: #3c096c (dark indigo)
+ * - Indigo Velvet: #5a189a (rich indigo)
+ * - Royal Violet: #7b2cbf (vibrant violet)
+ * - Lavender Purple: #9d4edd (bright purple)
+ */
+
+:root[data-theme="halloween"] {
+  /* ============================================================================
+   * Base Palette - Oranges
+   * ============================================================================ */
+  --hw-pumpkin-spice: #ff6d00;
+  --hw-harvest-orange: #ff7900;
+  --hw-princeton-orange: #ff8500;
+  --hw-deep-saffron: #ff9100;
+  --hw-amber-glow: #ff9e00;
+
+  /* Base Palette - Purples */
+  --hw-dark-amethyst: #240046;
+  --hw-indigo-ink: #3c096c;
+  --hw-indigo-velvet: #5a189a;
+  --hw-royal-violet: #7b2cbf;
+  --hw-lavender-purple: #9d4edd;
+
+  /* Derived colors */
+  --hw-pumpkin-dark: #cc5500;
+  --hw-orange-muted: #b35c00;
+  --hw-purple-bright: #c77dff;
+
+  /* ============================================================================
+   * Gray Scale - Purple-tinted darks
+   * ============================================================================ */
+  --color-gray-50: #1a0033;
+  --color-gray-100: #240046;
+  --color-gray-200: #2e0059;
+  --color-gray-300: #3c096c;
+  --color-gray-400: #5a189a;
+  --color-gray-500: #7b2cbf;
+  --color-gray-600: #9d4edd;
+  --color-gray-700: #ff9e00;
+  --color-gray-800: #ffb84d;
+  --color-gray-900: #ffd699;
+
+  /* ============================================================================
+   * Primary Colors - Orange
+   * ============================================================================ */
+  --color-primary: #ff8500;
+  --color-primary-hover: #ff9e00;
+  --color-primary-light: rgba(255, 133, 0, 0.2);
+  --color-primary-dark: #ff6d00;
+
+  /* ============================================================================
+   * Semantic Colors
+   * ============================================================================ */
+  --color-success: #50fa7b;
+  --color-success-light: rgba(80, 250, 123, 0.15);
+  --color-success-hover: rgba(80, 250, 123, 0.25);
+
+  --color-error: #ff5555;
+  --color-error-light: rgba(255, 85, 85, 0.15);
+  --color-error-hover: rgba(255, 85, 85, 0.25);
+
+  --color-warning: #ff9e00;
+  --color-warning-light: rgba(255, 158, 0, 0.15);
+
+  --color-info: #8be9fd;
+  --color-info-light: rgba(139, 233, 253, 0.15);
+
+  /* ============================================================================
+   * Background Colors
+   * ============================================================================ */
+  --bg-app: #1a0033;
+  --bg-surface: #240046;
+  --bg-surface-raised: #2e0059;
+  --bg-surface-sunken: #140028;
+  --bg-hover: rgba(255, 133, 0, 0.12);
+  --bg-active: rgba(255, 158, 0, 0.2);
+  --bg-selected: rgba(255, 133, 0, 0.15);
+
+  /* ============================================================================
+   * Text Colors
+   * ============================================================================ */
+  --text-primary: #ffd699;
+  --text-secondary: #ffb84d;
+  --text-muted: #9d4edd;
+  --text-disabled: #5a189a;
+  --text-inverse: #1a0033;
+  --text-link: #ff9e00;
+  --text-link-hover: #ffb84d;
+
+  /* ============================================================================
+   * Border Colors
+   * ============================================================================ */
+  --border-default: #3c096c;
+  --border-light: #2e0059;
+  --border-focus: var(--hw-princeton-orange);
+
+  /* ============================================================================
+   * Icon Colors
+   * ============================================================================ */
+  --icon-default: #ff9e00;
+  --icon-muted: #9d4edd;
+  --icon-active: #ffb84d;
+
+  /* ============================================================================
+   * Button Colors
+   * ============================================================================ */
+  --btn-primary-bg: var(--hw-princeton-orange);
+  --btn-primary-bg-hover: var(--hw-amber-glow);
+  --btn-primary-text: #1a0033;
+
+  --btn-secondary-bg: #2e0059;
+  --btn-secondary-bg-hover: #3c096c;
+  --btn-secondary-text: #ff9e00;
+  --btn-secondary-border: #3c096c;
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(255, 133, 0, 0.12);
+  --btn-ghost-text: #ff9e00;
+
+  --btn-danger-bg: #ff5555;
+  --btn-danger-bg-hover: #ff7777;
+  --btn-danger-text: #1a0033;
+
+  /* ============================================================================
+   * Topbar
+   * ============================================================================ */
+  --topbar-bg: #240046;
+  --topbar-border: #3c096c;
+
+  /* ============================================================================
+   * Sidebar
+   * ============================================================================ */
+  --sidebar-bg: #240046;
+  --sidebar-border: #3c096c;
+  --sidebar-header-bg: #2e0059;
+
+  /* ============================================================================
+   * Editor
+   * ============================================================================ */
+  --editor-bg: #240046;
+  --editor-header-bg: #2e0059;
+  --editor-gutter-bg: #240046;
+  --editor-gutter-color: #7b2cbf;
+  --editor-active-line-bg: rgba(60, 9, 108, 0.6);
+  --editor-active-gutter-bg: rgba(90, 24, 154, 0.5);
+  --editor-selection-bg: rgba(255, 133, 0, 0.25);
+  --editor-cursor: #ff9e00;
+
+  /* ============================================================================
+   * Calendar
+   * ============================================================================ */
+  --calendar-bg: #240046;
+  --calendar-header-bg: #2e0059;
+  --calendar-border: #3c096c;
+  --calendar-today-bg: rgba(255, 133, 0, 0.2);
+  --calendar-selected-bg: var(--hw-princeton-orange);
+  --calendar-selected-text: #1a0033;
+  --calendar-other-month-text: #5a189a;
+  --calendar-weekend-bg: #140028;
+
+  /* ============================================================================
+   * Modal
+   * ============================================================================ */
+  --modal-backdrop-bg: rgba(26, 0, 51, 0.85);
+  --modal-bg: #240046;
+  --modal-header-bg: #2e0059;
+  --modal-border: #3c096c;
+
+  /* ============================================================================
+   * Form Controls
+   * ============================================================================ */
+  --input-bg: #2e0059;
+  --input-border: #3c096c;
+  --input-border-focus: var(--hw-princeton-orange);
+  --input-text: #ffd699;
+  --input-placeholder: #7b2cbf;
+
+  /* ============================================================================
+   * Panel
+   * ============================================================================ */
+  --panel-bg: #240046;
+  --panel-header-bg: #2e0059;
+  --panel-border: #3c096c;
+
+  /* ============================================================================
+   * Context Menu
+   * ============================================================================ */
+  --context-menu-bg: #2e0059;
+  --context-menu-border: #3c096c;
+  --context-menu-item-hover-bg: rgba(255, 133, 0, 0.15);
+  --context-menu-separator: #3c096c;
+
+  /* ============================================================================
+   * Folder Tree
+   * ============================================================================ */
+  --tree-item-hover-bg: rgba(255, 133, 0, 0.12);
+  --tree-item-selected-bg: rgba(255, 133, 0, 0.15);
+  --tree-icon-color: #9d4edd;
+  --tree-folder-icon-color: #ff9e00;
+  --tree-file-icon-color: #9d4edd;
+
+  /* ============================================================================
+   * Autocomplete
+   * ============================================================================ */
+  --autocomplete-bg: #2e0059;
+  --autocomplete-border: #3c096c;
+  --autocomplete-item-hover-bg: rgba(255, 133, 0, 0.15);
+  --autocomplete-item-selected-bg: rgba(255, 133, 0, 0.2);
+  --autocomplete-item-text: #ffd699;
+  --autocomplete-item-detail: #9d4edd;
+  --autocomplete-match-text: #ff9e00;
+
+  /* ============================================================================
+   * Markdown / Editor Syntax
+   * ============================================================================ */
+  /* Headings - orange to purple gradient */
+  --md-heading-1: #ff9e00;
+  --md-heading-2: #ff8500;
+  --md-heading-3: #ff6d00;
+  --md-heading-4: #9d4edd;
+  --md-heading-5: #8be9fd;
+  --md-heading-6: #50fa7b;
+
+  /* Formatting */
+  --md-bold: #ffd699;
+  --md-italic: #ffb84d;
+  --md-strikethrough: #5a189a;
+
+  /* Links */
+  --md-link: #8be9fd;
+  --md-link-url: #7b2cbf;
+  --md-wiki-link: #ff9e00;
+
+  /* Code - inline */
+  --md-code-text: #50fa7b;
+  --md-code-bg: rgba(60, 9, 108, 0.5);
+
+  /* Code - syntax highlighting */
+  --md-code-keyword: #ff6d00;
+  --md-code-string: #50fa7b;
+  --md-code-number: #ff9e00;
+  --md-code-comment: #7b2cbf;
+  --md-code-function: #9d4edd;
+  --md-code-variable: #ffb84d;
+  --md-code-operator: #ff5555;
+  --md-code-punctuation: #9d4edd;
+  --md-code-bracket: #9d4edd;
+  --md-code-class: #8be9fd;
+  --md-code-property: #ff9e00;
+  --md-code-boolean: #ff6d00;
+  --md-code-null: #7b2cbf;
+
+  /* Lists & Quotes */
+  --md-list-marker: #ff9e00;
+  --md-blockquote: #9d4edd;
+  --md-blockquote-border: #5a189a;
+
+  /* Tables */
+  --md-table-border: #3c096c;
+  --md-table-header-bg: #2e0059;
+  --md-table-alt-bg: rgba(60, 9, 108, 0.3);
+
+  /* Syntax markers */
+  --md-syntax-marker: #7b2cbf;
+
+  /* ============================================================================
+   * Block Colors - Spooky orange & purple palette
+   * ============================================================================ */
+  --block-text: #1a0033;
+  --block-color-blue: #8be9fd;
+  --block-color-sapphire: #6dd3e8;
+  --block-color-sky: #a8e6f0;
+  --block-color-teal: #6bccb0;
+  --block-color-green: #50fa7b;
+  --block-color-yellow: #ff9e00;
+  --block-color-peach: #ff8500;
+  --block-color-maroon: #ff7799;
+  --block-color-red: #ff5555;
+  --block-color-mauve: #9d4edd;
+  --block-color-pink: #c77dff;
+  --block-color-flamingo: #e0aaff;
+  --block-color-rosewater: #f0d6ff;
+  --block-color-lavender: #7b2cbf;
+}

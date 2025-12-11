@@ -18,6 +18,7 @@
     PropertiesPanel,
     ScheduleBlockModal,
     MediaViewer,
+    QueryBuilder,
   } from "./lib/components";
   import { vaultStore, editorStore, workspaceStore } from "./lib/stores";
   import {
@@ -69,6 +70,7 @@
   const activeDoc = $derived(workspaceStore.activeDoc);
   const selectedDate = $derived(workspaceStore.selectedDate);
   const openMedia = $derived(workspaceStore.openMedia);
+  const queryViewVisible = $derived(workspaceStore.queryViewVisible);
 
   // Calendar data from backend
   let scheduleBlocks = $state<ScheduleBlockDto[]>([]);
@@ -423,6 +425,15 @@
     // Optionally switch to daily view
   }
 
+  function handleQueryResultClick(noteId: number, notePath: string, noteTitle: string | null) {
+    workspaceStore.closeQueryView();
+    workspaceStore.openDoc({
+      path: notePath,
+      id: noteId,
+      title: noteTitle,
+    });
+  }
+
   onMount(async () => {
     // Initialize theme from settings
     workspaceStore.initTheme();
@@ -595,6 +606,13 @@
         </div>
       {/if}
     </main>
+
+    <!-- Query Builder Panel (slides in from right) -->
+    {#if queryViewVisible}
+      <div class="query-panel">
+        <QueryBuilder onResultClick={handleQueryResultClick} />
+      </div>
+    {/if}
   </div>
 
   <!-- Settings Modal -->
@@ -739,6 +757,19 @@
   /* State C: Doc-finder mode */
   .doc-finder-view {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Query Builder Panel */
+  .query-panel {
+    width: 400px;
+    min-width: 320px;
+    max-width: 500px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border-default);
+    background: var(--bg-surface);
     display: flex;
     flex-direction: column;
     overflow: hidden;

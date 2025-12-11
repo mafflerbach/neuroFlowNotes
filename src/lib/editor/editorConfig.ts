@@ -34,6 +34,7 @@ import { hoverPreviewExtension } from "./hoverPreview";
 import { pasteHandlerExtension } from "./pasteHandler";
 import { vimExtension } from "./vimExtension";
 import { calloutExtension } from "./calloutExtension";
+import { queryEmbedExtension } from "./queryEmbedExtension";
 
 /**
  * Shared editor theme using CSS variables for theming support
@@ -159,6 +160,9 @@ export function createEditorExtensions(
 
     // Callout blocks (> [!note], > [!warning], etc.)
     calloutExtension(),
+
+    // Query embeds (```query``` blocks with live results)
+    queryEmbedExtension(),
   ];
 
   // Add readonly extension if needed

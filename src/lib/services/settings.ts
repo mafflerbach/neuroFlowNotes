@@ -3,6 +3,7 @@
  */
 
 import type { CalendarView } from "../stores/workspace.svelte";
+import { logger } from "../utils/logger";
 
 const STORAGE_KEY = "neuroflow-settings";
 
@@ -36,7 +37,7 @@ export function loadSettings(): AppSettings {
       return { ...defaultSettings, ...parsed };
     }
   } catch (e) {
-    console.error("[Settings] Failed to load settings:", e);
+    logger.error("Settings", "Failed to load settings:", e);
   }
   return { ...defaultSettings };
 }
@@ -50,7 +51,7 @@ export function saveSettings(settings: Partial<AppSettings>): void {
     const updated = { ...current, ...settings };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   } catch (e) {
-    console.error("[Settings] Failed to save settings:", e);
+    logger.error("Settings", "Failed to save settings:", e);
   }
 }
 

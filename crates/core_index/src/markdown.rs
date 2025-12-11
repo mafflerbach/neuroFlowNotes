@@ -22,6 +22,21 @@ static WIKILINK_FULL_REGEX: Lazy<Regex> =
 static TAG_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?:^|[^\w#])#([a-zA-Z][a-zA-Z0-9_\-/]*)").unwrap());
 
+/// Regex for matching @context annotations in tasks.
+/// Matches @word (e.g., @home, @work, @phone, @computer, @errands)
+static CONTEXT_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"@([a-zA-Z][a-zA-Z0-9_\-]*)").unwrap());
+
+/// Regex for matching !priority annotations in tasks.
+/// Matches !high, !medium, !low (or !h, !m, !l)
+static PRIORITY_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"!(high|medium|low|h|m|l)\b").unwrap());
+
+/// Regex for matching ^due-date annotations in tasks.
+/// Matches ^YYYY-MM-DD or relative dates like ^today, ^tomorrow, ^monday, ^next-week
+static DUE_DATE_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"\^(\d{4}-\d{2}-\d{2}|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next-week)").unwrap());
+
 /// Result of analyzing a markdown note.
 #[derive(Debug, Clone, Default)]
 pub struct NoteAnalysis {
@@ -66,8 +81,11 @@ pub struct ParsedHeading {
 /// A todo item found in the document.
 #[derive(Debug, Clone)]
 pub struct ParsedTodo {
-    /// The todo description text.
+    /// The todo description text (with annotations stripped).
     pub description: String,
+
+    /// The raw text as written in markdown (with annotations).
+    pub raw_text: String,
 
     /// Whether the todo is completed.
     pub completed: bool,
@@ -77,6 +95,15 @@ pub struct ParsedTodo {
 
     /// The heading path (e.g., "Plan > Sub-section").
     pub heading_path: Option<String>,
+
+    /// GTD context (e.g., "home", "work", "phone").
+    pub context: Option<String>,
+
+    /// Priority level ("high", "medium", "low").
+    pub priority: Option<String>,
+
+    /// Due date as YYYY-MM-DD string.
+    pub due_date: Option<String>,
 }
 
 /// Parse a markdown document and extract structured data.
@@ -162,15 +189,22 @@ pub fn parse(content: &str) -> NoteAnalysis {
 
             Event::End(TagEnd::Item) => {
                 if in_task_item {
-                    let description = task_text.trim().to_string();
+                    let raw_text = task_text.trim().to_string();
                     let line_number = offset_to_line(&line_offsets, current_offset);
                     let heading_path = build_heading_path(&heading_stack);
 
+                    // Extract GTD annotations
+                    let (description, context, priority, due_date) = parse_todo_annotations(&raw_text);
+
                     analysis.todos.push(ParsedTodo {
                         description,
+                        raw_text,
                         completed: task_completed,
                         line_number,
                         heading_path,
+                        context,
+                        priority,
+                        due_date,
                     });
 
                     in_task_item = false;
@@ -277,6 +311,90 @@ fn extract_tags(content: &str) -> Vec<String> {
     tags.retain(|tag| seen.insert(tag.clone()));
 
     tags
+}
+
+/// Parse GTD annotations from a todo text.
+///
+/// Extracts @context, !priority, and ^due-date from the text.
+/// Returns (clean_description, context, priority, due_date).
+fn parse_todo_annotations(text: &str) -> (String, Option<String>, Option<String>, Option<String>) {
+    // Extract context (@word)
+    let context = CONTEXT_REGEX
+        .captures(text)
+        .map(|cap| cap[1].to_string());
+
+    // Extract priority (!high, !medium, !low, !h, !m, !l)
+    let priority = PRIORITY_REGEX
+        .captures(text)
+        .map(|cap| {
+            // Normalize shorthand to full form
+            match &cap[1] {
+                "h" => "high".to_string(),
+                "m" => "medium".to_string(),
+                "l" => "low".to_string(),
+                other => other.to_string(),
+            }
+        });
+
+    // Extract due date (^YYYY-MM-DD or relative)
+    let due_date = DUE_DATE_REGEX
+        .captures(text)
+        .map(|cap| {
+            let date_str = &cap[1];
+            // Convert relative dates to absolute
+            resolve_relative_date(date_str)
+        });
+
+    // Create clean description by removing annotations
+    let clean = CONTEXT_REGEX.replace_all(text, "");
+    let clean = PRIORITY_REGEX.replace_all(&clean, "");
+    let clean = DUE_DATE_REGEX.replace_all(&clean, "");
+    // Clean up extra whitespace
+    let description = clean
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    (description, context, priority, due_date)
+}
+
+/// Resolve relative date strings to YYYY-MM-DD format.
+fn resolve_relative_date(date_str: &str) -> String {
+    use chrono::{Datelike, Local, Weekday};
+
+    let today = Local::now().date_naive();
+
+    match date_str.to_lowercase().as_str() {
+        "today" => today.format("%Y-%m-%d").to_string(),
+        "tomorrow" => (today + chrono::Duration::days(1)).format("%Y-%m-%d").to_string(),
+        "next-week" => (today + chrono::Duration::days(7)).format("%Y-%m-%d").to_string(),
+        // Handle day names (find next occurrence)
+        day_name => {
+            let target_weekday = match day_name {
+                "monday" => Some(Weekday::Mon),
+                "tuesday" => Some(Weekday::Tue),
+                "wednesday" => Some(Weekday::Wed),
+                "thursday" => Some(Weekday::Thu),
+                "friday" => Some(Weekday::Fri),
+                "saturday" => Some(Weekday::Sat),
+                "sunday" => Some(Weekday::Sun),
+                _ => None, // Already a date string like 2024-12-15
+            };
+
+            if let Some(target) = target_weekday {
+                let current_weekday = today.weekday();
+                let days_until = (target.num_days_from_monday() as i64
+                    - current_weekday.num_days_from_monday() as i64
+                    + 7) % 7;
+                // If it's today, go to next week
+                let days_until = if days_until == 0 { 7 } else { days_until };
+                (today + chrono::Duration::days(days_until)).format("%Y-%m-%d").to_string()
+            } else {
+                // Already an absolute date
+                date_str.to_string()
+            }
+        }
+    }
 }
 
 /// Compute byte offsets for each line start.
@@ -628,5 +746,85 @@ mod tests {
         // The links should capture just the note name, not the section
         assert!(analysis.links.contains(&"note".to_string()));
         assert!(analysis.links.contains(&"embed".to_string()));
+    }
+
+    #[test]
+    fn test_parse_todo_annotations() {
+        // Test with all annotations
+        let (desc, ctx, pri, due) = parse_todo_annotations("Call mom @phone !high ^2024-12-15");
+        assert_eq!(desc, "Call mom");
+        assert_eq!(ctx, Some("phone".to_string()));
+        assert_eq!(pri, Some("high".to_string()));
+        assert_eq!(due, Some("2024-12-15".to_string()));
+
+        // Test shorthand priority
+        let (_, _, pri, _) = parse_todo_annotations("Task !h");
+        assert_eq!(pri, Some("high".to_string()));
+
+        let (_, _, pri, _) = parse_todo_annotations("Task !m");
+        assert_eq!(pri, Some("medium".to_string()));
+
+        let (_, _, pri, _) = parse_todo_annotations("Task !l");
+        assert_eq!(pri, Some("low".to_string()));
+
+        // Test context only
+        let (desc, ctx, pri, due) = parse_todo_annotations("Fix bug @computer");
+        assert_eq!(desc, "Fix bug");
+        assert_eq!(ctx, Some("computer".to_string()));
+        assert_eq!(pri, None);
+        assert_eq!(due, None);
+
+        // Test no annotations
+        let (desc, ctx, pri, due) = parse_todo_annotations("Simple task");
+        assert_eq!(desc, "Simple task");
+        assert_eq!(ctx, None);
+        assert_eq!(pri, None);
+        assert_eq!(due, None);
+    }
+
+    #[test]
+    fn test_parse_todos_with_gtd() {
+        let content = "# Tasks\n\n- [ ] Call mom @phone !high ^2024-12-15\n- [ ] Buy groceries @errands\n- [x] Done task\n";
+        let analysis = parse(content);
+
+        assert_eq!(analysis.todos.len(), 3);
+
+        // First todo with all GTD annotations
+        assert_eq!(analysis.todos[0].description, "Call mom");
+        assert_eq!(analysis.todos[0].raw_text, "Call mom @phone !high ^2024-12-15");
+        assert_eq!(analysis.todos[0].context, Some("phone".to_string()));
+        assert_eq!(analysis.todos[0].priority, Some("high".to_string()));
+        assert_eq!(analysis.todos[0].due_date, Some("2024-12-15".to_string()));
+
+        // Second todo with context only
+        assert_eq!(analysis.todos[1].description, "Buy groceries");
+        assert_eq!(analysis.todos[1].context, Some("errands".to_string()));
+        assert_eq!(analysis.todos[1].priority, None);
+        assert_eq!(analysis.todos[1].due_date, None);
+
+        // Third todo - completed, no annotations
+        assert_eq!(analysis.todos[2].description, "Done task");
+        assert!(analysis.todos[2].completed);
+        assert_eq!(analysis.todos[2].context, None);
+    }
+
+    #[test]
+    fn test_relative_date_resolution() {
+        // Test absolute date passes through
+        assert_eq!(resolve_relative_date("2024-12-15"), "2024-12-15");
+
+        // Relative dates resolve to real dates (we can only test format)
+        let today = resolve_relative_date("today");
+        assert!(today.len() == 10); // YYYY-MM-DD format
+        assert!(today.starts_with("20")); // Starts with year
+
+        let tomorrow = resolve_relative_date("tomorrow");
+        assert!(tomorrow.len() == 10);
+
+        let next_week = resolve_relative_date("next-week");
+        assert!(next_week.len() == 10);
+
+        let monday = resolve_relative_date("monday");
+        assert!(monday.len() == 10);
     }
 }

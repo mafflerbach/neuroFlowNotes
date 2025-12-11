@@ -3,4 +3,13 @@
 /**
  * A scheduled time block (optionally linked to a note).
  */
-export type ScheduleBlockDto = { id: bigint, note_id: bigint | null, date: string, start_time: string, end_time: string, label: string | null, color: string | null, context: string | null, };
+export type ScheduleBlockDto = { id: bigint, note_id: bigint | null, date: string, start_time: string, end_time: string, label: string | null, color: string | null, context: string | null, 
+/**
+ * RFC 5545 recurrence rule (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR").
+ */
+rrule: string | null, 
+/**
+ * True if this is an occurrence of a recurring block (not the master).
+ * Occurrences have the same id as their master but different dates.
+ */
+is_occurrence: boolean, };

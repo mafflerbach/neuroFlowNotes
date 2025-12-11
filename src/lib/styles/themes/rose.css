@@ -1,0 +1,283 @@
+/**
+ * Rose Theme
+ * A warm, elegant theme with peach and dusty rose accents
+ *
+ * Base colors:
+ * - Peach Fuzz: #ffcdb2 (light peach)
+ * - Powder Blush: #ffb4a2 (coral peach)
+ * - Cotton Candy: #e5989b (soft rose)
+ * - Dusty Rose: #b5838d (muted rose)
+ * - Dim Grey: #6d6875 (purple-grey)
+ */
+
+:root[data-theme="rose"] {
+  /* ============================================================================
+   * Base Palette
+   * ============================================================================ */
+  --rose-peach-fuzz: #ffcdb2;
+  --rose-powder-blush: #ffb4a2;
+  --rose-cotton-candy: #e5989b;
+  --rose-dusty-rose: #b5838d;
+  --rose-dim-grey: #6d6875;
+
+  /* Derived colors - darker versions for text/contrast */
+  --rose-peach-dark: #d9a080;
+  --rose-dusty-dark: #8f6069;
+  --rose-grey-dark: #504a55;
+
+  /* ============================================================================
+   * Gray Scale - Warm rose-tinted grays
+   * ============================================================================ */
+  --color-gray-50: #fdfcfb;
+  --color-gray-100: #f9f7f6;
+  --color-gray-200: #f2edeb;
+  --color-gray-300: #e6deda;
+  --color-gray-400: #cdc3bf;
+  --color-gray-500: #a89e9a;
+  --color-gray-600: #7d7572;
+  --color-gray-700: #5c5553;
+  --color-gray-800: #3d3836;
+  --color-gray-900: #1f1c1b;
+
+  /* ============================================================================
+   * Primary Colors
+   * ============================================================================ */
+  --color-primary: #b5838d;
+  --color-primary-hover: #9a6b74;
+  --color-primary-light: rgba(229, 152, 155, 0.25);
+  --color-primary-dark: #8f6069;
+
+  /* ============================================================================
+   * Semantic Colors
+   * ============================================================================ */
+  --color-success: #7a9e7e;
+  --color-success-light: #eef4ef;
+  --color-success-hover: #d5e5d7;
+
+  --color-error: #c97070;
+  --color-error-light: #f9ebeb;
+  --color-error-hover: #f0d4d4;
+
+  --color-warning: #d4a55a;
+  --color-warning-light: #faf4e8;
+
+  --color-info: #7a8fa5;
+  --color-info-light: #eef2f6;
+
+  /* ============================================================================
+   * Background Colors
+   * ============================================================================ */
+  --bg-app: #faf8f7;
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #fdfcfb;
+  --bg-surface-sunken: #f6f3f1;
+  --bg-hover: rgba(181, 131, 141, 0.1);
+  --bg-active: rgba(229, 152, 155, 0.2);
+  --bg-selected: rgba(255, 205, 178, 0.3);
+
+  /* ============================================================================
+   * Text Colors
+   * ============================================================================ */
+  --text-primary: #3d3836;
+  --text-secondary: #5c5553;
+  --text-muted: #7d7572;
+  --text-disabled: #a89e9a;
+  --text-inverse: #ffffff;
+  --text-link: #8f6069;
+  --text-link-hover: #6d4a52;
+
+  /* ============================================================================
+   * Border Colors
+   * ============================================================================ */
+  --border-default: #e6deda;
+  --border-light: #f2edeb;
+  --border-focus: var(--rose-cotton-candy);
+
+  /* ============================================================================
+   * Icon Colors
+   * ============================================================================ */
+  --icon-default: #7d7572;
+  --icon-muted: #a89e9a;
+  --icon-active: var(--rose-dusty-rose);
+
+  /* ============================================================================
+   * Button Colors
+   * ============================================================================ */
+  --btn-primary-bg: var(--rose-dusty-rose);
+  --btn-primary-bg-hover: var(--rose-dusty-dark);
+  --btn-primary-text: #ffffff;
+
+  --btn-secondary-bg: #fdfcfb;
+  --btn-secondary-bg-hover: rgba(181, 131, 141, 0.15);
+  --btn-secondary-text: #5c5553;
+  --btn-secondary-border: #e6deda;
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(181, 131, 141, 0.1);
+  --btn-ghost-text: #5c5553;
+
+  --btn-danger-bg: #c97070;
+  --btn-danger-bg-hover: #b55a5a;
+  --btn-danger-text: #ffffff;
+
+  /* ============================================================================
+   * Topbar
+   * ============================================================================ */
+  --topbar-bg: #ffffff;
+  --topbar-border: #e6deda;
+
+  /* ============================================================================
+   * Sidebar
+   * ============================================================================ */
+  --sidebar-bg: #fdfcfb;
+  --sidebar-border: #e6deda;
+  --sidebar-header-bg: #fdfcfb;
+
+  /* ============================================================================
+   * Editor
+   * ============================================================================ */
+  --editor-bg: #ffffff;
+  --editor-header-bg: #fdfcfb;
+  --editor-gutter-bg: #fdfcfb;
+  --editor-gutter-color: #a89e9a;
+  --editor-active-line-bg: rgba(255, 205, 178, 0.12);
+  --editor-active-gutter-bg: rgba(255, 205, 178, 0.2);
+  --editor-selection-bg: rgba(255, 180, 162, 0.3);
+  --editor-cursor: var(--rose-dusty-rose);
+
+  /* ============================================================================
+   * Calendar
+   * ============================================================================ */
+  --calendar-bg: #ffffff;
+  --calendar-header-bg: #fdfcfb;
+  --calendar-border: #f2edeb;
+  --calendar-today-bg: rgba(255, 205, 178, 0.25);
+  --calendar-selected-bg: var(--rose-dusty-rose);
+  --calendar-selected-text: #ffffff;
+  --calendar-other-month-text: #a89e9a;
+  --calendar-weekend-bg: #f6f3f1;
+
+  /* ============================================================================
+   * Modal
+   * ============================================================================ */
+  --modal-backdrop-bg: rgba(61, 56, 54, 0.4);
+  --modal-bg: #ffffff;
+  --modal-header-bg: #fdfcfb;
+  --modal-border: #e6deda;
+
+  /* ============================================================================
+   * Form Controls
+   * ============================================================================ */
+  --input-bg: #ffffff;
+  --input-border: #e6deda;
+  --input-border-focus: var(--rose-cotton-candy);
+  --input-text: #3d3836;
+  --input-placeholder: #a89e9a;
+
+  /* ============================================================================
+   * Panel
+   * ============================================================================ */
+  --panel-bg: #ffffff;
+  --panel-header-bg: #fdfcfb;
+  --panel-border: #e6deda;
+
+  /* ============================================================================
+   * Context Menu
+   * ============================================================================ */
+  --context-menu-bg: #ffffff;
+  --context-menu-border: #e6deda;
+  --context-menu-item-hover-bg: rgba(181, 131, 141, 0.1);
+  --context-menu-separator: #f2edeb;
+
+  /* ============================================================================
+   * Folder Tree
+   * ============================================================================ */
+  --tree-item-hover-bg: rgba(181, 131, 141, 0.1);
+  --tree-item-selected-bg: rgba(255, 205, 178, 0.3);
+  --tree-icon-color: #a89e9a;
+  --tree-folder-icon-color: var(--rose-dusty-rose);
+  --tree-file-icon-color: #7d7572;
+
+  /* ============================================================================
+   * Autocomplete
+   * ============================================================================ */
+  --autocomplete-bg: #ffffff;
+  --autocomplete-border: #e6deda;
+  --autocomplete-item-hover-bg: rgba(181, 131, 141, 0.1);
+  --autocomplete-item-selected-bg: rgba(255, 205, 178, 0.3);
+  --autocomplete-item-text: #3d3836;
+  --autocomplete-item-detail: #7d7572;
+  --autocomplete-match-text: var(--rose-dusty-rose);
+
+  /* ============================================================================
+   * Markdown / Editor Syntax
+   * ============================================================================ */
+  /* Headings - warm progression */
+  --md-heading-1: #8f6069;
+  --md-heading-2: #9a6b74;
+  --md-heading-3: #b5838d;
+  --md-heading-4: #6d6875;
+  --md-heading-5: #7a8fa5;
+  --md-heading-6: #7d7572;
+
+  /* Formatting */
+  --md-bold: #3d3836;
+  --md-italic: #5c5553;
+  --md-strikethrough: #a89e9a;
+
+  /* Links */
+  --md-link: #7a8fa5;
+  --md-link-url: #a89e9a;
+  --md-wiki-link: #b5838d;
+
+  /* Code - inline */
+  --md-code-text: #b5838d;
+  --md-code-bg: rgba(255, 205, 178, 0.2);
+
+  /* Code - syntax highlighting */
+  --md-code-keyword: #b5838d;
+  --md-code-string: #7a9e7e;
+  --md-code-number: #7a8fa5;
+  --md-code-comment: #a89e9a;
+  --md-code-function: #8f6069;
+  --md-code-variable: #5c5553;
+  --md-code-operator: #e5989b;
+  --md-code-punctuation: #5c5553;
+  --md-code-bracket: #5c5553;
+  --md-code-class: #8f6069;
+  --md-code-property: #7a8fa5;
+  --md-code-boolean: #7a8fa5;
+  --md-code-null: #a89e9a;
+
+  /* Lists & Quotes */
+  --md-list-marker: var(--rose-dusty-rose);
+  --md-blockquote: #7d7572;
+  --md-blockquote-border: var(--rose-peach-fuzz);
+
+  /* Tables */
+  --md-table-border: #e6deda;
+  --md-table-header-bg: rgba(255, 205, 178, 0.15);
+  --md-table-alt-bg: #f6f3f1;
+
+  /* Syntax markers */
+  --md-syntax-marker: #a89e9a;
+
+  /* ============================================================================
+   * Block Colors - Warm rose & peach tones
+   * ============================================================================ */
+  --block-text: #3d3836;
+  --block-color-blue: #7a8fa5;
+  --block-color-sapphire: #89a5b8;
+  --block-color-sky: #a5c4d4;
+  --block-color-teal: #8fb5ad;
+  --block-color-green: #7a9e7e;
+  --block-color-yellow: #e5c98a;
+  --block-color-peach: #ffcdb2;
+  --block-color-maroon: #c97070;
+  --block-color-red: #e5989b;
+  --block-color-mauve: #b5838d;
+  --block-color-pink: #ffb4a2;
+  --block-color-flamingo: #ffd0c7;
+  --block-color-rosewater: #ffe5dc;
+  --block-color-lavender: #a5a0c5;
+}

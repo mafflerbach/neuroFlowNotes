@@ -17,6 +17,11 @@ interface OpenDoc {
   title: string | null;
 }
 
+interface PendingScroll {
+  section: string; // slug to scroll to
+  noteId: number;
+}
+
 interface OpenMedia {
   path: string;
   filename: string;
@@ -33,6 +38,9 @@ class WorkspaceStore {
   // Currently open media file (if any)
   openMedia = $state<OpenMedia | null>(null);
 
+  // Pending section scroll (when navigating to [[note#section]])
+  pendingScroll = $state<PendingScroll | null>(null);
+
   // Folder view visibility
   folderViewVisible = $state(true);
 
@@ -41,6 +49,9 @@ class WorkspaceStore {
 
   // Calendar/timeline visibility
   calendarVisible = $state(true);
+
+  // Query builder view visibility
+  queryViewVisible = $state(false);
 
   // Breadcrumb / document stack (for State C)
   breadcrumb = $state<OpenDoc[]>([]);
@@ -78,6 +89,21 @@ class WorkspaceStore {
   /** Toggle calendar/timeline visibility */
   toggleCalendar() {
     this.calendarVisible = !this.calendarVisible;
+  }
+
+  /** Toggle query builder view */
+  toggleQueryView() {
+    this.queryViewVisible = !this.queryViewVisible;
+  }
+
+  /** Open query view */
+  openQueryView() {
+    this.queryViewVisible = true;
+  }
+
+  /** Close query view */
+  closeQueryView() {
+    this.queryViewVisible = false;
   }
 
   /** Switch calendar view (monthly, weekly, daily) */
@@ -161,7 +187,7 @@ class WorkspaceStore {
   }
 
   /** Follow a [[wikilink]] - transitions to State C */
-  followLink(doc: OpenDoc) {
+  followLink(doc: OpenDoc, section?: string) {
     // Transition to doc-finder mode
     this.state = "doc-finder";
 
@@ -175,6 +201,16 @@ class WorkspaceStore {
       // Add new doc to breadcrumb
       this.breadcrumb = [...this.breadcrumb, doc];
     }
+
+    // Set pending scroll if section was specified
+    if (section) {
+      this.pendingScroll = { section, noteId: doc.id };
+    }
+  }
+
+  /** Clear pending scroll (called after scrolling is complete) */
+  clearPendingScroll() {
+    this.pendingScroll = null;
   }
 
   /** Navigate breadcrumb - click on a breadcrumb item */

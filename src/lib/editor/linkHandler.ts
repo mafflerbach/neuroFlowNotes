@@ -7,6 +7,7 @@
 import { EditorView } from "@codemirror/view";
 import { workspaceStore } from "../stores/workspace.svelte";
 import { listNotes, saveNote } from "../services/api";
+import { logger } from "../utils/logger";
 
 // Pattern to match wiki links: [[target]] or [[target#section]] or [[target|display]]
 const WIKILINK_PATTERN = /\[\[([^\]#|]+)(?:#([^\]|]+))?(?:\|[^\]]+)?\]\]/g;
@@ -34,7 +35,7 @@ async function createAndNavigateToNote(target: string): Promise<void> {
       title: title,
     });
   } catch (error) {
-    console.error("[LinkHandler] Failed to create note:", error);
+    logger.error("LinkHandler", "Failed to create note:", error);
   }
 }
 
@@ -66,8 +67,7 @@ function findWikiLinkAtPosition(
 /**
  * Navigate to a note by its name or path
  */
-async function navigateToNote(target: string, _section?: string): Promise<void> {
-  // TODO: _section parameter will be used to scroll to section anchors
+async function navigateToNote(target: string, section?: string): Promise<void> {
   try {
     const notes = await listNotes();
 
@@ -92,17 +92,21 @@ async function navigateToNote(target: string, _section?: string): Promise<void> 
 
     if (note) {
       // Follow the link - transitions to doc-finder mode (State C)
-      workspaceStore.followLink({
-        path: note.path,
-        id: note.id,
-        title: note.title ?? note.path.replace(".md", ""),
-      });
+      // Pass section for anchor scrolling
+      workspaceStore.followLink(
+        {
+          path: note.path,
+          id: note.id,
+          title: note.title ?? note.path.replace(".md", ""),
+        },
+        section
+      );
     } else {
       // Note doesn't exist - create it in the root directory
       await createAndNavigateToNote(target);
     }
   } catch (error) {
-    console.error("[LinkHandler] Failed to navigate:", error);
+    logger.error("LinkHandler", "Failed to navigate:", error);
   }
 }
 

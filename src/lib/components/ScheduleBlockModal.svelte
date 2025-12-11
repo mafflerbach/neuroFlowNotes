@@ -1,6 +1,6 @@
 <script lang="ts">
   import { X, Calendar, Check, Repeat, Link } from "lucide-svelte";
-  import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR, getBlockColor } from "../constants/colors";
+  import { BLOCK_COLORS, DEFAULT_BLOCK_COLOR, getBlockColor, getBlockColorVar } from "../constants/colors";
   import type { ScheduleBlockDto, NoteListItem } from "../types";
   import NoteAutocomplete from "./shared/NoteAutocomplete.svelte";
 
@@ -51,7 +51,7 @@
   let startTime = $state("09:00");
   let endTime = $state("10:00");
   let label = $state("");
-  let selectedColor = $state(DEFAULT_BLOCK_COLOR.hex);
+  let selectedColor = $state(DEFAULT_BLOCK_COLOR.id);
   let context = $state("");
   let recurrence = $state("");
   let selectedNote = $state<NoteListItem | null>(null);
@@ -63,7 +63,7 @@
         startTime = block.start_time.slice(0, 5);
         endTime = block.end_time.slice(0, 5);
         label = block.label || "";
-        selectedColor = block.color || DEFAULT_BLOCK_COLOR.hex;
+        selectedColor = block.color || DEFAULT_BLOCK_COLOR.id;
         context = block.context || "";
         recurrence = block.rrule || "";
         selectedNote = linkedNote;
@@ -72,7 +72,7 @@
         startTime = `${initialHour.toString().padStart(2, "0")}:00`;
         endTime = `${(initialHour + 1).toString().padStart(2, "0")}:00`;
         label = "";
-        selectedColor = DEFAULT_BLOCK_COLOR.hex;
+        selectedColor = DEFAULT_BLOCK_COLOR.id;
         context = "";
         recurrence = "";
         selectedNote = null;
@@ -257,18 +257,18 @@
           <div class="form-group">
             <span class="field-label">Color</span>
             <div class="color-picker">
-              {#each BLOCK_COLORS as color (color.hex)}
+              {#each BLOCK_COLORS as color (color.id)}
                 <button
                   type="button"
                   class="color-swatch"
-                  class:selected={selectedColor === color.hex}
-                  style="background-color: {color.hex}"
-                  onclick={() => (selectedColor = color.hex)}
+                  class:selected={selectedColor === color.id}
+                  style="background-color: {getBlockColorVar(color.id)}"
+                  onclick={() => (selectedColor = color.id)}
                   title={color.name}
                   aria-label={color.name}
                 >
-                  {#if selectedColor === color.hex}
-                    <Check size={14} strokeWidth={3} color={color.textColor} />
+                  {#if selectedColor === color.id}
+                    <Check size={14} strokeWidth={3} style="color: {color.textColor}" />
                   {/if}
                 </button>
               {/each}
@@ -280,7 +280,7 @@
             <span class="field-label">Preview</span>
             <div
               class="block-preview"
-              style="background-color: {selectedColor}; color: {currentColorObj.textColor}"
+              style="background-color: {getBlockColorVar(selectedColor)}; color: {currentColorObj.textColor}"
             >
               <span class="preview-time">{startTime} - {endTime}</span>
               {#if label}

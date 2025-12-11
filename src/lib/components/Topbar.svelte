@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Folder, List, Plus, Settings, Calendar } from "lucide-svelte";
+  import { Folder, List, Plus, Settings, Calendar, Search } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import { vaultStore } from "../stores/vault.svelte";
   import * as api from "../services/api";
@@ -60,6 +60,15 @@
       title="Toggle Calendar"
     >
       <Calendar size={18} />
+    </button>
+    <button
+      class="icon-btn"
+      class:active={workspaceStore.queryViewVisible}
+      onclick={() => workspaceStore.toggleQueryView()}
+      title="Query Builder"
+      disabled={!vaultStore.isOpen}
+    >
+      <Search size={18} />
     </button>
   </div>
 

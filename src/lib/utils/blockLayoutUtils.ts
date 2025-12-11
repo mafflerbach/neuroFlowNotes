@@ -5,6 +5,7 @@
  */
 
 import type { ScheduleBlockDto } from "../types";
+import { getBlockColorVar, DEFAULT_BLOCK_COLOR } from "../constants/colors";
 
 /**
  * Parse a time string "HH:MM" or "HH:MM:SS" to decimal hours.
@@ -152,7 +153,9 @@ export function getBlockStyle(
   // Use pixel-based positioning for better precision on high-DPI displays
   const top = (startTime - startHour) * hourSlotHeight;
   const height = (endTime - startTime) * hourSlotHeight;
-  const color = block.color || "#4f6bed";
+  // Use CSS variable for themed color support
+  const colorId = block.color || DEFAULT_BLOCK_COLOR.id;
+  const color = getBlockColorVar(colorId);
 
   const width = 100 / totalColumns;
   const left = column * width;

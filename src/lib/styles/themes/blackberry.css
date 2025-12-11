@@ -1,0 +1,284 @@
+/**
+ * Blackberry Theme (Dark)
+ * An elegant dark theme with blackberry purple and soft lavender accents
+ *
+ * Base colors:
+ * - Black: #000000 (pure black)
+ * - Blackberry Cream: #502f4c (deep purple)
+ * - Dusty Lavender: #70587c (muted purple)
+ * - Thistle: #c8b8db (soft lavender)
+ * - Snow: #f9f4f5 (warm off-white)
+ */
+
+:root[data-theme="blackberry"] {
+  /* ============================================================================
+   * Base Palette
+   * ============================================================================ */
+  --bb-black: #000000;
+  --bb-blackberry-cream: #502f4c;
+  --bb-dusty-lavender: #70587c;
+  --bb-thistle: #c8b8db;
+  --bb-snow: #f9f4f5;
+
+  /* Derived colors */
+  --bb-near-black: #0a0a0a;
+  --bb-deep-purple: #3a2238;
+  --bb-muted-purple: #8a7494;
+  --bb-light-thistle: #ddd2e8;
+
+  /* ============================================================================
+   * Gray Scale - Purple-tinted blacks
+   * ============================================================================ */
+  --color-gray-50: #000000;
+  --color-gray-100: #0d0a0d;
+  --color-gray-200: #1a151a;
+  --color-gray-300: #2d2330;
+  --color-gray-400: #502f4c;
+  --color-gray-500: #70587c;
+  --color-gray-600: #8a7494;
+  --color-gray-700: #c8b8db;
+  --color-gray-800: #e5dced;
+  --color-gray-900: #f9f4f5;
+
+  /* ============================================================================
+   * Primary Colors
+   * ============================================================================ */
+  --color-primary: #c8b8db;
+  --color-primary-hover: #ddd2e8;
+  --color-primary-light: rgba(200, 184, 219, 0.2);
+  --color-primary-dark: #70587c;
+
+  /* ============================================================================
+   * Semantic Colors
+   * ============================================================================ */
+  --color-success: #8bc49a;
+  --color-success-light: rgba(139, 196, 154, 0.15);
+  --color-success-hover: rgba(139, 196, 154, 0.25);
+
+  --color-error: #e08080;
+  --color-error-light: rgba(224, 128, 128, 0.15);
+  --color-error-hover: rgba(224, 128, 128, 0.25);
+
+  --color-warning: #dab06a;
+  --color-warning-light: rgba(218, 176, 106, 0.15);
+
+  --color-info: #8ab4d4;
+  --color-info-light: rgba(138, 180, 212, 0.15);
+
+  /* ============================================================================
+   * Background Colors
+   * ============================================================================ */
+  --bg-app: #000000;
+  --bg-surface: #0d0a0d;
+  --bg-surface-raised: #1a151a;
+  --bg-surface-sunken: #000000;
+  --bg-hover: rgba(112, 88, 124, 0.15);
+  --bg-active: rgba(200, 184, 219, 0.15);
+  --bg-selected: rgba(200, 184, 219, 0.12);
+
+  /* ============================================================================
+   * Text Colors
+   * ============================================================================ */
+  --text-primary: #f9f4f5;
+  --text-secondary: #e5dced;
+  --text-muted: #c8b8db;
+  --text-disabled: #70587c;
+  --text-inverse: #000000;
+  --text-link: #c8b8db;
+  --text-link-hover: #ddd2e8;
+
+  /* ============================================================================
+   * Border Colors
+   * ============================================================================ */
+  --border-default: #2d2330;
+  --border-light: #1a151a;
+  --border-focus: var(--bb-thistle);
+
+  /* ============================================================================
+   * Icon Colors
+   * ============================================================================ */
+  --icon-default: #c8b8db;
+  --icon-muted: #70587c;
+  --icon-active: #ddd2e8;
+
+  /* ============================================================================
+   * Button Colors
+   * ============================================================================ */
+  --btn-primary-bg: var(--bb-dusty-lavender);
+  --btn-primary-bg-hover: var(--bb-muted-purple);
+  --btn-primary-text: #f9f4f5;
+
+  --btn-secondary-bg: #1a151a;
+  --btn-secondary-bg-hover: #2d2330;
+  --btn-secondary-text: #c8b8db;
+  --btn-secondary-border: #2d2330;
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(112, 88, 124, 0.15);
+  --btn-ghost-text: #c8b8db;
+
+  --btn-danger-bg: #e08080;
+  --btn-danger-bg-hover: #e89999;
+  --btn-danger-text: #000000;
+
+  /* ============================================================================
+   * Topbar
+   * ============================================================================ */
+  --topbar-bg: #0d0a0d;
+  --topbar-border: #2d2330;
+
+  /* ============================================================================
+   * Sidebar
+   * ============================================================================ */
+  --sidebar-bg: #0d0a0d;
+  --sidebar-border: #2d2330;
+  --sidebar-header-bg: #1a151a;
+
+  /* ============================================================================
+   * Editor
+   * ============================================================================ */
+  --editor-bg: #0d0a0d;
+  --editor-header-bg: #1a151a;
+  --editor-gutter-bg: #0d0a0d;
+  --editor-gutter-color: #502f4c;
+  --editor-active-line-bg: rgba(45, 35, 48, 0.6);
+  --editor-active-gutter-bg: rgba(80, 47, 76, 0.4);
+  --editor-selection-bg: rgba(200, 184, 219, 0.2);
+  --editor-cursor: #c8b8db;
+
+  /* ============================================================================
+   * Calendar
+   * ============================================================================ */
+  --calendar-bg: #0d0a0d;
+  --calendar-header-bg: #1a151a;
+  --calendar-border: #2d2330;
+  --calendar-today-bg: rgba(200, 184, 219, 0.15);
+  --calendar-selected-bg: var(--bb-dusty-lavender);
+  --calendar-selected-text: #f9f4f5;
+  --calendar-other-month-text: #502f4c;
+  --calendar-weekend-bg: #000000;
+
+  /* ============================================================================
+   * Modal
+   * ============================================================================ */
+  --modal-backdrop-bg: rgba(0, 0, 0, 0.85);
+  --modal-bg: #0d0a0d;
+  --modal-header-bg: #1a151a;
+  --modal-border: #2d2330;
+
+  /* ============================================================================
+   * Form Controls
+   * ============================================================================ */
+  --input-bg: #1a151a;
+  --input-border: #2d2330;
+  --input-border-focus: var(--bb-thistle);
+  --input-text: #f9f4f5;
+  --input-placeholder: #70587c;
+
+  /* ============================================================================
+   * Panel
+   * ============================================================================ */
+  --panel-bg: #0d0a0d;
+  --panel-header-bg: #1a151a;
+  --panel-border: #2d2330;
+
+  /* ============================================================================
+   * Context Menu
+   * ============================================================================ */
+  --context-menu-bg: #1a151a;
+  --context-menu-border: #2d2330;
+  --context-menu-item-hover-bg: rgba(112, 88, 124, 0.2);
+  --context-menu-separator: #2d2330;
+
+  /* ============================================================================
+   * Folder Tree
+   * ============================================================================ */
+  --tree-item-hover-bg: rgba(112, 88, 124, 0.15);
+  --tree-item-selected-bg: rgba(200, 184, 219, 0.12);
+  --tree-icon-color: #70587c;
+  --tree-folder-icon-color: #c8b8db;
+  --tree-file-icon-color: #70587c;
+
+  /* ============================================================================
+   * Autocomplete
+   * ============================================================================ */
+  --autocomplete-bg: #1a151a;
+  --autocomplete-border: #2d2330;
+  --autocomplete-item-hover-bg: rgba(112, 88, 124, 0.2);
+  --autocomplete-item-selected-bg: rgba(200, 184, 219, 0.15);
+  --autocomplete-item-text: #f9f4f5;
+  --autocomplete-item-detail: #c8b8db;
+  --autocomplete-match-text: #ddd2e8;
+
+  /* ============================================================================
+   * Markdown / Editor Syntax
+   * ============================================================================ */
+  /* Headings - lavender gradient */
+  --md-heading-1: #ddd2e8;
+  --md-heading-2: #c8b8db;
+  --md-heading-3: #8a7494;
+  --md-heading-4: #8ab4d4;
+  --md-heading-5: #8bc49a;
+  --md-heading-6: #dab06a;
+
+  /* Formatting */
+  --md-bold: #f9f4f5;
+  --md-italic: #e5dced;
+  --md-strikethrough: #502f4c;
+
+  /* Links */
+  --md-link: #8ab4d4;
+  --md-link-url: #70587c;
+  --md-wiki-link: #c8b8db;
+
+  /* Code - inline */
+  --md-code-text: #dab06a;
+  --md-code-bg: rgba(45, 35, 48, 0.6);
+
+  /* Code - syntax highlighting */
+  --md-code-keyword: #c8b8db;
+  --md-code-string: #8bc49a;
+  --md-code-number: #dab06a;
+  --md-code-comment: #502f4c;
+  --md-code-function: #8a7494;
+  --md-code-variable: #e5dced;
+  --md-code-operator: #e08080;
+  --md-code-punctuation: #8a7494;
+  --md-code-bracket: #8a7494;
+  --md-code-class: #8ab4d4;
+  --md-code-property: #c8b8db;
+  --md-code-boolean: #dab06a;
+  --md-code-null: #70587c;
+
+  /* Lists & Quotes */
+  --md-list-marker: #c8b8db;
+  --md-blockquote: #8a7494;
+  --md-blockquote-border: #502f4c;
+
+  /* Tables */
+  --md-table-border: #2d2330;
+  --md-table-header-bg: #1a151a;
+  --md-table-alt-bg: rgba(45, 35, 48, 0.4);
+
+  /* Syntax markers */
+  --md-syntax-marker: #502f4c;
+
+  /* ============================================================================
+   * Block Colors - Elegant purple-black palette
+   * ============================================================================ */
+  --block-text: #000000;
+  --block-color-blue: #8ab4d4;
+  --block-color-sapphire: #7aa8c8;
+  --block-color-sky: #a5c8db;
+  --block-color-teal: #8bc4b8;
+  --block-color-green: #8bc49a;
+  --block-color-yellow: #dab06a;
+  --block-color-peach: #d4a088;
+  --block-color-maroon: #c88090;
+  --block-color-red: #e08080;
+  --block-color-mauve: #c8b8db;
+  --block-color-pink: #ddd2e8;
+  --block-color-flamingo: #e5dced;
+  --block-color-rosewater: #f0e8f2;
+  --block-color-lavender: #8a7494;
+}

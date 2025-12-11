@@ -9,3 +9,4 @@ export * from "./metadata";
 export * from "./search";
 export * from "./events";
 export * from "./embed";
+export * from "./query";

@@ -3,4 +3,16 @@
 /**
  * A todo item extracted from a note.
  */
-export type TodoDto = { id: bigint, note_id: bigint, line_number: number | null, description: string, completed: boolean, heading_path: string | null, created_at: string | null, completed_at: string | null, };
+export type TodoDto = { id: bigint, note_id: bigint, line_number: number | null, description: string, completed: boolean, heading_path: string | null, 
+/**
+ * GTD context (e.g., "home", "work", "phone", "computer").
+ */
+context: string | null, 
+/**
+ * Priority level ("high", "medium", "low").
+ */
+priority: string | null, 
+/**
+ * Due date as YYYY-MM-DD string.
+ */
+due_date: string | null, created_at: string | null, completed_at: string | null, };

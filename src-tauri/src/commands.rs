@@ -3,9 +3,12 @@
 use crate::state::AppState;
 use core_domain::Vault;
 use shared_types::{
-    BacklinkDto, CreateScheduleBlockRequest, EmbedContent, FolderNode, HeadingInfo, NoteContent,
-    NoteDto, NoteForDate, NoteListItem, PropertyDto, ResolveEmbedRequest, ScheduleBlockDto,
-    SearchResult, SetPropertyRequest, TagDto, TodoDto, UpdateScheduleBlockRequest, VaultInfo,
+    BacklinkDto, CreateScheduleBlockRequest, DeletePropertyKeyRequest, EmbedContent, FolderNode,
+    HeadingInfo, MergePropertyKeysRequest, NoteContent, NoteDto, NoteForDate, NoteListItem,
+    NoteWithPropertyValue, PropertyDto, PropertyKeyInfo, PropertyOperationResult, PropertyValueInfo,
+    QueryRequest, QueryResponse, RenamePropertyKeyRequest, RenamePropertyValueRequest,
+    ResolveEmbedRequest, ScheduleBlockDto, SearchResult, SetPropertyRequest, TagDto, TaskQuery,
+    TaskWithContext, TodoDto, UpdateScheduleBlockRequest, VaultInfo,
 };
 use tauri::{AppHandle, Emitter, State};
 use thiserror::Error;
@@ -20,6 +23,7 @@ pub enum CommandError {
     #[error("Vault error: {0}")]
     Vault(String),
 
+    #[allow(dead_code)]
     #[error("Note not found: {0}")]
     NoteNotFound(String),
 }
@@ -306,6 +310,32 @@ pub async fn get_incomplete_todos(state: State<'_, AppState>) -> Result<Vec<Todo
 
     vault
         .get_incomplete_todos()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Query tasks with filters, returning enriched context from parent notes.
+#[tauri::command]
+pub async fn query_tasks(state: State<'_, AppState>, query: TaskQuery) -> Result<Vec<TaskWithContext>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .query_tasks(&query)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get all distinct contexts used in tasks.
+#[tauri::command]
+pub async fn get_task_contexts(state: State<'_, AppState>) -> Result<Vec<String>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_task_contexts()
         .await
         .map_err(|e| CommandError::Vault(e.to_string()))
 }
@@ -930,4 +960,319 @@ pub async fn save_pasted_image(
 
     // Return the filename (relative to vault root)
     Ok(filename)
+}
+
+// ============================================================================
+// Query Builder Commands
+// ============================================================================
+
+/// Get all property keys used in the vault (for query builder dropdown).
+#[tauri::command]
+pub async fn get_property_keys(state: State<'_, AppState>) -> Result<Vec<PropertyKeyInfo>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_property_keys()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get all distinct values for a property key (for query builder value autocomplete).
+#[tauri::command]
+pub async fn get_property_values(state: State<'_, AppState>, key: String) -> Result<Vec<String>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_property_values(&key)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Run a query with property filters.
+#[tauri::command]
+pub async fn run_query(state: State<'_, AppState>, request: QueryRequest) -> Result<QueryResponse> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .run_query(&request)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Execute a query embed from YAML content.
+/// This parses the YAML and executes the query, returning both the parsed config and results.
+/// Supports both single-query mode and multi-tab mode.
+#[tauri::command]
+pub async fn execute_query_embed(
+    state: State<'_, AppState>,
+    yaml_content: String,
+) -> Result<shared_types::QueryEmbedResponse> {
+    use shared_types::{QueryEmbed, QueryEmbedResponse, QueryRequest, TabResult};
+    use tracing::info;
+
+    info!("execute_query_embed called with: {}", yaml_content);
+
+    // Parse YAML into QueryEmbed
+    let query: QueryEmbed = match serde_yaml::from_str::<QueryEmbed>(&yaml_content) {
+        Ok(q) => {
+            info!("Parsed query: result_type={:?}, filters={}", q.result_type, q.filters.len());
+            q
+        }
+        Err(e) => {
+            info!("YAML parse error: {}", e);
+            return Ok(QueryEmbedResponse {
+                query: QueryEmbed::default(),
+                results: vec![],
+                total_count: 0,
+                tab_results: vec![],
+                error: Some(format!("Invalid query YAML: {}", e)),
+            });
+        }
+    };
+
+    let vault_guard = state.vault.read().await;
+    let vault = match vault_guard.as_ref() {
+        Some(v) => v,
+        None => {
+            return Ok(QueryEmbedResponse {
+                query: query.clone(),
+                results: vec![],
+                total_count: 0,
+                tab_results: vec![],
+                error: Some("No vault is currently open".to_string()),
+            });
+        }
+    };
+
+    // Check if we're in tab mode
+    if !query.tabs.is_empty() {
+        // Multi-tab mode: execute each tab's query
+        let mut tab_results = Vec::new();
+        let tabs = query.tabs.clone();
+
+        for tab in &tabs {
+            let request = QueryRequest {
+                filters: tab.filters.clone(),
+                match_mode: tab.match_mode.clone(),
+                result_type: tab.result_type.clone(),
+                include_completed: tab.include_completed,
+                limit: Some(tab.limit),
+            };
+
+            match vault.repo().run_query(&request).await {
+                Ok(response) => {
+                    tab_results.push(TabResult {
+                        name: tab.name.clone(),
+                        results: response.results,
+                        total_count: response.total_count,
+                        view: tab.view.clone(),
+                    });
+                }
+                Err(e) => {
+                    // Return error for this tab but continue with others
+                    return Ok(QueryEmbedResponse {
+                        query,
+                        results: vec![],
+                        total_count: 0,
+                        tab_results: vec![],
+                        error: Some(format!("Query execution failed for tab '{}': {}", tab.name, e)),
+                    });
+                }
+            }
+        }
+
+        Ok(QueryEmbedResponse {
+            query,
+            results: vec![],
+            total_count: 0,
+            tab_results,
+            error: None,
+        })
+    } else {
+        // Single-query mode (original behavior)
+        info!("Single-query mode: result_type={:?}", query.result_type);
+        let request = QueryRequest {
+            filters: query.filters.clone(),
+            match_mode: query.match_mode.clone(),
+            result_type: query.result_type.clone(),
+            include_completed: query.include_completed,
+            limit: Some(query.limit),
+        };
+
+        info!("Running query...");
+        match vault.repo().run_query(&request).await {
+            Ok(response) => {
+                info!("Query completed: {} results", response.results.len());
+                Ok(QueryEmbedResponse {
+                    query,
+                    results: response.results,
+                    total_count: response.total_count,
+                    tab_results: vec![],
+                    error: None,
+                })
+            }
+            Err(e) => {
+                info!("Query failed: {}", e);
+                Ok(QueryEmbedResponse {
+                    query,
+                    results: vec![],
+                    total_count: 0,
+                    tab_results: vec![],
+                    error: Some(format!("Query execution failed: {}", e)),
+                })
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Property Management Commands
+// ============================================================================
+
+/// Rename a property key across all notes.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn rename_property_key(
+    state: State<'_, AppState>,
+    request: RenamePropertyKeyRequest,
+) -> Result<PropertyOperationResult> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    let (affected_count, notes_affected) = vault
+        .repo()
+        .rename_property_key(&request.old_key, &request.new_key)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    Ok(PropertyOperationResult {
+        affected_count,
+        notes_affected,
+    })
+}
+
+/// Rename a property value across all notes with that key.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn rename_property_value(
+    state: State<'_, AppState>,
+    request: RenamePropertyValueRequest,
+) -> Result<PropertyOperationResult> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    let (affected_count, notes_affected) = vault
+        .repo()
+        .rename_property_value(&request.key, &request.old_value, &request.new_value)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    Ok(PropertyOperationResult {
+        affected_count,
+        notes_affected,
+    })
+}
+
+/// Merge two property keys (rename source to target).
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn merge_property_keys(
+    state: State<'_, AppState>,
+    request: MergePropertyKeysRequest,
+) -> Result<PropertyOperationResult> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    let (affected_count, notes_affected) = vault
+        .repo()
+        .merge_property_keys(&request.source_key, &request.target_key)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    Ok(PropertyOperationResult {
+        affected_count,
+        notes_affected,
+    })
+}
+
+/// Delete a property key from all notes.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn delete_property_key(
+    state: State<'_, AppState>,
+    request: DeletePropertyKeyRequest,
+) -> Result<PropertyOperationResult> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    let (affected_count, notes_affected) = vault
+        .repo()
+        .delete_property_key(&request.key)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    Ok(PropertyOperationResult {
+        affected_count,
+        notes_affected,
+    })
+}
+
+/// Get all distinct values for a property key with usage counts.
+#[tauri::command]
+pub async fn get_property_values_with_counts(
+    state: State<'_, AppState>,
+    key: String,
+) -> Result<Vec<PropertyValueInfo>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    let values = vault
+        .repo()
+        .get_property_values_with_counts(&key)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    Ok(values
+        .into_iter()
+        .map(|(value, usage_count)| PropertyValueInfo { value, usage_count })
+        .collect())
+}
+
+/// Get all notes that have a specific property key, along with their value.
+#[tauri::command]
+pub async fn get_notes_with_property(
+    state: State<'_, AppState>,
+    key: String,
+) -> Result<Vec<NoteWithPropertyValue>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_notes_with_property(&key)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get all notes that have a specific property key and value.
+#[tauri::command]
+pub async fn get_notes_with_property_value(
+    state: State<'_, AppState>,
+    key: String,
+    value: String,
+) -> Result<Vec<NoteWithPropertyValue>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_notes_with_property_value(&key, &value)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
 }
