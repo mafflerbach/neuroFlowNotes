@@ -14,6 +14,7 @@
   let editorContainer: HTMLDivElement | undefined = $state();
   let view: EditorView | null = null;
   let currentNoteId: number | null = null;
+  let lastVimMode: boolean | null = null;
 
   /**
    * Convert heading text to slug (must match backend slugify function)
@@ -132,6 +133,17 @@
         workspaceStore.clearPendingScroll();
       });
     }
+  });
+
+  // Recreate editor when vim mode changes
+  $effect(() => {
+    const vimModeEnabled = workspaceStore.vimMode;
+    // Only recreate if vim mode actually changed and we have an open note
+    if (lastVimMode !== null && vimModeEnabled !== lastVimMode && view && editorStore.currentNote && currentNoteId) {
+      // Recreate the editor with the new vim mode setting
+      createEditor(editorStore.currentNote.content);
+    }
+    lastVimMode = vimModeEnabled;
   });
 
   onDestroy(() => {

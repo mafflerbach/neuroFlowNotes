@@ -48,6 +48,7 @@
   }: Props = $props();
 
   // Form state
+  let selectedDate = $state(""); // YYYY-MM-DD
   let startTime = $state("09:00");
   let endTime = $state("10:00");
   let label = $state("");
@@ -60,6 +61,7 @@
   $effect(() => {
     if (open) {
       if (mode === "edit" && block) {
+        selectedDate = block.date;
         startTime = block.start_time.slice(0, 5);
         endTime = block.end_time.slice(0, 5);
         label = block.label || "";
@@ -69,6 +71,7 @@
         selectedNote = linkedNote;
       } else {
         // Create mode
+        selectedDate = date;
         startTime = `${initialHour.toString().padStart(2, "0")}:00`;
         endTime = `${(initialHour + 1).toString().padStart(2, "0")}:00`;
         label = "";
@@ -87,7 +90,7 @@
     if (!trimmedLabel) return; // Shouldn't happen due to required, but safety check
 
     onSave({
-      date,
+      date: selectedDate,
       start_time: startTime + ":00",
       end_time: endTime + ":00",
       label: trimmedLabel,
@@ -126,16 +129,6 @@
     }
   }
 
-  // Format date for display
-  function formatDisplayDate(dateStr: string): string {
-    const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    });
-  }
-
   // Get the current color object
   const currentColorObj = $derived(getBlockColor(selectedColor));
 </script>
@@ -163,10 +156,18 @@
 
       <form onsubmit={handleSubmit}>
         <div class="modal-body">
-          <!-- Date display -->
-          <div class="date-display">
-            <Calendar size={16} />
-            <span>{formatDisplayDate(date)}</span>
+          <!-- Date input -->
+          <div class="form-group">
+            <label for="block-date">
+              <Calendar size={14} class="inline-icon" />
+              Date
+            </label>
+            <input
+              id="block-date"
+              type="date"
+              bind:value={selectedDate}
+              required
+            />
           </div>
 
           <!-- Time range -->
@@ -380,19 +381,6 @@
     padding: var(--spacing-5);
     overflow-y: auto;
     flex: 1;
-  }
-
-  .date-display {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    padding: var(--spacing-3);
-    background: var(--bg-surface-raised);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-5);
-    color: var(--text-primary);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-medium);
   }
 
   .form-group {

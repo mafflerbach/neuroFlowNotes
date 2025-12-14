@@ -349,10 +349,20 @@ impl VaultRepository {
 
     /// Get all distinct property keys used in the vault.
     pub async fn get_property_keys(&self) -> Result<Vec<PropertyKeyInfo>> {
-        // Get all distinct keys with usage count
-        let rows = sqlx::query_as::<_, (String, i64)>(
+        // Get all distinct keys with usage count and most common property type
+        let rows = sqlx::query_as::<_, (String, i64, Option<String>)>(
             r#"
-            SELECT key, COUNT(DISTINCT note_id) as usage_count
+            SELECT
+                key,
+                COUNT(DISTINCT note_id) as usage_count,
+                (
+                    SELECT type
+                    FROM properties p2
+                    WHERE p2.key = properties.key AND p2.type IS NOT NULL
+                    GROUP BY type
+                    ORDER BY COUNT(*) DESC
+                    LIMIT 1
+                ) as most_common_type
             FROM properties
             GROUP BY key
             ORDER BY usage_count DESC, key
@@ -362,7 +372,7 @@ impl VaultRepository {
         .await?;
 
         let mut results = Vec::new();
-        for (key, usage_count) in rows {
+        for (key, usage_count, property_type) in rows {
             // Get sample values for each key (up to 10 unique values)
             let sample_values = sqlx::query_scalar::<_, String>(
                 r#"
@@ -380,6 +390,7 @@ impl VaultRepository {
                 key,
                 usage_count,
                 sample_values,
+                property_type,
             });
         }
 

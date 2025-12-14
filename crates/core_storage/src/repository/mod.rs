@@ -18,6 +18,7 @@ mod backlinks;
 mod todos;
 mod schedule;
 mod properties;
+mod folder_properties;
 mod queries;
 mod dates;
 

@@ -220,17 +220,17 @@
           await vaultStore.refreshFolderTree();
         }
 
-        // Update the block to link to this note
+        // Update the block to link to this note (preserve existing fields)
         await updateScheduleBlock({
           id: block.id,
           note_id: noteId,
           date: null,
           start_time: null,
           end_time: null,
-          label: null,
-          color: null,
-          context: null,
-          rrule: null,
+          label: block.label,
+          color: block.color,
+          context: block.context,
+          rrule: block.rrule,
         });
 
         // Refresh calendar data

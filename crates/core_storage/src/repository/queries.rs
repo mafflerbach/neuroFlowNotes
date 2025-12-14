@@ -80,6 +80,9 @@ impl VaultRepository {
     }
 
     /// Build SQL for property filters.
+    /// Special keys:
+    /// - `_path`: filters on the note's path (use StartsWith for "in folder" behavior)
+    /// - `_tags`: filters on the note's tags from the note_tags table
     fn build_property_filter_sql(
         &self,
         filters: &[PropertyFilter],
@@ -94,6 +97,120 @@ impl VaultRepository {
         let mut params = Vec::new();
 
         for filter in filters {
+            // Handle special _path filter (filters on notes.path column)
+            if filter.key == "_path" {
+                let condition = match filter.operator {
+                    PropertyOperator::Equals => {
+                        params.push(filter.value.clone().unwrap_or_default());
+                        "n.path = ?".to_string()
+                    }
+                    PropertyOperator::NotEquals => {
+                        params.push(filter.value.clone().unwrap_or_default());
+                        "n.path != ?".to_string()
+                    }
+                    PropertyOperator::Contains => {
+                        params.push(format!("%{}%", filter.value.clone().unwrap_or_default()));
+                        "n.path LIKE ?".to_string()
+                    }
+                    PropertyOperator::StartsWith => {
+                        // StartsWith on _path means "in folder" - match folder/ prefix
+                        let folder = filter.value.clone().unwrap_or_default();
+                        // Ensure folder path ends with / for proper matching
+                        let folder_prefix = if folder.ends_with('/') {
+                            folder
+                        } else {
+                            format!("{}/", folder)
+                        };
+                        params.push(format!("{}%", folder_prefix));
+                        "n.path LIKE ?".to_string()
+                    }
+                    PropertyOperator::EndsWith => {
+                        params.push(format!("%{}", filter.value.clone().unwrap_or_default()));
+                        "n.path LIKE ?".to_string()
+                    }
+                    // Exists/NotExists don't make sense for path - treat as always true/false
+                    PropertyOperator::Exists => "1=1".to_string(),
+                    PropertyOperator::NotExists => "1=0".to_string(),
+                    // ContainsAll/ContainsAny/Date operators don't make sense for path
+                    PropertyOperator::ContainsAll | PropertyOperator::ContainsAny
+                    | PropertyOperator::DateOn | PropertyOperator::DateBefore
+                    | PropertyOperator::DateAfter | PropertyOperator::DateOnOrBefore
+                    | PropertyOperator::DateOnOrAfter => "1=1".to_string(),
+                };
+                conditions.push(condition);
+                continue;
+            }
+
+            // Handle special _tags filter (filters on tags table)
+            // Schema: tags(id, note_id, tag) - direct note_id -> tag mapping
+            if filter.key == "_tags" {
+                let condition = match filter.operator {
+                    PropertyOperator::Exists => {
+                        "EXISTS (SELECT 1 FROM tags WHERE note_id = n.id)".to_string()
+                    }
+                    PropertyOperator::NotExists => {
+                        "NOT EXISTS (SELECT 1 FROM tags WHERE note_id = n.id)".to_string()
+                    }
+                    PropertyOperator::Equals | PropertyOperator::Contains => {
+                        // Single tag match
+                        params.push(filter.value.clone().unwrap_or_default());
+                        "EXISTS (SELECT 1 FROM tags WHERE note_id = n.id AND tag = ?)".to_string()
+                    }
+                    PropertyOperator::NotEquals => {
+                        params.push(filter.value.clone().unwrap_or_default());
+                        "NOT EXISTS (SELECT 1 FROM tags WHERE note_id = n.id AND tag = ?)".to_string()
+                    }
+                    PropertyOperator::ContainsAll => {
+                        // Note must have ALL specified tags
+                        let value = filter.value.clone().unwrap_or_default();
+                        let tags: Vec<&str> = value.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+                        if tags.is_empty() {
+                            "1=1".to_string()
+                        } else {
+                            let mut tag_conditions = Vec::new();
+                            for tag in &tags {
+                                params.push(tag.to_string());
+                                tag_conditions.push("EXISTS (SELECT 1 FROM tags WHERE note_id = n.id AND tag = ?)".to_string());
+                            }
+                            format!("({})", tag_conditions.join(" AND "))
+                        }
+                    }
+                    PropertyOperator::ContainsAny => {
+                        // Note must have ANY of the specified tags
+                        let value = filter.value.clone().unwrap_or_default();
+                        let tags: Vec<&str> = value.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+                        if tags.is_empty() {
+                            "1=0".to_string()
+                        } else {
+                            let placeholders: Vec<&str> = tags.iter().map(|_| "?").collect();
+                            for tag in &tags {
+                                params.push(tag.to_string());
+                            }
+                            format!(
+                                "EXISTS (SELECT 1 FROM tags WHERE note_id = n.id AND tag IN ({}))",
+                                placeholders.join(", ")
+                            )
+                        }
+                    }
+                    PropertyOperator::StartsWith => {
+                        // Tags starting with prefix
+                        params.push(format!("{}%", filter.value.clone().unwrap_or_default()));
+                        "EXISTS (SELECT 1 FROM tags WHERE note_id = n.id AND tag LIKE ?)".to_string()
+                    }
+                    PropertyOperator::EndsWith => {
+                        params.push(format!("%{}", filter.value.clone().unwrap_or_default()));
+                        "EXISTS (SELECT 1 FROM tags WHERE note_id = n.id AND tag LIKE ?)".to_string()
+                    }
+                    // Date operators don't make sense for tags
+                    PropertyOperator::DateOn | PropertyOperator::DateBefore
+                    | PropertyOperator::DateAfter | PropertyOperator::DateOnOrBefore
+                    | PropertyOperator::DateOnOrAfter => "1=1".to_string(),
+                };
+                conditions.push(condition);
+                continue;
+            }
+
+            // Regular property filter
             let condition = match filter.operator {
                 PropertyOperator::Exists => {
                     params.push(filter.key.clone());
@@ -127,6 +244,64 @@ impl VaultRepository {
                     params.push(filter.key.clone());
                     params.push(format!("%{}", filter.value.clone().unwrap_or_default()));
                     "EXISTS (SELECT 1 FROM properties WHERE note_id = n.id AND key = ? AND value LIKE ?)".to_string()
+                }
+                PropertyOperator::ContainsAll => {
+                    // For list properties stored as comma-separated: must contain ALL values
+                    let value = filter.value.clone().unwrap_or_default();
+                    let items: Vec<&str> = value.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+                    if items.is_empty() {
+                        "1=1".to_string()
+                    } else {
+                        let mut item_conditions = Vec::new();
+                        for item in &items {
+                            params.push(filter.key.clone());
+                            params.push(format!("%{}%", item));
+                            item_conditions.push("EXISTS (SELECT 1 FROM properties WHERE note_id = n.id AND key = ? AND value LIKE ?)".to_string());
+                        }
+                        format!("({})", item_conditions.join(" AND "))
+                    }
+                }
+                PropertyOperator::ContainsAny => {
+                    // For list properties stored as comma-separated: must contain ANY value
+                    let value = filter.value.clone().unwrap_or_default();
+                    let items: Vec<&str> = value.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+                    if items.is_empty() {
+                        "1=0".to_string()
+                    } else {
+                        let mut item_conditions = Vec::new();
+                        for item in &items {
+                            params.push(filter.key.clone());
+                            params.push(format!("%{}%", item));
+                            item_conditions.push("EXISTS (SELECT 1 FROM properties WHERE note_id = n.id AND key = ? AND value LIKE ?)".to_string());
+                        }
+                        format!("({})", item_conditions.join(" OR "))
+                    }
+                }
+                // Date operators compare property values as YYYY-MM-DD strings
+                PropertyOperator::DateOn => {
+                    params.push(filter.key.clone());
+                    params.push(filter.value.clone().unwrap_or_default());
+                    "EXISTS (SELECT 1 FROM properties WHERE note_id = n.id AND key = ? AND date(value) = date(?))".to_string()
+                }
+                PropertyOperator::DateBefore => {
+                    params.push(filter.key.clone());
+                    params.push(filter.value.clone().unwrap_or_default());
+                    "EXISTS (SELECT 1 FROM properties WHERE note_id = n.id AND key = ? AND date(value) < date(?))".to_string()
+                }
+                PropertyOperator::DateAfter => {
+                    params.push(filter.key.clone());
+                    params.push(filter.value.clone().unwrap_or_default());
+                    "EXISTS (SELECT 1 FROM properties WHERE note_id = n.id AND key = ? AND date(value) > date(?))".to_string()
+                }
+                PropertyOperator::DateOnOrBefore => {
+                    params.push(filter.key.clone());
+                    params.push(filter.value.clone().unwrap_or_default());
+                    "EXISTS (SELECT 1 FROM properties WHERE note_id = n.id AND key = ? AND date(value) <= date(?))".to_string()
+                }
+                PropertyOperator::DateOnOrAfter => {
+                    params.push(filter.key.clone());
+                    params.push(filter.value.clone().unwrap_or_default());
+                    "EXISTS (SELECT 1 FROM properties WHERE note_id = n.id AND key = ? AND date(value) >= date(?))".to_string()
                 }
             };
             conditions.push(condition);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-svelte";
+  import { FilePlus, FolderPlus, Pencil, Trash2, Settings2 } from "lucide-svelte";
 
   interface Props {
     isDir: boolean;
@@ -9,6 +9,7 @@
     onNewFolder?: () => void;
     onRename: () => void;
     onDelete: () => void;
+    onProperties?: () => void;
     onClose: () => void;
   }
 
@@ -20,6 +21,7 @@
     onNewFolder,
     onRename,
     onDelete,
+    onProperties,
     onClose,
   }: Props = $props();
 
@@ -54,6 +56,12 @@
     <Pencil size={14} />
     Rename
   </button>
+  {#if isDir && onProperties}
+    <button class="menu-item" onclick={onProperties}>
+      <Settings2 size={14} />
+      Properties
+    </button>
+  {/if}
   <button class="menu-item danger" onclick={onDelete}>
     <Trash2 size={14} />
     Delete

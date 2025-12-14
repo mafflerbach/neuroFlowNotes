@@ -1,3 +1,51 @@
+<script lang="ts" module>
+  // Module-level storage key and cache for folder expansion state
+  const STORAGE_KEY = "neuroflow-folder-expanded";
+  let expandedFolders: Set<string> | null = null;
+
+  function loadExpandedFolders(): Set<string> {
+    if (expandedFolders !== null) return expandedFolders;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      expandedFolders = stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      expandedFolders = new Set();
+    }
+    return expandedFolders;
+  }
+
+  function saveExpandedFolders() {
+    if (expandedFolders === null) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...expandedFolders]));
+    } catch (e) {
+      console.error("Failed to save folder state:", e);
+    }
+  }
+
+  function isFolderExpanded(path: string, depth: number): boolean {
+    const folders = loadExpandedFolders();
+    // If we have explicit state, use it. Otherwise, auto-expand first 2 levels
+    if (folders.has(path)) return true;
+    // Check if explicitly collapsed (we store collapsed state as "_collapsed:{path}")
+    if (folders.has(`_collapsed:${path}`)) return false;
+    // Default: expand first 2 levels
+    return depth < 2;
+  }
+
+  function setFolderCollapsed(path: string, collapsed: boolean) {
+    const folders = loadExpandedFolders();
+    if (collapsed) {
+      folders.delete(path);
+      folders.add(`_collapsed:${path}`);
+    } else {
+      folders.delete(`_collapsed:${path}`);
+      folders.add(path);
+    }
+    saveExpandedFolders();
+  }
+</script>
+
 <script lang="ts">
   import { ChevronRight, Folder, File, Image, FileAudio, FileVideo, FileText } from "lucide-svelte";
   import type { FolderNode } from "../types";
@@ -8,6 +56,7 @@
   import { ask } from "@tauri-apps/plugin-dialog";
   import FolderTree from "./FolderTree.svelte";
   import TreeContextMenu from "./folder-tree/TreeContextMenu.svelte";
+  import FolderPropertiesModal from "./FolderPropertiesModal.svelte";
 
   interface Props {
     node: FolderNode;
@@ -16,11 +65,8 @@
 
   let { node, depth = 0 }: Props = $props();
 
-  // Auto-expand first 2 levels
-  let isExpanded = $state(false);
-  $effect(() => {
-    if (depth < 2) isExpanded = true;
-  });
+  // Load initial expanded state from storage
+  let isExpanded = $state(isFolderExpanded(node.path, depth));
 
   // Context menu state
   let showContextMenu = $state(false);
@@ -38,9 +84,14 @@
   let newItemName = $state("");
   let newItemInput = $state<HTMLInputElement | null>(null);
 
+  // Folder properties modal state
+  let showPropertiesModal = $state(false);
+
   function toggleExpand() {
     if (node.is_dir) {
       isExpanded = !isExpanded;
+      // Persist the state
+      setFolderCollapsed(node.path, !isExpanded);
     }
   }
 
@@ -218,6 +269,11 @@
     newItemType = "folder";
     newItemName = "";
     setTimeout(() => newItemInput?.focus(), 0);
+  }
+
+  function openProperties() {
+    closeContextMenu();
+    showPropertiesModal = true;
   }
 
   async function confirmCreate() {
@@ -444,7 +500,18 @@
       onNewFolder={startCreateFolder}
       onRename={startRename}
       onDelete={handleDelete}
+      onProperties={node.is_dir ? openProperties : undefined}
       onClose={closeContextMenu}
+    />
+  {/if}
+
+  <!-- Folder Properties Modal -->
+  {#if node.is_dir}
+    <FolderPropertiesModal
+      open={showPropertiesModal}
+      folderPath={node.path}
+      folderName={node.name}
+      onClose={() => showPropertiesModal = false}
     />
   {/if}
 </div>

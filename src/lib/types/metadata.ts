@@ -119,3 +119,37 @@ export interface NoteWithPropertyValue {
   title: string | null;
   value: string | null;
 }
+
+// ============================================================================
+// Folder Property Types
+// ============================================================================
+
+/** A key-value property for a folder (inherited by notes in that folder tree). */
+export interface FolderPropertyDto {
+  id: number;
+  folder_path: string;
+  key: string;
+  value: string | null;
+  property_type: string | null;
+}
+
+/** Request to set a folder property value. */
+export interface SetFolderPropertyRequest {
+  folder_path: string;
+  key: string;
+  value: string | null;
+  property_type: string | null;
+}
+
+/** A property with inheritance information. */
+export interface PropertyWithInheritance {
+  id: number;
+  key: string;
+  value: string | null;
+  property_type: string | null;
+  sort_order: number | null;
+  /** True if this property is inherited from a folder (not directly set on the note). */
+  inherited: boolean;
+  /** The folder path this property is inherited from (if inherited). */
+  inherited_from: string | null;
+}

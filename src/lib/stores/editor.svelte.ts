@@ -9,6 +9,9 @@ import { workspaceStore } from "./workspace.svelte";
 import { vaultStore } from "./vault.svelte";
 import { logger } from "../utils/logger";
 
+// Autosave delay in milliseconds
+const AUTOSAVE_DELAY = 1500;
+
 class EditorStore {
   currentNote = $state<NoteContent | null>(null);
   todos = $state<TodoDto[]>([]);
@@ -18,6 +21,9 @@ class EditorStore {
 
   // Flag to prevent reload during save/rename operations
   private isSaving = false;
+
+  // Autosave timer
+  private autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Callback to notify App.svelte to refresh calendar data
   onScheduleBlocksUpdated: (() => void) | null = null;
@@ -75,11 +81,48 @@ class EditorStore {
     if (this.currentNote) {
       this.currentNote.content = content;
       this.isDirty = true;
+      this.scheduleAutosave();
+    }
+  }
+
+  /**
+   * Schedule an autosave after a delay.
+   * Resets the timer if called again before the delay expires.
+   */
+  private scheduleAutosave() {
+    // Clear any existing timer
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+    }
+
+    // Schedule a new save
+    this.autosaveTimer = setTimeout(async () => {
+      this.autosaveTimer = null;
+      if (this.isDirty) {
+        try {
+          await this.save();
+        } catch (e) {
+          logger.error("EditorStore", "Autosave failed:", e);
+        }
+      }
+    }, AUTOSAVE_DELAY);
+  }
+
+  /**
+   * Cancel any pending autosave.
+   */
+  private cancelAutosave() {
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
     }
   }
 
   async save() {
     if (!this.currentNote || !this.isDirty) return;
+
+    // Cancel any pending autosave since we're saving now
+    this.cancelAutosave();
 
     // Note: Don't set isLoading = true here - that would hide the editor and destroy the container
     this.isSaving = true;
@@ -184,6 +227,7 @@ class EditorStore {
   }
 
   close() {
+    this.cancelAutosave();
     this.currentNote = null;
     this.todos = [];
     this.isDirty = false;

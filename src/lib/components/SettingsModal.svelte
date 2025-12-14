@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Modal } from "./shared";
   import PropertiesEditor from "./PropertiesEditor.svelte";
+  import ImportModal from "./ImportModal.svelte";
   import { workspaceStore, type CalendarView } from "../stores/workspace.svelte";
   import type { Theme } from "../services/settings";
   import { getAvailableThemes } from "../services/themes";
@@ -15,6 +16,9 @@
   // Track active section for tabs
   let activeSection = $state<"settings" | "properties">("settings");
 
+  // Import modal state
+  let showImportModal = $state(false);
+
   // Get available themes
   const availableThemes = getAvailableThemes();
 
@@ -22,6 +26,7 @@
   let multiColumnEditable = $state(workspaceStore.multiColumnEditable);
   let defaultCalendarView = $state<CalendarView>(workspaceStore.getDefaultCalendarView());
   let theme = $state<Theme>(workspaceStore.getTheme());
+  let vimMode = $state(workspaceStore.vimMode);
 
   // Reset local state when modal opens
   $effect(() => {
@@ -29,6 +34,7 @@
       multiColumnEditable = workspaceStore.multiColumnEditable;
       defaultCalendarView = workspaceStore.getDefaultCalendarView();
       theme = workspaceStore.getTheme();
+      vimMode = workspaceStore.vimMode;
       activeSection = "settings";
     }
   });
@@ -37,6 +43,7 @@
     workspaceStore.multiColumnEditable = multiColumnEditable;
     workspaceStore.setDefaultCalendarView(defaultCalendarView);
     workspaceStore.setTheme(theme);
+    workspaceStore.setVimMode(vimMode);
     onClose();
   }
 
@@ -95,6 +102,27 @@
 
           <div class="setting-row">
             <div class="setting-info">
+              <label for="vim-mode" class="setting-label">
+                Vim mode
+              </label>
+              <p class="setting-description">
+                Enable vim keybindings in the editor. Requires reopening notes to take effect.
+              </p>
+            </div>
+            <div class="setting-control">
+              <label class="toggle">
+                <input
+                  type="checkbox"
+                  id="vim-mode"
+                  bind:checked={vimMode}
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
               <label for="multi-column-editable" class="setting-label">
                 Multi-column editing
               </label>
@@ -147,6 +175,16 @@
               <button class="action-btn">Change vault</button>
             </div>
           </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Import Obsidian Vault</span>
+              <p class="setting-description">Import notes from an existing Obsidian vault, including frontmatter properties and tags.</p>
+            </div>
+            <div class="setting-control">
+              <button class="action-btn" onclick={() => showImportModal = true}>Import</button>
+            </div>
+          </div>
         </section>
       {:else if activeSection === "properties"}
         <section class="settings-section properties-section">
@@ -170,6 +208,8 @@
     {/if}
   {/snippet}
 </Modal>
+
+<ImportModal open={showImportModal} onClose={() => showImportModal = false} />
 
 <style>
   .settings-layout {

@@ -4,11 +4,13 @@ use crate::state::AppState;
 use core_domain::Vault;
 use shared_types::{
     BacklinkDto, CreateScheduleBlockRequest, DeletePropertyKeyRequest, EmbedContent, FolderNode,
-    HeadingInfo, MergePropertyKeysRequest, NoteContent, NoteDto, NoteForDate, NoteListItem,
-    NoteWithPropertyValue, PropertyDto, PropertyKeyInfo, PropertyOperationResult, PropertyValueInfo,
+    FolderPropertyDto, HeadingInfo, ImportResult, ImportVaultRequest, MergePropertyKeysRequest,
+    NoteContent, NoteDto, NoteForDate, NoteListItem, NoteWithPropertyValue, PropertyDto,
+    PropertyKeyInfo, PropertyOperationResult, PropertyValueInfo, PropertyWithInheritance,
     QueryRequest, QueryResponse, RenamePropertyKeyRequest, RenamePropertyValueRequest,
-    ResolveEmbedRequest, ScheduleBlockDto, SearchResult, SetPropertyRequest, TagDto, TaskQuery,
-    TaskWithContext, TodoDto, UpdateScheduleBlockRequest, VaultInfo,
+    ResolveEmbedRequest, ScheduleBlockDto, SearchResult, SetFolderPropertyRequest,
+    SetPropertyRequest, TagDto, TaskQuery, TaskWithContext, TodoDto, UpdateScheduleBlockRequest,
+    VaultInfo,
 };
 use tauri::{AppHandle, Emitter, State};
 use thiserror::Error;
@@ -1275,4 +1277,151 @@ pub async fn get_notes_with_property_value(
         .get_notes_with_property_value(&key, &value)
         .await
         .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Folder Property Commands
+// ============================================================================
+
+/// Get all properties for a folder.
+#[tauri::command]
+pub async fn get_folder_properties(
+    state: State<'_, AppState>,
+    folder_path: String,
+) -> Result<Vec<FolderPropertyDto>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_folder_properties(&folder_path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Set a folder property.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn set_folder_property(
+    state: State<'_, AppState>,
+    request: SetFolderPropertyRequest,
+) -> Result<i64> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .set_folder_property(
+            &request.folder_path,
+            &request.key,
+            request.value.as_deref(),
+            request.property_type.as_deref(),
+        )
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Delete a folder property.
+#[tauri::command]
+#[instrument(skip(state))]
+pub async fn delete_folder_property(
+    state: State<'_, AppState>,
+    folder_path: String,
+    key: String,
+) -> Result<()> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .delete_folder_property(&folder_path, &key)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get properties for a note with inheritance info.
+/// Returns note's own properties plus inherited folder properties.
+#[tauri::command]
+pub async fn get_properties_with_inheritance(
+    state: State<'_, AppState>,
+    note_id: i64,
+    note_path: String,
+) -> Result<Vec<PropertyWithInheritance>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_properties_with_inheritance(note_id, &note_path)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get all folders that have properties defined.
+#[tauri::command]
+pub async fn get_folders_with_properties(state: State<'_, AppState>) -> Result<Vec<String>> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    vault
+        .repo()
+        .get_folders_with_properties()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Import Commands
+// ============================================================================
+
+/// Import an Obsidian vault into the current vault.
+///
+/// Copies all markdown files and assets, preserving folder structure.
+/// Parses YAML frontmatter and converts to properties.
+/// Merges frontmatter tags with inline tags.
+#[tauri::command]
+#[instrument(skip(state, app))]
+pub async fn import_obsidian_vault(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    request: ImportVaultRequest,
+) -> Result<ImportResult> {
+    info!("Importing Obsidian vault from: {}", request.source_path);
+
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    // Create progress channel
+    let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+    let app_clone = app.clone();
+
+    // Spawn task to forward progress to frontend
+    tokio::spawn(async move {
+        while let Some(progress) = rx.recv().await {
+            let _ = app_clone.emit("import:progress", progress);
+        }
+    });
+
+    // Run import
+    let result = core_domain::import_obsidian_vault(
+        vault,
+        std::path::Path::new(&request.source_path),
+        request.target_subfolder.as_deref(),
+        Some(tx),
+    )
+    .await
+    .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    // Trigger re-index to pick up all changes
+    vault
+        .full_index()
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    info!(
+        "Import complete: {} notes, {} properties",
+        result.notes_imported, result.properties_imported
+    );
+
+    Ok(result)
 }

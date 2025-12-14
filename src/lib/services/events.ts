@@ -7,6 +7,7 @@ import type {
   NotesUpdatedPayload,
   NotesDeletedPayload,
   IndexCompletePayload,
+  ImportProgress,
 } from "../types";
 
 export type EventCallback<T> = (payload: T) => void;
@@ -25,6 +26,12 @@ export function onNotesDeleted(callback: EventCallback<NotesDeletedPayload>): Pr
 
 export function onIndexComplete(callback: EventCallback<IndexCompletePayload>): Promise<UnlistenFn> {
   return listen<IndexCompletePayload>("index:complete", (event) => {
+    callback(event.payload);
+  });
+}
+
+export function onImportProgress(callback: EventCallback<ImportProgress>): Promise<UnlistenFn> {
+  return listen<ImportProgress>("import:progress", (event) => {
     callback(event.payload);
   });
 }

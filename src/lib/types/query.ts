@@ -13,7 +13,14 @@ export type PropertyOperator =
   | "NotEquals"
   | "Contains"
   | "StartsWith"
-  | "EndsWith";
+  | "EndsWith"
+  | "ContainsAll"
+  | "ContainsAny"
+  | "DateOn"
+  | "DateBefore"
+  | "DateAfter"
+  | "DateOnOrBefore"
+  | "DateOnOrAfter";
 
 /** A single property filter condition. */
 export interface PropertyFilter {
@@ -73,6 +80,8 @@ export interface PropertyKeyInfo {
   usage_count: number;
   /** Sample values for this property (up to 10). */
   sample_values: string[];
+  /** Most common property type for this key (text, date, number, boolean, list). */
+  property_type: string | null;
 }
 
 /** User-friendly labels for operators. */
@@ -84,6 +93,13 @@ export const OPERATOR_LABELS: Record<PropertyOperator, string> = {
   Contains: "contains",
   StartsWith: "starts with",
   EndsWith: "ends with",
+  ContainsAll: "contains all",
+  ContainsAny: "contains any",
+  DateOn: "on date",
+  DateBefore: "before",
+  DateAfter: "after",
+  DateOnOrBefore: "on or before",
+  DateOnOrAfter: "on or after",
 };
 
 /** Operators that don't require a value. */
@@ -94,7 +110,7 @@ export const VALUELESS_OPERATORS: PropertyOperator[] = ["Exists", "NotExists"];
 // ============================================================================
 
 /** View type for displaying query results. */
-export type QueryViewType = "Table" | "List";
+export type QueryViewType = "Table" | "List" | "Kanban";
 
 /** Sort direction for query results. */
 export type SortDirection = "Asc" | "Desc";
@@ -107,14 +123,26 @@ export interface QuerySort {
   direction: SortDirection;
 }
 
+/** Kanban-specific configuration. */
+export interface KanbanConfig {
+  /** Property to group cards into columns (e.g., "priority", "status", "context"). */
+  group_by: string;
+  /** Fields to display on each card. */
+  card_fields: string[];
+  /** Whether to show cards without a value in an "Uncategorized" column. */
+  show_uncategorized: boolean;
+}
+
 /** View configuration for query embed. */
 export interface QueryViewConfig {
-  /** View type (table or list). */
+  /** View type (table, list, or kanban). */
   view_type: QueryViewType;
   /** Columns to display (for table view). If empty, use defaults. */
   columns: string[];
   /** Sort configuration. */
   sort: QuerySort | null;
+  /** Kanban-specific configuration (only used when view_type is "Kanban"). */
+  kanban: KanbanConfig | null;
 }
 
 /** A single query tab definition. */

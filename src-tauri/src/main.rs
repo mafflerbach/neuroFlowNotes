@@ -21,6 +21,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
         .register_uri_scheme_protocol("stream", stream::handle_stream_protocol)
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
@@ -85,6 +86,14 @@ fn main() {
             commands::get_property_values_with_counts,
             commands::get_notes_with_property,
             commands::get_notes_with_property_value,
+            // Folder Properties
+            commands::get_folder_properties,
+            commands::set_folder_property,
+            commands::delete_folder_property,
+            commands::get_properties_with_inheritance,
+            commands::get_folders_with_properties,
+            // Import
+            commands::import_obsidian_vault,
         ])
         .setup(|_app| {
             info!("Tauri app setup complete");

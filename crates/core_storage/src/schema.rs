@@ -151,6 +151,9 @@ pub async fn init_database(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     // Migration: Add GTD columns to todos table
     migrate_todos_gtd(pool).await?;
 
+    // Migration: Create folder_properties table
+    migrate_folder_properties(pool).await?;
+
     info!("Database schema initialized");
     Ok(())
 }
@@ -444,6 +447,38 @@ async fn migrate_todos_gtd(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     } else {
         debug!("todos GTD columns already exist");
     }
+
+    Ok(())
+}
+
+/// Create folder_properties table for inherited folder-level metadata.
+async fn migrate_folder_properties(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    // Create the table if it doesn't exist
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS folder_properties (
+            id INTEGER PRIMARY KEY,
+            folder_path TEXT NOT NULL,
+            key TEXT NOT NULL,
+            value TEXT,
+            type TEXT,
+            UNIQUE(folder_path, key)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Create indexes for efficient lookups
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_folder_properties_path ON folder_properties(folder_path)")
+        .execute(pool)
+        .await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_folder_properties_key ON folder_properties(key)")
+        .execute(pool)
+        .await?;
+
+    debug!("folder_properties table created/verified");
 
     Ok(())
 }

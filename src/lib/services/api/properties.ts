@@ -13,6 +13,9 @@ import type {
   PropertyOperationResult,
   PropertyValueInfo,
   NoteWithPropertyValue,
+  FolderPropertyDto,
+  SetFolderPropertyRequest,
+  PropertyWithInheritance,
 } from "../../types";
 
 export async function getProperties(noteId: number): Promise<PropertyDto[]> {
@@ -79,4 +82,36 @@ export async function getNotesWithPropertyValue(
   value: string
 ): Promise<NoteWithPropertyValue[]> {
   return invoke<NoteWithPropertyValue[]>("get_notes_with_property_value", { key, value });
+}
+
+// ============================================================================
+// Folder Property Operations
+// ============================================================================
+
+/** Get all properties for a folder. */
+export async function getFolderProperties(folderPath: string): Promise<FolderPropertyDto[]> {
+  return invoke<FolderPropertyDto[]>("get_folder_properties", { folderPath });
+}
+
+/** Set a folder property. */
+export async function setFolderProperty(request: SetFolderPropertyRequest): Promise<number> {
+  return invoke<number>("set_folder_property", { request });
+}
+
+/** Delete a folder property. */
+export async function deleteFolderProperty(folderPath: string, key: string): Promise<void> {
+  return invoke("delete_folder_property", { folderPath, key });
+}
+
+/** Get properties for a note with inheritance info. */
+export async function getPropertiesWithInheritance(
+  noteId: number,
+  notePath: string
+): Promise<PropertyWithInheritance[]> {
+  return invoke<PropertyWithInheritance[]>("get_properties_with_inheritance", { noteId, notePath });
+}
+
+/** Get all folders that have properties defined. */
+export async function getFoldersWithProperties(): Promise<string[]> {
+  return invoke<string[]>("get_folders_with_properties");
 }

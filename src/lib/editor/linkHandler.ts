@@ -2,15 +2,24 @@
  * Link Handler Extension for CodeMirror
  * Handles Ctrl/Cmd+Click on wiki links to navigate to notes
  * Supports section anchors: [[note#section]]
+ * Also handles external links and markdown links
  */
 
 import { EditorView } from "@codemirror/view";
+import { open } from "@tauri-apps/plugin-shell";
 import { workspaceStore } from "../stores/workspace.svelte";
 import { listNotes, saveNote } from "../services/api";
 import { logger } from "../utils/logger";
 
-// Pattern to match wiki links: [[target]] or [[target#section]] or [[target|display]]
-const WIKILINK_PATTERN = /\[\[([^\]#|]+)(?:#([^\]|]+))?(?:\|[^\]]+)?\]\]/g;
+// Pattern to match wiki links: [[target]] or [[target#section]] or [[#section]] or [[target|display]]
+// Note: target is optional to support [[#section]] for same-document links
+const WIKILINK_PATTERN = /\[\[([^\]#|]*)(?:#([^\]|]+))?(?:\|[^\]]+)?\]\]/g;
+
+// Pattern to match markdown links: [text](url)
+const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+// Pattern to match bare URLs
+const URL_PATTERN = /(?<![[\(])(https?:\/\/[^\s<>\[\]"']+)/g;
 
 /**
  * Create a new note in the root directory and navigate to it
@@ -65,9 +74,84 @@ function findWikiLinkAtPosition(
 }
 
 /**
+ * Find a markdown link at a given position in a line
+ * Returns the URL if found
+ */
+function findMarkdownLinkAtPosition(
+  lineText: string,
+  posInLine: number
+): { url: string; isExternal: boolean } | null {
+  let match;
+  MARKDOWN_LINK_PATTERN.lastIndex = 0;
+
+  while ((match = MARKDOWN_LINK_PATTERN.exec(lineText)) !== null) {
+    const start = match.index;
+    const end = match.index + match[0].length;
+
+    if (posInLine >= start && posInLine <= end) {
+      const url = match[2];
+      const isExternal = url.startsWith("http://") || url.startsWith("https://");
+      return { url, isExternal };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find a bare URL at a given position in a line
+ */
+function findBareUrlAtPosition(
+  lineText: string,
+  posInLine: number
+): string | null {
+  let match;
+  URL_PATTERN.lastIndex = 0;
+
+  while ((match = URL_PATTERN.exec(lineText)) !== null) {
+    const start = match.index;
+    const end = match.index + match[0].length;
+
+    if (posInLine >= start && posInLine <= end) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Open an external URL in the default browser
+ */
+async function openExternalUrl(url: string): Promise<void> {
+  try {
+    await open(url);
+  } catch (error) {
+    logger.error("LinkHandler", "Failed to open external URL:", error);
+  }
+}
+
+/**
+ * Scroll to a section in the current note
+ */
+function scrollToSectionInCurrentNote(section: string): void {
+  const activeDoc = workspaceStore.activeDoc;
+  if (activeDoc) {
+    // Re-follow the same link to trigger scroll behavior
+    workspaceStore.followLink(activeDoc, section);
+  }
+}
+
+/**
  * Navigate to a note by its name or path
  */
 async function navigateToNote(target: string, section?: string): Promise<void> {
+  // Handle same-document section links (empty target)
+  if (!target && section) {
+    scrollToSectionInCurrentNote(section);
+    return;
+  }
+
   try {
     const notes = await listNotes();
 
@@ -101,7 +185,7 @@ async function navigateToNote(target: string, section?: string): Promise<void> {
         },
         section
       );
-    } else {
+    } else if (target) {
       // Note doesn't exist - create it in the root directory
       await createAndNavigateToNote(target);
     }
@@ -134,10 +218,35 @@ const linkClickHandler = EditorView.domEventHandlers({
     const posInLine = pos - line.from;
 
     // Check if clicking on a wiki link
-    const link = findWikiLinkAtPosition(line.text, posInLine);
-    if (link) {
+    const wikiLink = findWikiLinkAtPosition(line.text, posInLine);
+    if (wikiLink) {
       event.preventDefault();
-      navigateToNote(link.target, link.section);
+      navigateToNote(wikiLink.target, wikiLink.section);
+      return true;
+    }
+
+    // Check if clicking on a markdown link
+    const markdownLink = findMarkdownLinkAtPosition(line.text, posInLine);
+    if (markdownLink) {
+      event.preventDefault();
+      if (markdownLink.isExternal) {
+        openExternalUrl(markdownLink.url);
+      } else if (markdownLink.url.startsWith("#")) {
+        // Anchor link to section in current document (e.g., [Overview](#overview))
+        const section = markdownLink.url.slice(1); // Remove the # prefix
+        scrollToSectionInCurrentNote(section);
+      } else {
+        // Internal markdown link - treat as note reference
+        navigateToNote(markdownLink.url);
+      }
+      return true;
+    }
+
+    // Check if clicking on a bare URL
+    const bareUrl = findBareUrlAtPosition(line.text, posInLine);
+    if (bareUrl) {
+      event.preventDefault();
+      openExternalUrl(bareUrl);
       return true;
     }
 

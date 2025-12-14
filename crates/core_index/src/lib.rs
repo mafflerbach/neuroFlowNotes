@@ -5,7 +5,10 @@
 //! - Todos (task list items)
 //! - Wikilinks ([[link]])
 //! - Tags (#tag)
+//! - YAML frontmatter
 
+pub mod frontmatter;
 pub mod markdown;
 
+pub use frontmatter::{parse_frontmatter, strip_frontmatter, Frontmatter, PropertyValue};
 pub use markdown::{NoteAnalysis, ParsedHeading, ParsedTodo};

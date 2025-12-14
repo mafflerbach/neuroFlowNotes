@@ -734,6 +734,87 @@
 }
 
 /* ============================================================================
+ * List Bullet Widget Styles (Live Preview)
+ * ============================================================================ */
+
+/* Base bullet widget styling */
+.cm-list-bullet-widget {
+  color: var(--md-list-marker);
+  font-weight: var(--font-weight-semibold);
+  display: inline;
+}
+
+/* Unordered list bullets */
+.cm-list-bullet-widget.cm-list-unordered {
+  color: var(--md-list-marker);
+}
+
+/* Ordered list numbers */
+.cm-list-bullet-widget.cm-list-ordered {
+  color: var(--md-list-marker);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nested level styling - progressively lighter/smaller */
+.cm-list-bullet-widget[data-level="1"] {
+  opacity: 0.85;
+}
+
+.cm-list-bullet-widget[data-level="2"] {
+  opacity: 0.75;
+}
+
+.cm-list-bullet-widget[data-level="3"] {
+  opacity: 0.65;
+}
+
+/* ============================================================================
+ * Checkbox Widget Styles (Live Preview for Tasks)
+ * ============================================================================ */
+
+/* Container for checkbox and GTD icons */
+.cm-checkbox-widget {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+/* Base checkbox styling */
+.cm-checkbox {
+  font-size: 1.1em;
+  line-height: 1;
+  cursor: default;
+}
+
+/* Unchecked checkbox */
+.cm-checkbox-unchecked {
+  color: var(--md-list-marker);
+}
+
+/* Checked checkbox */
+.cm-checkbox-checked {
+  color: var(--color-success);
+}
+
+/* GTD Context icon */
+.cm-checkbox-context {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+/* Priority indicator */
+.cm-checkbox-priority {
+  font-size: 0.8em;
+}
+
+/* Due date indicator */
+.cm-checkbox-due {
+  font-size: 0.8em;
+  opacity: 0.85;
+}
+
+/* ============================================================================
  * Embed Container Styles
  * ============================================================================ */
 

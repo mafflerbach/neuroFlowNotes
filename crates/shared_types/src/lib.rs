@@ -385,6 +385,20 @@ pub enum PropertyOperator {
     StartsWith,
     /// Property ends with suffix
     EndsWith,
+    /// Property list contains ALL of the specified values (comma-separated)
+    ContainsAll,
+    /// Property list contains ANY of the specified values (comma-separated)
+    ContainsAny,
+    /// Date property equals the specified date (YYYY-MM-DD)
+    DateOn,
+    /// Date property is before the specified date
+    DateBefore,
+    /// Date property is after the specified date
+    DateAfter,
+    /// Date property is on or before the specified date
+    DateOnOrBefore,
+    /// Date property is on or after the specified date
+    DateOnOrAfter,
 }
 
 /// A single property filter condition.
@@ -471,6 +485,8 @@ pub struct PropertyKeyInfo {
     pub usage_count: i64,
     /// Sample values for this property (up to 10).
     pub sample_values: Vec<String>,
+    /// Most common property type for this key (text, date, number, boolean, list).
+    pub property_type: Option<String>,
 }
 
 // ============================================================================
@@ -552,6 +568,47 @@ pub struct NoteWithPropertyValue {
 }
 
 // ============================================================================
+// Folder Property Types
+// ============================================================================
+
+/// A key-value property for a folder (inherited by notes in that folder tree).
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct FolderPropertyDto {
+    pub id: i64,
+    pub folder_path: String,
+    pub key: String,
+    pub value: Option<String>,
+    /// Type hint: "text", "date", "number", "boolean", "list"
+    pub property_type: Option<String>,
+}
+
+/// Request to set a folder property value.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct SetFolderPropertyRequest {
+    pub folder_path: String,
+    pub key: String,
+    pub value: Option<String>,
+    pub property_type: Option<String>,
+}
+
+/// A property with inheritance information.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PropertyWithInheritance {
+    pub id: i64,
+    pub key: String,
+    pub value: Option<String>,
+    pub property_type: Option<String>,
+    pub sort_order: Option<i32>,
+    /// True if this property is inherited from a folder (not directly set on the note).
+    pub inherited: bool,
+    /// The folder path this property is inherited from (if inherited).
+    pub inherited_from: Option<String>,
+}
+
+// ============================================================================
 // Query Embed Types (for inline ```query``` blocks)
 // ============================================================================
 
@@ -563,6 +620,8 @@ pub enum QueryViewType {
     Table,
     /// Display as a simple list.
     List,
+    /// Display as a Kanban board grouped by a property.
+    Kanban,
 }
 
 impl Default for QueryViewType {
@@ -595,11 +654,39 @@ pub struct QuerySort {
     pub direction: SortDirection,
 }
 
+/// Kanban-specific configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct KanbanConfig {
+    /// Property to group cards into columns (e.g., "priority", "status", "context").
+    pub group_by: String,
+    /// Fields to display on each card.
+    #[serde(default)]
+    pub card_fields: Vec<String>,
+    /// Whether to show cards without a value in an "Uncategorized" column.
+    #[serde(default = "default_true")]
+    pub show_uncategorized: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+impl Default for KanbanConfig {
+    fn default() -> Self {
+        Self {
+            group_by: "priority".to_string(),
+            card_fields: vec!["description".to_string(), "due_date".to_string()],
+            show_uncategorized: true,
+        }
+    }
+}
+
 /// View configuration for query embed.
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct QueryViewConfig {
-    /// View type (table or list).
+    /// View type (table, list, or kanban).
     #[serde(default)]
     pub view_type: QueryViewType,
     /// Columns to display (for table view). If empty, use defaults.
@@ -607,6 +694,8 @@ pub struct QueryViewConfig {
     pub columns: Vec<String>,
     /// Sort configuration.
     pub sort: Option<QuerySort>,
+    /// Kanban-specific configuration (only used when view_type is "Kanban").
+    pub kanban: Option<KanbanConfig>,
 }
 
 impl Default for QueryViewConfig {
@@ -615,6 +704,7 @@ impl Default for QueryViewConfig {
             view_type: QueryViewType::Table,
             columns: vec![],
             sort: None,
+            kanban: None,
         }
     }
 }
@@ -736,4 +826,52 @@ pub struct QueryEmbedResponse {
     pub tab_results: Vec<TabResult>,
     /// Error message if parsing or execution failed.
     pub error: Option<String>,
+}
+
+// ============================================================================
+// Import Types (for Obsidian vault import)
+// ============================================================================
+
+/// Request to import an Obsidian vault.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ImportVaultRequest {
+    /// Path to the source Obsidian vault.
+    pub source_path: String,
+    /// Optional subfolder within the target vault to import into.
+    pub target_subfolder: Option<String>,
+}
+
+/// Progress update during vault import.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ImportProgress {
+    /// Current file being processed.
+    pub current_file: String,
+    /// Number of files processed so far.
+    pub files_processed: i64,
+    /// Total number of files to process.
+    pub total_files: i64,
+    /// Number of properties imported.
+    pub properties_imported: i64,
+    /// Number of tags imported.
+    pub tags_imported: i64,
+}
+
+/// Result of vault import.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ImportResult {
+    /// Number of notes imported.
+    pub notes_imported: i64,
+    /// Number of files copied (includes non-markdown assets).
+    pub files_copied: i64,
+    /// Number of properties imported from frontmatter.
+    pub properties_imported: i64,
+    /// Number of tags imported (from frontmatter).
+    pub tags_imported: i64,
+    /// Duration of import in milliseconds.
+    pub duration_ms: u64,
+    /// Any warnings or skipped files.
+    pub warnings: Vec<String>,
 }

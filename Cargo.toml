@@ -54,3 +54,6 @@ tauri-build = { version = "2.0" }
 
 # TypeScript type generation
 ts-rs = { version = "10.0", features = ["serde-compat", "chrono-impl"] }
+
+# YAML parsing (for Obsidian frontmatter)
+serde_yaml = "0.9"

@@ -1,14 +1,17 @@
 <script lang="ts">
-  import { getPropertyKeys, getPropertyValues, runQuery } from "../services/api";
+  import { getPropertyKeys, getPropertyValues, runQuery, getAllTags, getFolderTree } from "../services/api";
   import { workspaceStore } from "../stores";
+  import { FuzzySelect, MultiValueInput } from "./shared";
   import type {
     PropertyKeyInfo,
     PropertyFilter,
     PropertyOperator,
     FilterMatchMode,
     QueryResultType,
+    QueryViewType,
     QueryRequest,
     QueryResultItem,
+    FolderNode,
   } from "../types";
 
   interface Props {
@@ -25,9 +28,37 @@
   let resultType = $state<QueryResultType>("Tasks");
   let includeCompleted = $state(false);
 
+  // View configuration
+  let viewType = $state<QueryViewType>("Table");
+  let kanbanGroupBy = $state("priority");
+  let kanbanCardFields = $state(["context", "due_date"]);
+
+  // Persistence key
+  const STORAGE_KEY = "queryBuilderState";
+
+  // Load persisted state
+  function loadPersistedState(): {
+    filters: PropertyFilter[];
+    matchMode: FilterMatchMode;
+    resultType: QueryResultType;
+    includeCompleted: boolean;
+  } | null {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error("Failed to load query builder state:", e);
+    }
+    return null;
+  }
+
   // Data
   let propertyKeys = $state<PropertyKeyInfo[]>([]);
   let propertyValues = $state<Record<string, string[]>>({});
+  let allTags = $state<string[]>([]);
+  let folderPaths = $state<string[]>([]);
   let results = $state<QueryResultItem[]>([]);
   let totalCount = $state(0);
   let loading = $state(false);
@@ -43,14 +74,128 @@
     Contains: "contains",
     StartsWith: "starts with",
     EndsWith: "ends with",
+    ContainsAll: "contains all",
+    ContainsAny: "contains any",
+    DateOn: "on date",
+    DateBefore: "before",
+    DateAfter: "after",
+    DateOnOrBefore: "on or before",
+    DateOnOrAfter: "on or after",
+  };
+
+  // Special path filter operators (subset that make sense for paths)
+  const pathOperatorLabels: Record<string, string> = {
+    StartsWith: "in folder",
+    Contains: "contains",
+    Equals: "equals",
+    NotEquals: "does not equal",
+  };
+
+  // Special tags filter operators
+  const tagsOperatorLabels: Record<string, string> = {
+    Exists: "has any tags",
+    NotExists: "has no tags",
+    Equals: "has tag",
+    ContainsAll: "has all tags",
+    ContainsAny: "has any of tags",
   };
 
   // Operators that don't need a value
   const valuelessOperators: PropertyOperator[] = ["Exists", "NotExists"];
 
+  // Operators that accept multiple values (comma-separated)
+  const multiValueOperators: PropertyOperator[] = ["ContainsAll", "ContainsAny"];
+
+  // Date comparison operators
+  const dateOperators: PropertyOperator[] = ["DateOn", "DateBefore", "DateAfter", "DateOnOrBefore", "DateOnOrAfter"];
+
+  // Operators by property type
+  const dateTypeOperators: Record<string, string> = {
+    Exists: "exists",
+    NotExists: "does not exist",
+    DateOn: "on date",
+    DateBefore: "before",
+    DateAfter: "after",
+    DateOnOrBefore: "on or before",
+    DateOnOrAfter: "on or after",
+  };
+
+  const numberOperators: Record<string, string> = {
+    Exists: "exists",
+    NotExists: "does not exist",
+    Equals: "equals",
+    NotEquals: "does not equal",
+  };
+
+  const booleanOperators: Record<string, string> = {
+    Exists: "exists",
+    NotExists: "does not exist",
+    Equals: "is",
+  };
+
+  const listOperators: Record<string, string> = {
+    Exists: "exists",
+    NotExists: "does not exist",
+    Contains: "contains",
+    ContainsAll: "contains all",
+    ContainsAny: "contains any",
+  };
+
+  // Special built-in filter keys
+  const SPECIAL_KEYS = [
+    { key: "_path", label: "Folder (path)", isSpecial: true },
+    { key: "_tags", label: "Tags", isSpecial: true },
+  ];
+
+  // Get property type for a key
+  function getPropertyType(key: string): string | null {
+    const propInfo = propertyKeys.find(p => p.key === key);
+    return propInfo?.property_type ?? null;
+  }
+
+  // Flatten folder tree into array of paths
+  function flattenFolderTree(node: FolderNode, paths: string[] = []): string[] {
+    if (node.is_dir && node.path) {
+      paths.push(node.path);
+    }
+    for (const child of node.children) {
+      if (child.is_dir) {
+        flattenFolderTree(child, paths);
+      }
+    }
+    return paths;
+  }
+
   // Load property keys on mount
   $effect(() => {
     loadPropertyKeys();
+    loadTags();
+    loadFolders();
+    restorePersistedState();
+  });
+
+  // Create derived value for persistence tracking
+  const stateForPersistence = $derived(JSON.stringify({
+    filters: filters.filter(f => f.key),
+    matchMode,
+    resultType,
+    includeCompleted,
+  }));
+
+  // Persist state when it changes
+  $effect(() => {
+    // Access the derived state to track changes
+    if (stateForPersistence) {
+      // Debounce persistence slightly
+      const timer = setTimeout(() => {
+        try {
+          localStorage.setItem(STORAGE_KEY, stateForPersistence);
+        } catch (e) {
+          console.error("Failed to persist query builder state:", e);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
   });
 
   async function loadPropertyKeys() {
@@ -64,12 +209,72 @@
     }
   }
 
+  async function loadTags() {
+    try {
+      allTags = await getAllTags();
+    } catch (e) {
+      console.error("Failed to load tags:", e);
+    }
+  }
+
+  async function loadFolders() {
+    try {
+      const tree = await getFolderTree();
+      folderPaths = flattenFolderTree(tree).sort();
+    } catch (e) {
+      console.error("Failed to load folders:", e);
+    }
+  }
+
+  function restorePersistedState() {
+    const persisted = loadPersistedState();
+    if (persisted) {
+      if (persisted.filters && persisted.filters.length > 0) {
+        filters = persisted.filters;
+        // Pre-load values for persisted filter keys
+        // Use persisted.filters (not reactive filters) to avoid dependency loop
+        for (const f of persisted.filters) {
+          if (f.key && !f.key.startsWith("_")) {
+            loadValuesForKey(f.key);
+          }
+        }
+      }
+      matchMode = persisted.matchMode ?? "All";
+      resultType = persisted.resultType ?? "Tasks";
+      includeCompleted = persisted.includeCompleted ?? false;
+    }
+  }
+
+  // Split comma-separated values into individual items for list-type properties
+  function splitListValues(values: string[]): string[] {
+    const uniqueItems = new Set<string>();
+    for (const value of values) {
+      // Check if this looks like a list (contains ", ")
+      if (value.includes(", ")) {
+        for (const item of value.split(", ")) {
+          const trimmed = item.trim();
+          if (trimmed) {
+            uniqueItems.add(trimmed);
+          }
+        }
+      } else {
+        // Single value
+        if (value.trim()) {
+          uniqueItems.add(value.trim());
+        }
+      }
+    }
+    // Return sorted array
+    return [...uniqueItems].sort((a, b) => a.localeCompare(b));
+  }
+
   // Load property values when a key is selected
   async function loadValuesForKey(key: string) {
     if (propertyValues[key]) return; // Already loaded
     try {
       const values = await getPropertyValues(key);
-      propertyValues = { ...propertyValues, [key]: values };
+      // Split list values into individual items
+      propertyValues = { ...propertyValues, [key]: splitListValues(values) };
     } catch (e) {
       console.error(`Failed to load values for key ${key}:`, e);
     }
@@ -86,10 +291,105 @@
     filters = filters.filter((_, i) => i !== index);
   }
 
+  // Check if a key is a special built-in key
+  function isSpecialKey(key: string): boolean {
+    return key.startsWith("_");
+  }
+
+  // Get operator labels for a given key (based on property type)
+  function getOperatorLabels(key: string): Record<string, string> {
+    if (key === "_path") {
+      return pathOperatorLabels;
+    }
+    if (key === "_tags") {
+      return tagsOperatorLabels;
+    }
+
+    // Get the property type and return appropriate operators
+    const propType = getPropertyType(key);
+    switch (propType) {
+      case "date":
+        return dateTypeOperators;
+      case "number":
+        return numberOperators;
+      case "boolean":
+        return booleanOperators;
+      case "list":
+        return listOperators;
+      case "text":
+      default:
+        // For text or unknown types, return all operators
+        return operatorLabels;
+    }
+  }
+
+  // Build options for the property key FuzzySelect
+  type SelectOption = { value: string; label: string; group?: string; count?: number; suffix?: string };
+
+  const propertyKeyOptions = $derived.by(() => {
+    const options: SelectOption[] = [];
+
+    // Add special keys first
+    for (const sk of SPECIAL_KEYS) {
+      options.push({
+        value: sk.key,
+        label: sk.label,
+        group: "Built-in",
+      });
+    }
+
+    // Add property keys sorted alphabetically
+    const sortedKeys = [...propertyKeys].sort((a, b) => a.key.localeCompare(b.key));
+    for (const pk of sortedKeys) {
+      // Add type indicator as suffix
+      const typeSuffix = pk.property_type ? ` (${pk.property_type})` : "";
+      options.push({
+        value: pk.key,
+        label: pk.key,
+        group: "Properties",
+        count: pk.usage_count,
+        suffix: typeSuffix,
+      });
+    }
+
+    return options;
+  });
+
+  // Get value suggestions for a filter (for the value FuzzySelect)
+  function getValueOptions(key: string): SelectOption[] {
+    if (key === "_tags") {
+      return allTags.map((tag) => ({
+        value: tag,
+        label: tag,
+      }));
+    }
+
+    if (key === "_path") {
+      return folderPaths.map((path) => ({
+        value: path,
+        label: path,
+      }));
+    }
+
+    const values = propertyValues[key] || [];
+    return values.map((v) => ({
+      value: v,
+      label: v,
+    }));
+  }
+
   // Update a filter's key
   function updateFilterKey(index: number, key: string) {
     filters[index].key = key;
-    if (key) {
+    // Reset operator to a valid one for this key's type
+    const validOps = Object.keys(getOperatorLabels(key));
+    if (!validOps.includes(filters[index].operator)) {
+      filters[index].operator = validOps[0] as PropertyOperator;
+    }
+    // Clear value when switching keys
+    filters[index].value = null;
+
+    if (key && !isSpecialKey(key)) {
       loadValuesForKey(key);
     }
   }
@@ -190,19 +490,30 @@
 
     // View configuration
     yaml += "view:\n";
-    yaml += "  view_type: Table\n";
+    yaml += `  view_type: ${viewType}\n`;
 
-    // Default columns based on result type
-    if (resultType === "Notes") {
-      yaml += "  columns:\n";
-      yaml += "    - title\n";
-      yaml += "    - path\n";
-    } else {
-      yaml += "  columns:\n";
-      yaml += "    - description\n";
-      yaml += "    - priority\n";
-      yaml += "    - due_date\n";
-      yaml += "    - note_title\n";
+    if (viewType === "Kanban") {
+      // Kanban-specific config
+      yaml += "  kanban:\n";
+      yaml += `    group_by: ${kanbanGroupBy}\n`;
+      yaml += "    card_fields:\n";
+      for (const field of kanbanCardFields) {
+        yaml += `      - ${field}\n`;
+      }
+      yaml += "    show_uncategorized: true\n";
+    } else if (viewType === "Table") {
+      // Default columns based on result type
+      if (resultType === "Notes") {
+        yaml += "  columns:\n";
+        yaml += "    - title\n";
+        yaml += "    - path\n";
+      } else {
+        yaml += "  columns:\n";
+        yaml += "    - description\n";
+        yaml += "    - priority\n";
+        yaml += "    - due_date\n";
+        yaml += "    - note_title\n";
+      }
     }
 
     yaml += "```";
@@ -283,16 +594,15 @@
       <div class="filter-rows">
         {#each filters as filter, index (index)}
           <div class="filter-row">
-            <select
-              class="key-select"
-              value={filter.key}
-              onchange={(e) => updateFilterKey(index, e.currentTarget.value)}
-            >
-              <option value="">Select property...</option>
-              {#each propertyKeys as pk}
-                <option value={pk.key}>{pk.key} ({pk.usage_count})</option>
-              {/each}
-            </select>
+            <div class="key-select-wrapper">
+              <FuzzySelect
+                options={propertyKeyOptions}
+                value={filter.key}
+                onSelect={(key) => updateFilterKey(index, key)}
+                placeholder="Select property..."
+                emptyMessage="No properties found"
+              />
+            </div>
 
             <select
               class="operator-select"
@@ -300,26 +610,69 @@
               onchange={(e) =>
                 updateFilterOperator(index, e.currentTarget.value as PropertyOperator)}
             >
-              {#each Object.entries(operatorLabels) as [op, label]}
+              {#each Object.entries(getOperatorLabels(filter.key)) as [op, label]}
                 <option value={op}>{label}</option>
               {/each}
             </select>
 
             {#if !valuelessOperators.includes(filter.operator)}
-              <input
-                type="text"
-                class="value-input"
-                placeholder="Value..."
-                value={filter.value ?? ""}
-                oninput={(e) => updateFilterValue(index, e.currentTarget.value)}
-                list={`values-${index}`}
-              />
-              {#if filter.key && propertyValues[filter.key]}
-                <datalist id={`values-${index}`}>
-                  {#each propertyValues[filter.key] as val}
-                    <option value={val} />
-                  {/each}
-                </datalist>
+              {@const valueOptions = getValueOptions(filter.key)}
+              {@const isMultiValue = multiValueOperators.includes(filter.operator)}
+              {@const isDateOp = dateOperators.includes(filter.operator)}
+              {@const propType = getPropertyType(filter.key)}
+              {#if isDateOp || propType === "date"}
+                <!-- Date picker for date operators or date type properties -->
+                <input
+                  type="date"
+                  class="value-input date-input"
+                  value={filter.value ?? ""}
+                  oninput={(e) => updateFilterValue(index, e.currentTarget.value)}
+                />
+              {:else if propType === "boolean"}
+                <!-- Boolean selector -->
+                <select
+                  class="value-input"
+                  value={filter.value ?? "true"}
+                  onchange={(e) => updateFilterValue(index, e.currentTarget.value)}
+                >
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </select>
+              {:else if propType === "number"}
+                <!-- Number input -->
+                <input
+                  type="number"
+                  class="value-input"
+                  placeholder="0"
+                  value={filter.value ?? ""}
+                  oninput={(e) => updateFilterValue(index, e.currentTarget.value)}
+                />
+              {:else if isMultiValue && valueOptions.length > 0}
+                <!-- Multi-value input for ContainsAll/ContainsAny -->
+                <MultiValueInput
+                  options={valueOptions}
+                  value={filter.value ?? ""}
+                  onChange={(val) => updateFilterValue(index, val)}
+                  placeholder="Add values..."
+                />
+              {:else if valueOptions.length > 0}
+                <div class="value-select-wrapper">
+                  <FuzzySelect
+                    options={valueOptions}
+                    value={filter.value ?? ""}
+                    onSelect={(val) => updateFilterValue(index, val)}
+                    placeholder="Select value..."
+                    emptyMessage="No values found"
+                  />
+                </div>
+              {:else}
+                <input
+                  type="text"
+                  class="value-input"
+                  placeholder={isMultiValue ? "Values (comma-separated)..." : "Value..."}
+                  value={filter.value ?? ""}
+                  oninput={(e) => updateFilterValue(index, e.currentTarget.value)}
+                />
               {/if}
             {/if}
 
@@ -382,6 +735,114 @@
         <input type="checkbox" bind:checked={includeCompleted} />
         Include completed tasks
       </label>
+    {/if}
+  </div>
+
+  <div class="view-section">
+    <div class="view-type">
+      <span class="section-label">View:</span>
+      <label>
+        <input
+          type="radio"
+          name="viewType"
+          value="Table"
+          checked={viewType === "Table"}
+          onchange={() => (viewType = "Table")}
+        />
+        Table
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="viewType"
+          value="List"
+          checked={viewType === "List"}
+          onchange={() => (viewType = "List")}
+        />
+        List
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="viewType"
+          value="Kanban"
+          checked={viewType === "Kanban"}
+          onchange={() => (viewType = "Kanban")}
+        />
+        Kanban
+      </label>
+    </div>
+
+    {#if viewType === "Kanban"}
+      <div class="kanban-options">
+        <div class="kanban-option">
+          <label class="option-label">Group by:</label>
+          <select class="option-select" bind:value={kanbanGroupBy}>
+            <!-- Built-in task fields -->
+            <optgroup label="Task Fields">
+              <option value="priority">Priority</option>
+              <option value="context">Context</option>
+              <option value="due_date">Due Date</option>
+              <option value="completed">Completed</option>
+            </optgroup>
+            <!-- Custom properties from vault -->
+            {#if propertyKeys.length > 0}
+              <optgroup label="Properties">
+                {#each propertyKeys as propKey}
+                  <option value={propKey.key}>{propKey.key}</option>
+                {/each}
+              </optgroup>
+            {/if}
+          </select>
+        </div>
+        <div class="kanban-option">
+          <label class="option-label">Card fields:</label>
+          <div class="card-fields-checkboxes">
+            <label>
+              <input
+                type="checkbox"
+                checked={kanbanCardFields.includes("priority")}
+                onchange={(e) => {
+                  if (e.currentTarget.checked) {
+                    kanbanCardFields = [...kanbanCardFields, "priority"];
+                  } else {
+                    kanbanCardFields = kanbanCardFields.filter(f => f !== "priority");
+                  }
+                }}
+              />
+              Priority
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={kanbanCardFields.includes("context")}
+                onchange={(e) => {
+                  if (e.currentTarget.checked) {
+                    kanbanCardFields = [...kanbanCardFields, "context"];
+                  } else {
+                    kanbanCardFields = kanbanCardFields.filter(f => f !== "context");
+                  }
+                }}
+              />
+              Context
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={kanbanCardFields.includes("due_date")}
+                onchange={(e) => {
+                  if (e.currentTarget.checked) {
+                    kanbanCardFields = [...kanbanCardFields, "due_date"];
+                  } else {
+                    kanbanCardFields = kanbanCardFields.filter(f => f !== "due_date");
+                  }
+                }}
+              />
+              Due Date
+            </label>
+          </div>
+        </div>
+      </div>
     {/if}
   </div>
 
@@ -675,10 +1136,19 @@
   .filter-row {
     display: flex;
     gap: var(--spacing-2);
-    align-items: center;
+    align-items: flex-start;
   }
 
-  .key-select,
+  .key-select-wrapper {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .value-select-wrapper {
+    flex: 1;
+    min-width: 120px;
+  }
+
   .operator-select {
     padding: var(--spacing-1) var(--spacing-2);
     font-size: var(--font-size-sm);
@@ -687,14 +1157,6 @@
     background: var(--bg-secondary);
     color: var(--text-primary);
     cursor: pointer;
-  }
-
-  .key-select {
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .operator-select {
     min-width: 130px;
   }
 
@@ -706,6 +1168,16 @@
     border-radius: var(--radius-sm);
     background: var(--bg-secondary);
     color: var(--text-primary);
+  }
+
+  .value-input.date-input {
+    min-width: 140px;
+    cursor: pointer;
+  }
+
+  .value-input.date-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: var(--calendar-icon-filter, none);
   }
 
   .filter-actions {
@@ -772,6 +1244,86 @@
   }
 
   .result-type input[type="radio"] {
+    accent-color: var(--color-primary);
+    width: 14px;
+    height: 14px;
+  }
+
+  .view-section {
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  .view-type {
+    display: flex;
+    gap: var(--spacing-3);
+    align-items: center;
+  }
+
+  .view-type label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    color: var(--text-primary);
+  }
+
+  .view-type input[type="radio"] {
+    accent-color: var(--color-primary);
+    width: 14px;
+    height: 14px;
+  }
+
+  .kanban-options {
+    display: flex;
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-3);
+    padding: var(--spacing-3);
+    background: var(--bg-surface-sunken);
+    border-radius: var(--radius-md);
+    flex-wrap: wrap;
+  }
+
+  .kanban-option {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+  }
+
+  .option-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .option-select {
+    padding: var(--spacing-1) var(--spacing-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+  }
+
+  .card-fields-checkboxes {
+    display: flex;
+    gap: var(--spacing-3);
+  }
+
+  .card-fields-checkboxes label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    color: var(--text-primary);
+  }
+
+  .card-fields-checkboxes input[type="checkbox"] {
     accent-color: var(--color-primary);
     width: 14px;
     height: 14px;

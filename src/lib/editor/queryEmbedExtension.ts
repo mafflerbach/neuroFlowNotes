@@ -31,7 +31,7 @@ import type { ViewUpdate, DecorationSet } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
 import type { EditorState } from "@codemirror/state";
 import { executeQueryEmbed } from "../services/api";
-import type { QueryEmbedResponse, QueryResultItem, QueryViewConfig } from "../types";
+import type { QueryEmbedResponse, QueryResultItem, QueryViewConfig, KanbanConfig } from "../types";
 import { workspaceStore } from "../stores/workspace.svelte";
 import { EditorCache } from "./cache";
 
@@ -107,7 +107,7 @@ async function getQueryResults(yamlContent: string): Promise<QueryEmbedResponse>
         result_type: "Tasks",
         include_completed: false,
         limit: 50,
-        view: { view_type: "Table", columns: [], sort: null },
+        view: { view_type: "Table", columns: [], sort: null, kanban: null },
         tabs: [],
       },
       results: [],
@@ -246,6 +246,8 @@ class QueryResultWidget extends WidgetType {
     const viewType = this.response.query.view.view_type;
     if (viewType === "Table") {
       this.renderTableWithConfig(results, this.response.query.view, this.response.query.result_type);
+    } else if (viewType === "Kanban") {
+      this.renderKanban(results, this.response.query.view);
     } else {
       this.renderList(results);
     }
@@ -301,6 +303,8 @@ class QueryResultWidget extends WidgetType {
       const viewType = activeTab.view.view_type;
       if (viewType === "Table") {
         this.renderTableInContainer(activeTab.results, activeTab.view, contentContainer);
+      } else if (viewType === "Kanban") {
+        this.renderKanbanInContainer(activeTab.results, activeTab.view, contentContainer);
       } else {
         this.renderListInContainer(activeTab.results, contentContainer);
       }
@@ -478,6 +482,313 @@ class QueryResultWidget extends WidgetType {
   private renderTableWithConfig(results: QueryResultItem[], view: QueryViewConfig, _resultType: string) {
     if (!this.element) return;
     this.renderTableInContainer(results, view, this.element);
+  }
+
+  private renderKanban(results: QueryResultItem[], view: QueryViewConfig) {
+    if (!this.element) return;
+    this.renderKanbanInContainer(results, view, this.element);
+  }
+
+  private renderKanbanInContainer(results: QueryResultItem[], view: QueryViewConfig, container: HTMLElement) {
+    const kanbanConfig = view.kanban || {
+      group_by: "priority",
+      card_fields: ["description", "due_date"],
+      show_uncategorized: true,
+    };
+
+    // Group results by the specified property
+    const groups = this.groupResultsByProperty(results, kanbanConfig.group_by, kanbanConfig.show_uncategorized);
+
+    // Create kanban board container
+    const board = document.createElement("div");
+    board.className = "cm-query-kanban-board";
+
+    // Define column order for known properties
+    const columnOrder = this.getColumnOrder(kanbanConfig.group_by, groups);
+
+    // Render each column
+    for (const columnName of columnOrder) {
+      const columnItems = groups.get(columnName) || [];
+      const column = this.renderKanbanColumn(columnName, columnItems, kanbanConfig);
+      board.appendChild(column);
+    }
+
+    container.appendChild(board);
+  }
+
+  private groupResultsByProperty(
+    results: QueryResultItem[],
+    groupBy: string,
+    showUncategorized: boolean
+  ): Map<string, QueryResultItem[]> {
+    const groups = new Map<string, QueryResultItem[]>();
+
+    for (const item of results) {
+      const value = this.getGroupValue(item, groupBy);
+
+      if (!value && !showUncategorized) {
+        continue;
+      }
+
+      const groupName = value || "Uncategorized";
+      const existing = groups.get(groupName) || [];
+      existing.push(item);
+      groups.set(groupName, existing);
+    }
+
+    return groups;
+  }
+
+  private getGroupValue(item: QueryResultItem, groupBy: string): string | null {
+    if (item.item_type === "task" && item.task) {
+      switch (groupBy) {
+        case "priority":
+          return item.task.todo.priority;
+        case "context":
+          return item.task.todo.context;
+        case "completed":
+          return item.task.todo.completed ? "Completed" : "Not Completed";
+        case "due_date":
+          return this.categorizeDate(item.task.todo.due_date);
+        default:
+          // Check note properties
+          const prop = item.properties.find((p) => p.key === groupBy);
+          return prop?.value || null;
+      }
+    } else if (item.note) {
+      const prop = item.properties.find((p) => p.key === groupBy);
+      return prop?.value || null;
+    }
+    return null;
+  }
+
+  private categorizeDate(dateStr: string | null): string | null {
+    if (!dateStr) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const date = new Date(dateStr + "T00:00:00");
+
+    if (date < today) return "Overdue";
+    if (date.getTime() === today.getTime()) return "Today";
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (date.getTime() === tomorrow.getTime()) return "Tomorrow";
+
+    const weekEnd = new Date(today);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    if (date < weekEnd) return "This Week";
+
+    return "Later";
+  }
+
+  private getColumnOrder(groupBy: string, groups: Map<string, QueryResultItem[]>): string[] {
+    // Define preferred order for known group-by values
+    const knownOrders: Record<string, string[]> = {
+      priority: ["high", "medium", "low", "Uncategorized"],
+      completed: ["Not Completed", "Completed"],
+      due_date: ["Overdue", "Today", "Tomorrow", "This Week", "Later", "Uncategorized"],
+    };
+
+    const preferredOrder = knownOrders[groupBy];
+    if (preferredOrder) {
+      // Return columns in preferred order, but only if they exist
+      const ordered: string[] = [];
+      for (const col of preferredOrder) {
+        if (groups.has(col)) {
+          ordered.push(col);
+        }
+      }
+      // Add any remaining columns not in the preferred order
+      for (const col of groups.keys()) {
+        if (!ordered.includes(col)) {
+          ordered.push(col);
+        }
+      }
+      return ordered;
+    }
+
+    // Default: sort alphabetically with "Uncategorized" at the end
+    const columns = Array.from(groups.keys()).sort((a, b) => {
+      if (a === "Uncategorized") return 1;
+      if (b === "Uncategorized") return -1;
+      return a.localeCompare(b);
+    });
+    return columns;
+  }
+
+  private renderKanbanColumn(
+    columnName: string,
+    items: QueryResultItem[],
+    config: KanbanConfig
+  ): HTMLElement {
+    const column = document.createElement("div");
+    column.className = "cm-query-kanban-column";
+
+    // Column header
+    const header = document.createElement("div");
+    header.className = `cm-query-kanban-column-header ${this.getColumnColorClass(columnName, config.group_by)}`;
+
+    const headerTitle = document.createElement("span");
+    headerTitle.className = "cm-query-kanban-column-title";
+    headerTitle.textContent = this.formatColumnName(columnName);
+    header.appendChild(headerTitle);
+
+    const headerCount = document.createElement("span");
+    headerCount.className = "cm-query-kanban-column-count";
+    headerCount.textContent = `${items.length}`;
+    header.appendChild(headerCount);
+
+    column.appendChild(header);
+
+    // Column cards container
+    const cardsContainer = document.createElement("div");
+    cardsContainer.className = "cm-query-kanban-cards";
+
+    for (const item of items) {
+      const card = this.renderKanbanCard(item, config);
+      cardsContainer.appendChild(card);
+    }
+
+    column.appendChild(cardsContainer);
+
+    return column;
+  }
+
+  private getColumnColorClass(columnName: string, groupBy: string): string {
+    if (groupBy === "priority") {
+      switch (columnName.toLowerCase()) {
+        case "high": return "priority-high";
+        case "medium": return "priority-medium";
+        case "low": return "priority-low";
+      }
+    }
+    if (groupBy === "due_date") {
+      switch (columnName) {
+        case "Overdue": return "due-overdue";
+        case "Today": return "due-today";
+        case "Tomorrow": return "due-tomorrow";
+      }
+    }
+    if (groupBy === "completed") {
+      return columnName === "Completed" ? "status-done" : "status-pending";
+    }
+    return "";
+  }
+
+  private renderKanbanCard(item: QueryResultItem, config: KanbanConfig): HTMLElement {
+    const card = document.createElement("div");
+    const isCompleted = item.item_type === "task" && item.task?.todo.completed;
+    card.className = `cm-query-kanban-card ${isCompleted ? "completed" : ""}`;
+
+    // Card title/description
+    const titleEl = document.createElement("div");
+    titleEl.className = "cm-query-kanban-card-title";
+
+    if (item.item_type === "task" && item.task) {
+      titleEl.textContent = item.task.todo.description;
+    } else if (item.note) {
+      titleEl.textContent = item.note.title || item.note.path.replace(".md", "");
+    }
+
+    // Make title clickable
+    titleEl.style.cursor = "pointer";
+    titleEl.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const noteId = item.item_type === "task"
+        ? item.task?.todo.note_id
+        : item.note?.id;
+      const notePath = item.item_type === "task"
+        ? item.task?.note_path
+        : item.note?.path;
+      const noteTitle = item.item_type === "task"
+        ? item.task?.note_title
+        : item.note?.title;
+
+      if (noteId && notePath) {
+        workspaceStore.followLink({
+          id: noteId,
+          path: notePath,
+          title: noteTitle ?? notePath.replace(".md", ""),
+        });
+      }
+    };
+
+    card.appendChild(titleEl);
+
+    // Card metadata based on config
+    const metaEl = document.createElement("div");
+    metaEl.className = "cm-query-kanban-card-meta";
+
+    for (const field of config.card_fields) {
+      const value = this.getCardFieldValue(item, field);
+      if (value) {
+        const fieldEl = document.createElement("span");
+        fieldEl.className = `cm-query-kanban-card-field ${this.getFieldClass(field)}`;
+        fieldEl.innerHTML = value;
+        metaEl.appendChild(fieldEl);
+      }
+    }
+
+    if (metaEl.children.length > 0) {
+      card.appendChild(metaEl);
+    }
+
+    // Note link (if different from title)
+    if (item.item_type === "task" && item.task) {
+      const noteLink = document.createElement("div");
+      noteLink.className = "cm-query-kanban-card-note";
+      noteLink.textContent = item.task.note_title || item.task.note_path.replace(".md", "");
+      noteLink.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        workspaceStore.followLink({
+          id: item.task!.todo.note_id,
+          path: item.task!.note_path,
+          title: item.task!.note_title ?? item.task!.note_path.replace(".md", ""),
+        });
+      };
+      card.appendChild(noteLink);
+    }
+
+    return card;
+  }
+
+  private getCardFieldValue(item: QueryResultItem, field: string): string | null {
+    if (item.item_type === "task" && item.task) {
+      switch (field) {
+        case "description":
+          return null; // Already shown as title
+        case "priority":
+          const p = item.task.todo.priority;
+          return p ? `<span class="priority-badge priority-${p}">${p}</span>` : null;
+        case "context":
+          const c = item.task.todo.context;
+          return c ? `@${c}` : null;
+        case "due_date":
+          return item.task.todo.due_date;
+        case "note_title":
+          return null; // Shown separately
+        default:
+          const prop = item.properties.find((pr) => pr.key === field);
+          return prop?.value || null;
+      }
+    } else if (item.note) {
+      const prop = item.properties.find((pr) => pr.key === field);
+      return prop?.value || null;
+    }
+    return null;
+  }
+
+  private getFieldClass(field: string): string {
+    switch (field) {
+      case "priority": return "field-priority";
+      case "context": return "field-context";
+      case "due_date": return "field-due";
+      default: return "field-default";
+    }
   }
 
   private renderList(results: QueryResultItem[]) {
@@ -1009,6 +1320,187 @@ const injectStyles = () => {
       color: var(--text-muted);
       font-size: var(--font-size-xs);
       font-style: italic;
+    }
+
+    /* Kanban board styles */
+    .cm-query-kanban-board {
+      display: flex;
+      gap: var(--spacing-3);
+      overflow-x: auto;
+      padding: var(--spacing-3);
+      min-height: 200px;
+    }
+
+    .cm-query-kanban-column {
+      flex: 0 0 240px;
+      min-width: 240px;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-surface-sunken);
+      border-radius: var(--radius-md);
+      max-height: 400px;
+    }
+
+    .cm-query-kanban-column-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-2) var(--spacing-3);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      background: var(--surface1);
+    }
+
+    .cm-query-kanban-column-header.priority-high {
+      background: var(--red);
+      color: var(--base);
+    }
+
+    .cm-query-kanban-column-header.priority-medium {
+      background: var(--yellow);
+      color: var(--crust);
+    }
+
+    .cm-query-kanban-column-header.priority-low {
+      background: var(--surface1);
+    }
+
+    .cm-query-kanban-column-header.due-overdue {
+      background: var(--red);
+      color: var(--base);
+    }
+
+    .cm-query-kanban-column-header.due-today {
+      background: var(--peach);
+      color: var(--crust);
+    }
+
+    .cm-query-kanban-column-header.due-tomorrow {
+      background: var(--yellow);
+      color: var(--crust);
+    }
+
+    .cm-query-kanban-column-header.status-done {
+      background: var(--green);
+      color: var(--base);
+    }
+
+    .cm-query-kanban-column-header.status-pending {
+      background: var(--surface1);
+    }
+
+    .cm-query-kanban-column-title {
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--font-size-sm);
+      text-transform: capitalize;
+    }
+
+    .cm-query-kanban-column-count {
+      font-size: var(--font-size-xs);
+      opacity: 0.8;
+      padding: 2px 6px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: var(--radius-sm);
+    }
+
+    .cm-query-kanban-cards {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-2);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+    }
+
+    .cm-query-kanban-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-2) var(--spacing-3);
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+
+    .cm-query-kanban-card:hover {
+      border-color: var(--border-default);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cm-query-kanban-card.completed {
+      opacity: 0.6;
+    }
+
+    .cm-query-kanban-card.completed .cm-query-kanban-card-title {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .cm-query-kanban-card-title {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-1);
+      line-height: 1.4;
+    }
+
+    .cm-query-kanban-card-title:hover {
+      color: var(--text-link);
+    }
+
+    .cm-query-kanban-card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-1);
+      font-size: var(--font-size-xs);
+    }
+
+    .cm-query-kanban-card-field {
+      padding: 1px 4px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+    }
+
+    .cm-query-kanban-card-field.field-context {
+      background: var(--blue);
+      color: var(--base);
+    }
+
+    .cm-query-kanban-card-field.field-due {
+      background: var(--peach);
+      color: var(--crust);
+    }
+
+    .cm-query-kanban-card-field .priority-badge {
+      padding: 1px 4px;
+      border-radius: var(--radius-sm);
+    }
+
+    .cm-query-kanban-card-field .priority-badge.priority-high {
+      background: var(--red);
+      color: var(--base);
+    }
+
+    .cm-query-kanban-card-field .priority-badge.priority-medium {
+      background: var(--yellow);
+      color: var(--crust);
+    }
+
+    .cm-query-kanban-card-field .priority-badge.priority-low {
+      background: var(--surface1);
+      color: var(--text-muted);
+    }
+
+    .cm-query-kanban-card-note {
+      margin-top: var(--spacing-2);
+      font-size: var(--font-size-xs);
+      color: var(--text-link);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cm-query-kanban-card-note:hover {
+      text-decoration: underline;
     }
   `;
   document.head.appendChild(style);
