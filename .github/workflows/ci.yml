@@ -44,6 +44,9 @@ jobs:
       - name: TypeScript check
         run: npm run check
 
+      - name: Build frontend
+        run: npm run build
+
       - name: Rust check
         run: cargo check --workspace
 
