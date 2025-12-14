@@ -2,6 +2,7 @@
  * Type definitions - re-exports all types from domain-specific files
  */
 
+export * from "./common";
 export * from "./note";
 export * from "./calendar";
 export * from "./vault";

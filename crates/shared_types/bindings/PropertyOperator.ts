@@ -3,4 +3,4 @@
 /**
  * Operator for property filters.
  */
-export type PropertyOperator = "Exists" | "NotExists" | "Equals" | "NotEquals" | "Contains" | "StartsWith" | "EndsWith";
+export type PropertyOperator = "Exists" | "NotExists" | "Equals" | "NotEquals" | "Contains" | "StartsWith" | "EndsWith" | "ContainsAll" | "ContainsAny" | "DateOn" | "DateBefore" | "DateAfter" | "DateOnOrBefore" | "DateOnOrAfter";

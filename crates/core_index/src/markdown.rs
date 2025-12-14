@@ -5,6 +5,8 @@ use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use regex::Regex;
 use tracing::{debug, instrument};
 
+use crate::frontmatter::{parse_frontmatter, PropertyValue};
+
 /// Regex for matching [[wikilinks]].
 /// Matches [[link]], [[link|display text]], [[link#section]], [[link#section|display]]
 /// Also matches embeds: ![[link]], ![[link#section]]
@@ -37,6 +39,17 @@ static PRIORITY_REGEX: Lazy<Regex> =
 static DUE_DATE_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\^(\d{4}-\d{2}-\d{2}|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next-week)").unwrap());
 
+/// A parsed property from frontmatter.
+#[derive(Debug, Clone)]
+pub struct ParsedProperty {
+    /// Property key.
+    pub key: String,
+    /// Property value as string.
+    pub value: Option<String>,
+    /// Inferred property type.
+    pub property_type: String,
+}
+
 /// Result of analyzing a markdown note.
 #[derive(Debug, Clone, Default)]
 pub struct NoteAnalysis {
@@ -54,6 +67,9 @@ pub struct NoteAnalysis {
 
     /// All wikilinks found (target note names).
     pub links: Vec<String>,
+
+    /// Properties from YAML frontmatter.
+    pub properties: Vec<ParsedProperty>,
 }
 
 /// A heading in the document.
@@ -110,10 +126,60 @@ pub struct ParsedTodo {
 #[instrument(skip(content))]
 pub fn parse(content: &str) -> NoteAnalysis {
     let mut analysis = NoteAnalysis::default();
-    let content_len = content.len();
+
+    // Parse frontmatter first
+    let (frontmatter, body) = parse_frontmatter(content);
+
+    // Extract properties from frontmatter
+    for (key, value) in &frontmatter.properties {
+        // Skip special keys that are handled separately
+        if key.to_lowercase() == "tags" || key.to_lowercase() == "tag" {
+            continue;
+        }
+
+        let (string_value, prop_type) = match value {
+            PropertyValue::String(s) => (Some(s.clone()), "text"),
+            PropertyValue::Number(n) => (Some(n.to_string()), "number"),
+            PropertyValue::Bool(b) => (Some(b.to_string()), "boolean"),
+            PropertyValue::List(items) => (Some(items.join(", ")), "list"),
+            PropertyValue::Null => (None, "text"),
+        };
+
+        // Try to detect date type from value
+        let detected_type = if prop_type == "text" {
+            if let Some(ref v) = string_value {
+                if v.len() == 10 && v.chars().nth(4) == Some('-') && v.chars().nth(7) == Some('-') {
+                    "date"
+                } else {
+                    prop_type
+                }
+            } else {
+                prop_type
+            }
+        } else {
+            prop_type
+        };
+
+        analysis.properties.push(ParsedProperty {
+            key: key.clone(),
+            value: string_value,
+            property_type: detected_type.to_string(),
+        });
+    }
+
+    // Add frontmatter tags to analysis tags
+    for tag in &frontmatter.tags {
+        if !analysis.tags.contains(tag) {
+            analysis.tags.push(tag.clone());
+        }
+    }
+
+    // Use body content for further parsing (after frontmatter)
+    let content_to_parse = if frontmatter.content_start > 0 { body } else { content };
+    let content_len = content_to_parse.len();
 
     // Track line numbers
-    let line_offsets = compute_line_offsets(content);
+    let line_offsets = compute_line_offsets(content_to_parse);
 
     // Track current heading stack for heading_path
     let mut heading_stack: Vec<(u8, String)> = Vec::new();
@@ -129,7 +195,7 @@ pub fn parse(content: &str) -> NoteAnalysis {
 
     // Parse with pulldown-cmark
     let options = Options::ENABLE_TASKLISTS | Options::ENABLE_STRIKETHROUGH;
-    let parser = Parser::new_ext(content, options);
+    let parser = Parser::new_ext(content_to_parse, options);
 
     let mut current_heading_level: Option<u8> = None;
     let mut current_heading_text = String::new();
@@ -169,7 +235,7 @@ pub fn parse(content: &str) -> NoteAnalysis {
                     heading_stack.push((level, text.clone()));
 
                     // Find where the heading line ends (after newline)
-                    let heading_end_offset = content[range.end..]
+                    let heading_end_offset = content_to_parse[range.end..]
                         .find('\n')
                         .map(|i| range.end + i + 1)
                         .unwrap_or(range.end);
@@ -254,13 +320,13 @@ pub fn parse(content: &str) -> NoteAnalysis {
             .map(|next| {
                 // Find the start of the next heading's line by looking for the # character
                 // The heading_end_offset is after the heading, so we need to go back
-                let heading_text_approx = &content[..next.heading_end_offset];
+                let heading_text_approx = &content_to_parse[..next.heading_end_offset];
                 // Find the last occurrence of a line starting with #
                 heading_text_approx
                     .rfind('\n')
                     .and_then(|nl| {
                         // Go back one more newline to find line start
-                        content[..nl].rfind('\n').map(|p| p + 1).or(Some(0))
+                        content_to_parse[..nl].rfind('\n').map(|p| p + 1).or(Some(0))
                     })
                     .unwrap_or(0)
             })
@@ -276,9 +342,15 @@ pub fn parse(content: &str) -> NoteAnalysis {
         });
     }
 
-    // Extract wikilinks and tags using regex
-    analysis.links = extract_wikilinks(content);
-    analysis.tags = extract_tags(content);
+    // Extract wikilinks and tags using regex (from body, not frontmatter)
+    analysis.links = extract_wikilinks(content_to_parse);
+    // Merge inline tags with frontmatter tags
+    let inline_tags = extract_tags(content_to_parse);
+    for tag in inline_tags {
+        if !analysis.tags.contains(&tag) {
+            analysis.tags.push(tag);
+        }
+    }
 
     debug!(
         "Parsed note: {} headings, {} todos, {} links, {} tags",

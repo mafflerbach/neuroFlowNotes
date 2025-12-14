@@ -10,5 +10,8 @@
 pub mod frontmatter;
 pub mod markdown;
 
-pub use frontmatter::{parse_frontmatter, strip_frontmatter, Frontmatter, PropertyValue};
-pub use markdown::{NoteAnalysis, ParsedHeading, ParsedTodo};
+pub use frontmatter::{
+    delete_frontmatter_property, parse_frontmatter, set_frontmatter_property, strip_frontmatter,
+    Frontmatter, PropertyValue,
+};
+pub use markdown::{NoteAnalysis, ParsedHeading, ParsedProperty, ParsedTodo};

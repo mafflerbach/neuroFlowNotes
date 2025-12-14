@@ -32,6 +32,7 @@ The query results will render inline when your cursor is outside the block. Move
 | `include_completed` | boolean | `false` | Include completed tasks in results |
 | `limit` | number | `50` | Maximum number of results to display |
 | `view` | object | (see below) | Display configuration |
+| `tabs` | array | `[]` | Multi-tab configuration (see below) |
 
 ### Filter Properties
 
@@ -56,6 +57,13 @@ Each filter in the `filters` array has:
 | `Contains` | Contains substring | Yes |
 | `StartsWith` | Starts with value | Yes |
 | `EndsWith` | Ends with value | Yes |
+| `ContainsAll` | List contains ALL values (comma-separated) | Yes |
+| `ContainsAny` | List contains ANY value (comma-separated) | Yes |
+| `DateOn` | Date equals value (YYYY-MM-DD) | Yes |
+| `DateBefore` | Date is before value | Yes |
+| `DateAfter` | Date is after value | Yes |
+| `DateOnOrBefore` | Date is on or before value | Yes |
+| `DateOnOrAfter` | Date is on or after value | Yes |
 
 ### View Configuration
 
@@ -63,9 +71,10 @@ The `view` object controls how results are displayed:
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `view_type` | string | `"Table"` | Display format: `"Table"` or `"List"` |
+| `view_type` | string | `"Table"` | Display format: `"Table"`, `"List"`, or `"Kanban"` |
 | `columns` | array | (auto) | Column names for table view |
 | `sort` | object | `null` | Sort configuration |
+| `kanban` | object | `null` | Kanban-specific configuration (when view_type is "Kanban") |
 
 #### Sort Configuration
 
@@ -73,6 +82,28 @@ The `view` object controls how results are displayed:
 sort:
   property: "due_date"
   direction: "Asc"  # or "Desc"
+```
+
+#### Kanban Configuration
+
+When using `view_type: Kanban`, configure the board with:
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `group_by` | string | `"priority"` | Property to group cards into columns |
+| `card_fields` | array | `["description", "due_date"]` | Fields to display on each card |
+| `show_uncategorized` | boolean | `true` | Show cards without a value in "Uncategorized" column |
+
+```yaml
+view:
+  view_type: Kanban
+  kanban:
+    group_by: "status"
+    card_fields:
+      - description
+      - due_date
+      - context
+    show_uncategorized: true
 ```
 
 #### Available Columns for Tasks
@@ -89,6 +120,57 @@ sort:
 - `title` - Note title
 - `path` - File path
 - Any property key from frontmatter
+
+### Multi-Tab Queries
+
+Use the `tabs` array to create multiple query tabs in a single embed. Each tab has its own filters, result type, and view configuration.
+
+#### Tab Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `name` | string | (required) | Display name for the tab |
+| `filters` | array | `[]` | Filters for this tab |
+| `match_mode` | string | `"All"` | How to combine filters |
+| `result_type` | string | `"Tasks"` | What to query |
+| `include_completed` | boolean | `false` | Include completed tasks |
+| `limit` | number | `50` | Maximum results |
+| `view` | object | (default) | View configuration for this tab |
+
+#### Multi-Tab Example
+
+```query
+tabs:
+  - name: "High Priority"
+    filters:
+      - key: priority
+        operator: Equals
+        value: "high"
+    result_type: Tasks
+    view:
+      view_type: List
+
+  - name: "Due This Week"
+    filters:
+      - key: due_date
+        operator: DateOnOrBefore
+        value: "2025-12-20"
+    result_type: Tasks
+    view:
+      view_type: Table
+      columns:
+        - description
+        - due_date
+
+  - name: "By Status"
+    result_type: Tasks
+    view:
+      view_type: Kanban
+      kanban:
+        group_by: "status"
+```
+
+When `tabs` is present, the top-level `filters`, `result_type`, etc. are ignored.
 
 ---
 
@@ -200,6 +282,66 @@ include_completed: false
 limit: 25
 view:
   view_type: List
+```
+
+### Tasks Due Before a Date
+
+```query
+filters:
+  - key: due_date
+    operator: DateBefore
+    value: "2025-12-31"
+result_type: Tasks
+view:
+  view_type: Table
+  columns:
+    - description
+    - due_date
+  sort:
+    property: due_date
+    direction: Asc
+```
+
+### Kanban Board by Priority
+
+```query
+result_type: Tasks
+include_completed: false
+view:
+  view_type: Kanban
+  kanban:
+    group_by: "priority"
+    card_fields:
+      - description
+      - context
+      - due_date
+```
+
+### Kanban Board by Status
+
+```query
+filters:
+  - key: project
+    operator: Equals
+    value: "NeuroFlow"
+result_type: Tasks
+view:
+  view_type: Kanban
+  kanban:
+    group_by: "status"
+    card_fields:
+      - description
+      - priority
+```
+
+### Notes with Specific Tags (ContainsAny)
+
+```query
+filters:
+  - key: tags
+    operator: ContainsAny
+    value: "urgent,important"
+result_type: Notes
 ```
 
 ---

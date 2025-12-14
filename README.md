@@ -12,10 +12,12 @@ A modern, privacy-focused note-taking application with calendar integration, tas
 - **Full-text search** across all notes
 - **Code blocks** with syntax highlighting
 
-### Properties (Frontmatter)
-- **YAML frontmatter** support for note metadata
-- **Visual property editor** - add/edit properties without touching YAML
-- **Property types** - text, number, date, checkbox, list
+### Properties
+- **YAML frontmatter** support for note metadata (importable from Obsidian)
+- **Properties panel** - view and edit note properties in the sidebar
+- **Auto-sync from frontmatter** - properties defined in YAML frontmatter are automatically indexed and displayed
+- **Property types** - text, number, date, boolean, list with type-aware inputs
+- **Folder properties** - set default properties inherited by all notes in a folder
 - **Bulk property management** - rename, merge, or delete properties across your entire vault
 - **Usage tracking** - see which notes use each property value
 
@@ -28,8 +30,11 @@ A modern, privacy-focused note-taking application with calendar integration, tas
 ### Query Embeds
 - **Live query results** embedded directly in notes
 - **YAML-based syntax** in code blocks
-- **Filter by properties** - equals, contains, exists, and more
-- **Table or list view** with customizable columns
+- **Filter by properties** - equals, contains, exists, date operators, and more
+- **Type-aware operators** - date comparisons (before/after), boolean, list matching
+- **Multiple view types** - Table, List, or Kanban board
+- **Kanban view** - group tasks by priority, context, or any property
+- **Multi-tab queries** - multiple query tabs in a single embed
 - **Sort and limit** results
 - See [Query Embeds Documentation](docs/QUERY_EMBEDS.md) for details
 
@@ -66,7 +71,7 @@ A modern, privacy-focused note-taking application with calendar integration, tas
 
 ### From Releases (Recommended)
 
-Download the latest release for your platform from the [Releases](https://github.com/your-username/neuroflow-notes/releases) page:
+Download the latest release for your platform from the [Releases](https://github.com/mafflerbach/neuroFlowNotes/releases) page:
 
 - **macOS**: `.dmg` (Apple Silicon & Intel)
 - **Windows**: `.msi` installer
@@ -84,8 +89,8 @@ Download the latest release for your platform from the [Releases](https://github
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/neuroflow-notes.git
-   cd neuroflow-notes
+   git clone https://github.com/mafflerbach/neuroFlowNotes.git
+   cd neuroFlowNotes
    ```
 
 2. Install dependencies:
@@ -112,18 +117,8 @@ Download the latest release for your platform from the [Releases](https://github
 1. **Open a vault** - Select a folder to use as your vault (or create a new one)
 2. **Create notes** - Right-click in the folder tree or use the calendar to create notes
 3. **Link notes** - Use `[[note name]]` syntax to create links between notes
-4. **Add properties** - Use the properties panel or YAML frontmatter
+4. **Add properties** - Add YAML frontmatter or use the properties panel
 5. **Schedule** - Click on the calendar to create schedule blocks for time-based planning
-
-### Keyboard Shortcuts
-
-| Action | Shortcut |
-|--------|----------|
-| Save note | `Cmd/Ctrl + S` |
-| Search | `Cmd/Ctrl + K` |
-| Bold | `Cmd/Ctrl + B` |
-| Italic | `Cmd/Ctrl + I` |
-| New note | `Cmd/Ctrl + N` |
 
 ### Wiki Links
 
@@ -144,7 +139,7 @@ Add metadata to notes using YAML frontmatter:
 project: NeuroFlow
 status: active
 priority: high
-due: 2024-12-31
+due: 2025-12-31
 tags:
   - development
   - rust
@@ -153,7 +148,7 @@ tags:
 # My Note Content
 ```
 
-Properties appear in the sidebar panel and can be edited visually.
+Properties from frontmatter are automatically synced and displayed in the sidebar panel where you can view and edit them.
 
 ### Tasks
 
@@ -162,7 +157,7 @@ Create tasks with checkbox syntax:
 ```markdown
 - [ ] Basic task
 - [ ] Task with @context and !high priority
-- [ ] Task with due date 📅 2024-12-25
+- [ ] Task with due date 📅 2025-12-25
 - [x] Completed task
 ```
 
@@ -194,23 +189,35 @@ Recurring patterns supported:
 
 ```
 neuroflow-notes/
-├── src/                    # Svelte frontend
+├── src/                        # Svelte frontend
 │   ├── lib/
-│   │   ├── components/     # UI components
-│   │   ├── stores/         # Svelte stores (state management)
-│   │   ├── services/       # API & backend communication
-│   │   ├── editor/         # CodeMirror extensions
-│   │   └── utils/          # Helper functions
-│   └── App.svelte          # Main application
-├── src-tauri/              # Tauri/Rust backend
+│   │   ├── components/         # UI components
+│   │   │   ├── calendar/       # Calendar view components
+│   │   │   ├── query-builder/  # Query builder components
+│   │   │   └── shared/         # Reusable components
+│   │   ├── stores/             # Svelte stores (state management)
+│   │   ├── services/           # API layer
+│   │   │   ├── api/            # Domain-specific API modules
+│   │   │   └── client.ts       # API wrapper with error handling
+│   │   ├── editor/             # CodeMirror extensions
+│   │   ├── types/              # TypeScript type definitions
+│   │   └── utils/              # Helper functions
+│   └── App.svelte              # Main application
+├── src-tauri/                  # Tauri/Rust backend
 │   └── src/
-│       └── commands.rs     # IPC command handlers
-└── crates/                 # Rust workspace crates
-    ├── shared_types/       # DTOs shared between frontend/backend
-    ├── core_fs/            # File system operations
-    ├── core_index/         # Markdown parsing & indexing
-    ├── core_storage/       # SQLite database layer
-    └── core_domain/        # Business logic (vault operations)
+│       └── commands/           # IPC command handlers (modular)
+│           ├── vault.rs        # Vault open/close/info
+│           ├── notes.rs        # Note CRUD
+│           ├── properties.rs   # Property management
+│           ├── schedule.rs     # Calendar/schedule blocks
+│           ├── queries.rs      # Query execution
+│           └── ...             # Other command modules
+└── crates/                     # Rust workspace crates
+    ├── shared_types/           # DTOs (modular types/)
+    ├── core_fs/                # File system operations
+    ├── core_index/             # Markdown parsing & indexing
+    ├── core_storage/           # SQLite database layer
+    └── core_domain/            # Business logic (vault operations)
 ```
 
 ## Tech Stack

@@ -15,4 +15,8 @@ usage_count: bigint,
 /**
  * Sample values for this property (up to 10).
  */
-sample_values: Array<string>, };
+sample_values: Array<string>, 
+/**
+ * Most common property type for this key (text, date, number, boolean, list).
+ */
+property_type: string | null, };

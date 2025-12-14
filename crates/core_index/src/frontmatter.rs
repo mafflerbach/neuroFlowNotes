@@ -198,6 +198,104 @@ pub fn strip_frontmatter(content: &str) -> &str {
     }
 }
 
+/// Update or add a property in a markdown file's frontmatter.
+/// Returns the new content with updated frontmatter.
+pub fn set_frontmatter_property(
+    content: &str,
+    key: &str,
+    value: Option<&str>,
+    property_type: Option<&str>,
+) -> String {
+    let (mut frontmatter, body) = parse_frontmatter(content);
+
+    // Convert value to PropertyValue based on type
+    let prop_value = match (value, property_type) {
+        (None, _) => PropertyValue::Null,
+        (Some(v), Some("boolean")) => {
+            PropertyValue::Bool(v.to_lowercase() == "true")
+        }
+        (Some(v), Some("number")) => {
+            PropertyValue::Number(v.parse().unwrap_or(0.0))
+        }
+        (Some(v), Some("list")) => {
+            let items: Vec<String> = v.split(',').map(|s| s.trim().to_string()).collect();
+            PropertyValue::List(items)
+        }
+        (Some(v), _) => PropertyValue::String(v.to_string()),
+    };
+
+    frontmatter.properties.insert(key.to_string(), prop_value);
+
+    serialize_with_frontmatter(&frontmatter, body)
+}
+
+/// Delete a property from a markdown file's frontmatter.
+/// Returns the new content with the property removed.
+pub fn delete_frontmatter_property(content: &str, key: &str) -> String {
+    let (mut frontmatter, body) = parse_frontmatter(content);
+
+    frontmatter.properties.remove(key);
+
+    // If no properties left, return content without frontmatter
+    if frontmatter.properties.is_empty() {
+        return body.to_string();
+    }
+
+    serialize_with_frontmatter(&frontmatter, body)
+}
+
+/// Serialize frontmatter and body back to markdown content.
+fn serialize_with_frontmatter(frontmatter: &Frontmatter, body: &str) -> String {
+    if frontmatter.properties.is_empty() {
+        return body.to_string();
+    }
+
+    let mut yaml_map = serde_yaml::Mapping::new();
+
+    for (key, value) in &frontmatter.properties {
+        let yaml_value = property_to_yaml_value(value);
+        yaml_map.insert(Value::String(key.clone()), yaml_value);
+    }
+
+    let yaml_str = serde_yaml::to_string(&Value::Mapping(yaml_map))
+        .unwrap_or_default();
+
+    // Build the new content
+    let mut result = String::new();
+    result.push_str("---\n");
+    result.push_str(&yaml_str);
+    result.push_str("---\n");
+
+    // Add body, ensuring proper spacing
+    let body_trimmed = body.trim_start_matches('\n');
+    if !body_trimmed.is_empty() {
+        result.push('\n');
+        result.push_str(body_trimmed);
+    }
+
+    result
+}
+
+/// Convert PropertyValue back to YAML Value.
+fn property_to_yaml_value(value: &PropertyValue) -> Value {
+    match value {
+        PropertyValue::String(s) => Value::String(s.clone()),
+        PropertyValue::Number(n) => {
+            // Try to represent as integer if possible
+            if n.fract() == 0.0 && *n >= i64::MIN as f64 && *n <= i64::MAX as f64 {
+                Value::Number(serde_yaml::Number::from(*n as i64))
+            } else {
+                Value::Number(serde_yaml::Number::from(*n))
+            }
+        }
+        PropertyValue::Bool(b) => Value::Bool(*b),
+        PropertyValue::List(items) => {
+            Value::Sequence(items.iter().map(|s| Value::String(s.clone())).collect())
+        }
+        PropertyValue::Null => Value::Null,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -320,5 +418,88 @@ title: Test
         let body = strip_frontmatter(content);
         assert!(body.contains("# Content"));
         assert!(!body.contains("---"));
+    }
+
+    #[test]
+    fn test_set_frontmatter_property_new() {
+        let content = "# My Note\n\nSome content.";
+        let result = set_frontmatter_property(content, "status", Some("draft"), Some("text"));
+
+        assert!(result.starts_with("---\n"));
+        assert!(result.contains("status: draft"));
+        assert!(result.contains("# My Note"));
+    }
+
+    #[test]
+    fn test_set_frontmatter_property_existing() {
+        let content = r#"---
+title: My Note
+status: draft
+---
+
+# My Note"#;
+        let result = set_frontmatter_property(content, "status", Some("published"), Some("text"));
+
+        assert!(result.contains("status: published"));
+        assert!(result.contains("title: My Note"));
+        assert!(result.contains("# My Note"));
+    }
+
+    #[test]
+    fn test_set_frontmatter_property_boolean() {
+        let content = "# Note";
+        let result = set_frontmatter_property(content, "published", Some("true"), Some("boolean"));
+
+        assert!(result.contains("published: true"));
+    }
+
+    #[test]
+    fn test_set_frontmatter_property_number() {
+        let content = "# Note";
+        let result = set_frontmatter_property(content, "count", Some("42"), Some("number"));
+
+        assert!(result.contains("count: 42"));
+    }
+
+    #[test]
+    fn test_set_frontmatter_property_list() {
+        let content = "# Note";
+        let result = set_frontmatter_property(content, "tags", Some("rust, svelte, tauri"), Some("list"));
+
+        assert!(result.contains("tags:"));
+        assert!(result.contains("- rust"));
+        assert!(result.contains("- svelte"));
+        assert!(result.contains("- tauri"));
+    }
+
+    #[test]
+    fn test_delete_frontmatter_property() {
+        let content = r#"---
+title: My Note
+status: draft
+priority: high
+---
+
+# Content"#;
+        let result = delete_frontmatter_property(content, "status");
+
+        assert!(result.contains("title: My Note"));
+        assert!(result.contains("priority: high"));
+        assert!(!result.contains("status:"));
+        assert!(result.contains("# Content"));
+    }
+
+    #[test]
+    fn test_delete_frontmatter_property_last() {
+        let content = r#"---
+status: draft
+---
+
+# Content"#;
+        let result = delete_frontmatter_property(content, "status");
+
+        // When last property is deleted, frontmatter should be removed
+        assert!(!result.contains("---"));
+        assert!(result.contains("# Content"));
     }
 }

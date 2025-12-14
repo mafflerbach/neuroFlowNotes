@@ -123,6 +123,35 @@ impl VaultRepository {
         Ok(())
     }
 
+    /// Sync frontmatter properties to the database.
+    /// Uses upsert to update/insert frontmatter properties while preserving DB-only properties.
+    pub async fn replace_properties(
+        &self,
+        note_id: i64,
+        properties: &[core_index::ParsedProperty],
+    ) -> Result<()> {
+        // Upsert each frontmatter property (update if exists, insert if not)
+        for prop in properties {
+            sqlx::query(
+                r#"
+                INSERT INTO properties (note_id, key, value, type)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(note_id, key) DO UPDATE SET
+                    value = excluded.value,
+                    type = excluded.type
+                "#,
+            )
+            .bind(note_id)
+            .bind(&prop.key)
+            .bind(prop.value.as_deref())
+            .bind(&prop.property_type)
+            .execute(&self.pool)
+            .await?;
+        }
+
+        Ok(())
+    }
+
     /// Get a specific property by note_id and key.
     pub async fn get_property(&self, note_id: i64, key: &str) -> Result<Option<PropertyDto>> {
         let row = sqlx::query_as::<_, (i64, i64, String, Option<String>, Option<String>, Option<i32>)>(

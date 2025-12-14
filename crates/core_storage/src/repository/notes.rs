@@ -182,6 +182,7 @@ impl VaultRepository {
         self.replace_tags(note_id, &analysis.tags).await?;
         self.replace_todos(note_id, &analysis.todos).await?;
         self.replace_backlinks(note_id, &analysis.links).await?;
+        self.replace_properties(note_id, &analysis.properties).await?;
         self.update_fts(note_id, content).await?;
 
         debug!("Indexed note {} (id={})", path, note_id);
