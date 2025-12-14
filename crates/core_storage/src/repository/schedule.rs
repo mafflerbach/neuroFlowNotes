@@ -10,6 +10,7 @@ use super::VaultRepository;
 
 impl VaultRepository {
     /// Create a schedule block.
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_schedule_block(
         &self,
         note_id: Option<i64>,
@@ -165,6 +166,7 @@ impl VaultRepository {
     }
 
     /// Update a schedule block.
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_schedule_block(
         &self,
         id: i64,

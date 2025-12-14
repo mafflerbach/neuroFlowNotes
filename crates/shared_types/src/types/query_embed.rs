@@ -6,10 +6,11 @@ use ts_rs::TS;
 use super::query::{FilterMatchMode, PropertyFilter, QueryResultItem, QueryResultType};
 
 /// View type for displaying query results.
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub enum QueryViewType {
     /// Display as a table with columns.
+    #[default]
     Table,
     /// Display as a simple list.
     List,
@@ -17,24 +18,13 @@ pub enum QueryViewType {
     Kanban,
 }
 
-impl Default for QueryViewType {
-    fn default() -> Self {
-        QueryViewType::Table
-    }
-}
-
 /// Sort direction for query results.
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub enum SortDirection {
+    #[default]
     Asc,
     Desc,
-}
-
-impl Default for SortDirection {
-    fn default() -> Self {
-        SortDirection::Asc
-    }
 }
 
 /// Sort configuration for query results.

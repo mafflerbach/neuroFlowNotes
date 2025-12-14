@@ -81,7 +81,7 @@ pub async fn import_obsidian_vault(
             format!("{}/{}", target_base, rel_path)
         };
 
-        match copy_file(&full_path, &vault.fs().to_absolute(Path::new(&target_path))).await {
+        match copy_file(full_path, &vault.fs().to_absolute(Path::new(&target_path))).await {
             Ok(_) => {
                 result.files_copied += 1;
                 debug!("Copied asset: {} -> {}", rel_path, target_path);
@@ -112,7 +112,7 @@ pub async fn import_obsidian_vault(
             format!("{}/{}", target_base, rel_path)
         };
 
-        match import_markdown_file(vault, &full_path, &target_path, &mut result).await {
+        match import_markdown_file(vault, full_path, &target_path, &mut result).await {
             Ok(_) => {
                 result.notes_imported += 1;
                 result.files_copied += 1;

@@ -54,12 +54,12 @@ impl VaultRepository {
 
                 for (note, properties) in notes {
                     // In Both mode, skip notes already represented by tasks
-                    if matches!(request.result_type, QueryResultType::Both) {
-                        if results.iter().any(|r| {
+                    if matches!(request.result_type, QueryResultType::Both)
+                        && results.iter().any(|r| {
                             r.task.as_ref().map(|t| t.todo.note_id) == Some(note.id)
-                        }) {
-                            continue;
-                        }
+                        })
+                    {
+                        continue;
                     }
 
                     results.push(QueryResultItem {
@@ -393,7 +393,7 @@ impl VaultRepository {
                 todo: TodoDto {
                     id,
                     note_id,
-                    line_number: line_number.map(|n| n as i32),
+                    line_number,
                     description,
                     completed: completed != 0,
                     heading_path,

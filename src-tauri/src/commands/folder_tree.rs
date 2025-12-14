@@ -119,7 +119,7 @@ async fn scan_directories(
 /// Build a folder tree from a flat list of note paths.
 fn build_folder_tree(notes: &[NoteListItem], vault_name: String) -> FolderNode {
     let mut root = FolderNode {
-        name: vault_name.split('/').last().unwrap_or("Vault").to_string(),
+        name: vault_name.split('/').next_back().unwrap_or("Vault").to_string(),
         path: String::new(),
         is_dir: true,
         children: Vec::new(),

@@ -9,7 +9,7 @@ use tracing::{info, warn};
 
 /// Get MIME type from file extension
 fn get_mime_type(path: &str) -> &'static str {
-    let ext = path.split('.').last().unwrap_or("").to_lowercase();
+    let ext = path.split('.').next_back().unwrap_or("").to_lowercase();
     match ext.as_str() {
         // Audio
         "mp3" => "audio/mpeg",

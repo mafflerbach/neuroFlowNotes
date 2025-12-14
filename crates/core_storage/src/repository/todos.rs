@@ -57,7 +57,7 @@ impl VaultRepository {
                 TodoDto {
                     id,
                     note_id,
-                    line_number: line_number.map(|n| n as i32),
+                    line_number,
                     description,
                     completed: completed != 0,
                     heading_path,
@@ -85,7 +85,7 @@ impl VaultRepository {
                 TodoDto {
                     id,
                     note_id,
-                    line_number: line_number.map(|n| n as i32),
+                    line_number,
                     description,
                     completed: completed != 0,
                     heading_path,
@@ -130,7 +130,7 @@ impl VaultRepository {
             TodoDto {
                 id,
                 note_id,
-                line_number: line_number.map(|n| n as i32),
+                line_number,
                 description,
                 completed: completed != 0,
                 heading_path,
@@ -242,7 +242,7 @@ impl VaultRepository {
                 todo: TodoDto {
                     id,
                     note_id,
-                    line_number: line_number.map(|n| n as i32),
+                    line_number,
                     description,
                     completed: completed != 0,
                     heading_path,
