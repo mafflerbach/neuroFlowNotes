@@ -4,7 +4,7 @@
   import QueryFilters from "./QueryFilters.svelte";
   import QueryOptions from "./QueryOptions.svelte";
   import QueryResults from "./QueryResults.svelte";
-  import { generateYamlCode, splitListValues } from "./queryUtils";
+  import { generateYamlCode } from "./queryUtils";
   import type {
     PropertyKeyInfo,
     PropertyFilter,
@@ -158,8 +158,9 @@
   async function loadValuesForKey(key: string) {
     if (propertyValues[key]) return;
     try {
+      // Backend auto-expands list-type properties
       const values = await getPropertyValues(key);
-      propertyValues = { ...propertyValues, [key]: splitListValues(values) };
+      propertyValues = { ...propertyValues, [key]: values };
     } catch (e) {
       console.error(`Failed to load values for key ${key}:`, e);
     }

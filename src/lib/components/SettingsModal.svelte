@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Modal } from "./shared";
   import PropertiesEditor from "./PropertiesEditor.svelte";
+  import PluginSettings from "./PluginSettings.svelte";
   import ImportModal from "./ImportModal.svelte";
   import { workspaceStore, type CalendarView } from "../stores/workspace.svelte";
   import type { Theme } from "../services/settings";
@@ -14,7 +15,7 @@
   let { open, onClose }: Props = $props();
 
   // Track active section for tabs
-  let activeSection = $state<"settings" | "properties">("settings");
+  let activeSection = $state<"settings" | "properties" | "plugins">("settings");
 
   // Import modal state
   let showImportModal = $state(false);
@@ -71,6 +72,13 @@
         onclick={() => (activeSection = "properties")}
       >
         Properties
+      </button>
+      <button
+        class="nav-item"
+        class:active={activeSection === "plugins"}
+        onclick={() => (activeSection = "plugins")}
+      >
+        Plugins
       </button>
     </nav>
 
@@ -194,6 +202,15 @@
             normalize casing, or merge similar properties.
           </p>
           <PropertiesEditor />
+        </section>
+      {:else if activeSection === "plugins"}
+        <section class="settings-section">
+          <h3 class="section-title">Plugins</h3>
+          <p class="section-description">
+            Enable or disable plugins to extend NeuroFlow with additional features.
+            Each plugin can have its own settings.
+          </p>
+          <PluginSettings />
         </section>
       {/if}
     </div>

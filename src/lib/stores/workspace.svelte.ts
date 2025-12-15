@@ -53,6 +53,14 @@ class WorkspaceStore {
   // Query builder view visibility
   queryViewVisible = $state(false);
 
+  // Active plugin panel (null = closed, string = plugin panel id)
+  activePluginPanel = $state<string | null>(null);
+
+  // Computed: is any plugin panel visible
+  get pluginPanelVisible(): boolean {
+    return this.activePluginPanel !== null;
+  }
+
   // Breadcrumb / document stack (for State C)
   breadcrumb = $state<OpenDoc[]>([]);
 
@@ -104,6 +112,30 @@ class WorkspaceStore {
   /** Close query view */
   closeQueryView() {
     this.queryViewVisible = false;
+  }
+
+  /** Toggle a specific plugin panel */
+  togglePluginPanel(panelId: string) {
+    if (this.activePluginPanel === panelId) {
+      this.activePluginPanel = null;
+    } else {
+      this.activePluginPanel = panelId;
+    }
+  }
+
+  /** Open a specific plugin panel */
+  openPluginPanel(panelId: string) {
+    this.activePluginPanel = panelId;
+  }
+
+  /** Close plugin panel */
+  closePluginPanel() {
+    this.activePluginPanel = null;
+  }
+
+  /** Check if a specific plugin panel is active */
+  isPluginPanelActive(panelId: string): boolean {
+    return this.activePluginPanel === panelId;
   }
 
   /** Switch calendar view (monthly, weekly, daily) */

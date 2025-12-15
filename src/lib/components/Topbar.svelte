@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Folder, List, Plus, Settings, Calendar, Search } from "lucide-svelte";
+  import { Folder, List, Plus, Settings, Calendar, Search, Sparkles, FileText } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import { vaultStore } from "../stores/vault.svelte";
   import * as api from "../services/api";
@@ -69,6 +69,24 @@
       disabled={!vaultStore.isOpen}
     >
       <Search size={18} />
+    </button>
+    <button
+      class="icon-btn"
+      class:active={workspaceStore.isPluginPanelActive("llm-daily-summarizer")}
+      onclick={() => workspaceStore.togglePluginPanel("llm-daily-summarizer")}
+      title="AI Daily Summary"
+      disabled={!vaultStore.isOpen}
+    >
+      <Sparkles size={18} />
+    </button>
+    <button
+      class="icon-btn"
+      class:active={workspaceStore.isPluginPanelActive("llm-file-summarizer")}
+      onclick={() => workspaceStore.togglePluginPanel("llm-file-summarizer")}
+      title="AI File Summary"
+      disabled={!vaultStore.isOpen}
+    >
+      <FileText size={18} />
     </button>
   </div>
 

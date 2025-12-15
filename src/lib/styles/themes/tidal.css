@@ -1,0 +1,217 @@
+/**
+ * Tidal Theme
+ * Teal and amber coastal palette
+ */
+
+:root[data-theme="tidal"] {
+  /* Base palette */
+  --tidal-ink-black: #001219;
+  --tidal-dark-teal: #005f73;
+  --tidal-dark-cyan: #0a9396;
+  --tidal-pearl-aqua: #94d2bd;
+  --tidal-vanilla: #e9d8a6;
+  --tidal-golden-orange: #ee9b00;
+  --tidal-burnt-caramel: #ca6702;
+  --tidal-rusty-spice: #bb3e03;
+  --tidal-oxidized-iron: #ae2012;
+  --tidal-brown-red: #9b2226;
+
+  /* Gray scale */
+  --color-gray-50: #f9f5ed;
+  --color-gray-100: #f2ebd9;
+  --color-gray-200: #e2d8bd;
+  --color-gray-300: #cbbf9b;
+  --color-gray-400: #a89473;
+  --color-gray-500: #867458;
+  --color-gray-600: #655540;
+  --color-gray-700: #4a3f30;
+  --color-gray-800: #2c241c;
+  --color-gray-900: #16100f;
+
+  /* Primary colors */
+  --color-primary: var(--tidal-dark-cyan);
+  --color-primary-hover: #0a7c80;
+  --color-primary-light: rgba(10, 147, 150, 0.22);
+  --color-primary-dark: var(--tidal-dark-teal);
+
+  /* Semantic colors */
+  --color-success: #5bc39b;
+  --color-success-light: rgba(91, 195, 155, 0.18);
+  --color-success-hover: rgba(91, 195, 155, 0.28);
+
+  --color-error: var(--tidal-brown-red);
+  --color-error-light: rgba(155, 34, 38, 0.18);
+  --color-error-hover: rgba(155, 34, 38, 0.28);
+
+  --color-warning: var(--tidal-golden-orange);
+  --color-warning-light: rgba(238, 155, 0, 0.2);
+
+  --color-info: #48bfe3;
+  --color-info-light: rgba(72, 191, 227, 0.2);
+
+  /* Backgrounds */
+  --bg-app: #021f28;
+  --bg-surface: #032f3c;
+  --bg-surface-raised: rgba(3, 47, 60, 0.95);
+  --bg-surface-sunken: #011820;
+  --bg-hover: rgba(148, 210, 189, 0.12);
+  --bg-active: rgba(10, 147, 150, 0.2);
+  --bg-selected: rgba(233, 216, 166, 0.25);
+
+  /* Text */
+  --text-primary: #f9fafc;
+  --text-secondary: #d7e4db;
+  --text-muted: #a0c1b4;
+  --text-disabled: rgba(148, 210, 189, 0.5);
+  --text-inverse: #032f3c;
+  --text-link: var(--tidal-pearl-aqua);
+  --text-link-hover: #b8f2db;
+
+  /* Borders and icons */
+  --border-default: rgba(10, 147, 150, 0.4);
+  --border-light: rgba(3, 95, 115, 0.55);
+  --border-focus: var(--tidal-golden-orange);
+
+  --icon-default: #d7e4db;
+  --icon-muted: #94d2bd;
+  --icon-active: var(--tidal-golden-orange);
+
+  /* Buttons */
+  --btn-primary-bg: var(--tidal-dark-cyan);
+  --btn-primary-bg-hover: #0f7e87;
+  --btn-primary-text: #f9fafc;
+
+  --btn-secondary-bg: rgba(233, 216, 166, 0.15);
+  --btn-secondary-bg-hover: rgba(233, 216, 166, 0.25);
+  --btn-secondary-text: var(--tidal-vanilla);
+  --btn-secondary-border: rgba(233, 216, 166, 0.4);
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(10, 147, 150, 0.12);
+  --btn-ghost-text: #94d2bd;
+
+  --btn-danger-bg: var(--tidal-brown-red);
+  --btn-danger-bg-hover: #c0353a;
+  --btn-danger-text: #f9fafc;
+
+  /* Topbar and sidebar */
+  --topbar-bg: #032f3c;
+  --topbar-border: rgba(10, 147, 150, 0.35);
+
+  --sidebar-bg: rgba(3, 47, 60, 0.92);
+  --sidebar-border: rgba(10, 147, 150, 0.35);
+  --sidebar-header-bg: rgba(3, 47, 60, 0.85);
+
+  /* Editor */
+  --editor-bg: rgba(3, 47, 60, 0.95);
+  --editor-header-bg: rgba(3, 47, 60, 0.85);
+  --editor-gutter-bg: rgba(2, 31, 40, 0.95);
+  --editor-gutter-color: #94d2bd;
+  --editor-active-line-bg: rgba(10, 147, 150, 0.18);
+  --editor-active-gutter-bg: rgba(10, 147, 150, 0.24);
+  --editor-selection-bg: rgba(233, 216, 166, 0.3);
+  --editor-cursor: var(--tidal-golden-orange);
+
+  /* Calendar */
+  --calendar-bg: #032f3c;
+  --calendar-header-bg: rgba(3, 47, 60, 0.85);
+  --calendar-border: rgba(10, 147, 150, 0.3);
+  --calendar-today-bg: rgba(10, 147, 150, 0.2);
+  --calendar-selected-bg: var(--tidal-vanilla);
+  --calendar-selected-text: #032f3c;
+  --calendar-other-month-text: rgba(148, 210, 189, 0.6);
+  --calendar-weekend-bg: rgba(2, 31, 40, 0.8);
+
+  /* Modal */
+  --modal-backdrop-bg: rgba(0, 18, 25, 0.65);
+  --modal-bg: rgba(3, 47, 60, 0.95);
+  --modal-header-bg: rgba(0, 95, 115, 0.8);
+  --modal-border: rgba(233, 216, 166, 0.25);
+
+  /* Form controls and panels */
+  --input-bg: rgba(2, 31, 40, 0.9);
+  --input-border: rgba(10, 147, 150, 0.4);
+  --input-border-focus: var(--tidal-golden-orange);
+  --input-text: #f9fafc;
+  --input-placeholder: rgba(148, 210, 189, 0.7);
+
+  --panel-bg: #032f3c;
+  --panel-header-bg: rgba(0, 95, 115, 0.65);
+  --panel-border: rgba(10, 147, 150, 0.35);
+
+  /* Context surfaces */
+  --context-menu-bg: rgba(2, 31, 40, 0.95);
+  --context-menu-border: rgba(10, 147, 150, 0.35);
+  --context-menu-item-hover-bg: rgba(10, 147, 150, 0.18);
+  --context-menu-separator: rgba(10, 147, 150, 0.2);
+
+  --tree-item-hover-bg: rgba(10, 147, 150, 0.14);
+  --tree-item-selected-bg: rgba(233, 216, 166, 0.2);
+  --tree-icon-color: #94d2bd;
+  --tree-folder-icon-color: var(--tidal-dark-cyan);
+  --tree-file-icon-color: #e9d8a6;
+
+  --autocomplete-bg: rgba(2, 31, 40, 0.98);
+  --autocomplete-border: rgba(10, 147, 150, 0.35);
+  --autocomplete-item-hover-bg: rgba(10, 147, 150, 0.16);
+  --autocomplete-item-selected-bg: rgba(233, 216, 166, 0.25);
+  --autocomplete-item-text: #f9fafc;
+  --autocomplete-item-detail: rgba(148, 210, 189, 0.9);
+  --autocomplete-match-text: #f4a261;
+
+  /* Markdown */
+  --md-heading-1: #f4a261;
+  --md-heading-2: #ffc971;
+  --md-heading-3: #94d2bd;
+  --md-heading-4: #0a9396;
+  --md-heading-5: #38bdf8;
+  --md-heading-6: #d7e4db;
+
+  --md-link: var(--tidal-pearl-aqua);
+  --md-link-url: rgba(148, 210, 189, 0.8);
+  --md-wiki-link: #f4a261;
+
+  --md-code-text: var(--tidal-golden-orange);
+  --md-code-bg: rgba(233, 216, 166, 0.15);
+
+  --md-code-keyword: #f4a261;
+  --md-code-string: #a3e635;
+  --md-code-number: #f59e0b;
+  --md-code-comment: rgba(148, 210, 189, 0.7);
+  --md-code-function: #2dd4bf;
+  --md-code-variable: #e9d8a6;
+  --md-code-operator: #ee9b00;
+  --md-code-punctuation: #fef9c3;
+  --md-code-bracket: #fde68a;
+  --md-code-class: #f97316;
+  --md-code-property: #38bdf8;
+  --md-code-boolean: #facc15;
+  --md-code-null: #fde68a;
+
+  --md-list-marker: var(--tidal-golden-orange);
+  --md-blockquote: rgba(233, 216, 166, 0.85);
+  --md-blockquote-border: rgba(238, 155, 0, 0.45);
+
+  --md-table-border: rgba(10, 147, 150, 0.4);
+  --md-table-header-bg: rgba(10, 147, 150, 0.12);
+  --md-table-alt-bg: rgba(2, 31, 40, 0.65);
+
+  --md-syntax-marker: rgba(148, 210, 189, 0.6);
+
+  /* Block colors */
+  --block-text: #032f3c;
+  --block-color-blue: var(--tidal-dark-cyan);
+  --block-color-sapphire: #48bfe3;
+  --block-color-sky: #94d2bd;
+  --block-color-teal: #0a9396;
+  --block-color-green: #5bc39b;
+  --block-color-yellow: #f4a261;
+  --block-color-peach: #f6bd60;
+  --block-color-maroon: var(--tidal-brown-red);
+  --block-color-red: var(--tidal-oxidized-iron);
+  --block-color-mauve: #c77dff;
+  --block-color-pink: #f4a9b8;
+  --block-color-flamingo: #ffb4a2;
+  --block-color-rosewater: #ffe5a5;
+  --block-color-lavender: #c4cfff;
+}

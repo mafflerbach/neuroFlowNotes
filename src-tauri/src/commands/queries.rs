@@ -24,11 +24,26 @@ pub async fn get_property_keys(state: State<'_, AppState>) -> Result<Vec<Propert
 #[tauri::command]
 pub async fn get_property_values(state: State<'_, AppState>, key: String) -> Result<Vec<String>> {
     let vault_guard = state.vault.read().await;
+
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+    vault
+        .repo()
+        .get_property_values(&key)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+/// Get all distinct individual values for a list-type property.
+/// Splits comma-separated values and returns unique items.
+/// Use this for ContainsAny/ContainsAll operators on list properties.
+#[tauri::command]
+pub async fn get_list_property_values(state: State<'_, AppState>, key: String) -> Result<Vec<String>> {
+    let vault_guard = state.vault.read().await;
     let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
 
     vault
         .repo()
-        .get_property_values(&key)
+        .get_list_property_values(&key)
         .await
         .map_err(|e| CommandError::Vault(e.to_string()))
 }

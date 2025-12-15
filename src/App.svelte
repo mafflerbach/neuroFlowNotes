@@ -50,6 +50,7 @@
     titleToFilename,
     type DocWithSource,
   } from "./lib/utils/docListUtils";
+  import { pluginRegistry, createBackendHooks } from "./lib/plugins";
 
   let unlisteners: UnlistenFn[] = [];
   let settingsOpen = $state(false);
@@ -72,6 +73,24 @@
   const selectedDate = $derived(workspaceStore.selectedDate);
   const openMedia = $derived(workspaceStore.openMedia);
   const queryViewVisible = $derived(workspaceStore.queryViewVisible);
+  const pluginPanelVisible = $derived(workspaceStore.pluginPanelVisible);
+  const activePluginPanelId = $derived(workspaceStore.activePluginPanel);
+
+  // Get enabled plugin sidebar panels
+  const pluginSidebarPanels = $derived(
+    pluginRegistry.enabled
+      .filter((p) => p.plugin.hooks?.sidebar?.panel)
+      .map((p) => ({
+        id: p.plugin.hooks!.sidebar!.panel!.id,
+        label: p.plugin.hooks!.sidebar!.panel!.label,
+        component: p.plugin.hooks!.sidebar!.panel!.component,
+      }))
+  );
+
+  // Get the active plugin panel (if any)
+  const activePluginPanel = $derived(
+    pluginSidebarPanels.find((p) => p.id === activePluginPanelId)
+  );
 
   // Calendar data from backend
   let scheduleBlocks = $state<ScheduleBlockDto[]>([]);
@@ -439,6 +458,10 @@
     // Initialize theme from settings
     workspaceStore.initTheme();
 
+    // Initialize plugin system
+    const backendHooks = createBackendHooks();
+    await pluginRegistry.initialize(backendHooks);
+
     // Try to open the last used vault
     await vaultStore.openLastVault();
 
@@ -614,6 +637,18 @@
         <QueryBuilder onResultClick={handleQueryResultClick} />
       </div>
     {/if}
+
+    <!-- Plugin Panel (slides in from right) -->
+    {#if pluginPanelVisible && activePluginPanel}
+      <div class="plugin-panel">
+        <activePluginPanel.component />
+      </div>
+    {:else if pluginPanelVisible && !activePluginPanel}
+      <div class="plugin-panel empty-plugin-panel">
+        <p>Plugin not available.</p>
+        <p class="hint">Enable this plugin in Settings → Plugins.</p>
+      </div>
+    {/if}
   </div>
 
   <!-- Settings Modal -->
@@ -777,5 +812,35 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  /* Plugin Panel */
+  .plugin-panel {
+    width: 320px;
+    min-width: 280px;
+    max-width: 400px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .empty-plugin-panel {
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-4);
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .empty-plugin-panel p {
+    margin: 0;
+  }
+
+  .empty-plugin-panel .hint {
+    font-size: var(--font-size-sm);
+    margin-top: var(--spacing-2);
   }
 </style>

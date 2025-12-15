@@ -75,6 +75,7 @@ fn main() {
             // Query Builder
             commands::get_property_keys,
             commands::get_property_values,
+            commands::get_list_property_values,
             commands::run_query,
             // Query Embeds
             commands::execute_query_embed,
@@ -94,6 +95,11 @@ fn main() {
             commands::get_folders_with_properties,
             // Import
             commands::import_obsidian_vault,
+            // Plugins
+            commands::read_plugin_config,
+            commands::write_plugin_config,
+            commands::list_plugin_configs,
+            commands::plugin_http_request,
         ])
         .setup(|_app| {
             info!("Tauri app setup complete");

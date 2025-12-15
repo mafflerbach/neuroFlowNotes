@@ -25,6 +25,15 @@ export async function getPropertyValues(key: string): Promise<string[]> {
 }
 
 /**
+ * Get all distinct individual values for a list-type property.
+ * Splits comma-separated values and returns unique items.
+ * Use this for ContainsAny/ContainsAll operators on list properties.
+ */
+export async function getListPropertyValues(key: string): Promise<string[]> {
+  return invoke<string[]>("get_list_property_values", { key });
+}
+
+/**
  * Run a query with property filters.
  */
 export async function runQuery(request: QueryRequest): Promise<QueryResponse> {

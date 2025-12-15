@@ -204,6 +204,7 @@
 
   .item-text {
     font-size: var(--font-size-sm);
+    color: var(--text-secondary);
     word-break: break-word;
   }
 

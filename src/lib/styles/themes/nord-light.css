@@ -1,0 +1,221 @@
+/**
+ * Nord Light Theme
+ */
+
+:root[data-theme="nord-light"] {
+  /* Base palette - using Nord snow storm & frost hues */
+  --nord-snow-0: #f4f7fb;
+  --nord-snow-1: #eceff4;
+  --nord-snow-2: #e5e9f0;
+  --nord-snow-3: #d8dee9;
+  --nord-polar-0: #cdd6e4;
+  --nord-polar-1: #b7c2d7;
+  --nord-frost-0: #5e81ac;
+  --nord-frost-1: #81a1c1;
+  --nord-frost-2: #88c0d0;
+  --nord-frost-3: #8fbcbb;
+  --nord-aurora-red: #bf616a;
+  --nord-aurora-orange: #d08770;
+  --nord-aurora-yellow: #ebcb8b;
+  --nord-aurora-green: #a3be8c;
+  --nord-aurora-purple: #b48ead;
+
+  /* Gray scale */
+  --color-gray-50: #fcfdff;
+  --color-gray-100: var(--nord-snow-1);
+  --color-gray-200: var(--nord-snow-2);
+  --color-gray-300: var(--nord-snow-3);
+  --color-gray-400: #c9d2e0;
+  --color-gray-500: #a5b1c4;
+  --color-gray-600: #7f8ba1;
+  --color-gray-700: #5a6477;
+  --color-gray-800: #3e4555;
+  --color-gray-900: #1f232b;
+
+  /* Primary colors */
+  --color-primary: var(--nord-frost-0);
+  --color-primary-hover: var(--nord-frost-1);
+  --color-primary-light: rgba(94, 129, 172, 0.18);
+  --color-primary-dark: #446089;
+
+  /* Semantic colors */
+  --color-success: var(--nord-aurora-green);
+  --color-success-light: rgba(163, 190, 140, 0.15);
+  --color-success-hover: rgba(163, 190, 140, 0.25);
+
+  --color-error: var(--nord-aurora-red);
+  --color-error-light: rgba(191, 97, 106, 0.15);
+  --color-error-hover: rgba(191, 97, 106, 0.25);
+
+  --color-warning: var(--nord-aurora-yellow);
+  --color-warning-light: rgba(235, 203, 139, 0.18);
+
+  --color-info: var(--nord-frost-2);
+  --color-info-light: rgba(136, 192, 208, 0.2);
+
+  /* Backgrounds */
+  --bg-app: var(--nord-snow-1);
+  --bg-surface: var(--nord-snow-0);
+  --bg-surface-raised: var(--nord-snow-2);
+  --bg-surface-sunken: var(--nord-snow-3);
+  --bg-hover: rgba(129, 161, 193, 0.15);
+  --bg-active: rgba(94, 129, 172, 0.2);
+  --bg-selected: rgba(136, 192, 208, 0.25);
+
+  /* Text */
+  --text-primary: #1f252f;
+  --text-secondary: #3e4555;
+  --text-muted: #5e6779;
+  --text-disabled: rgba(122, 131, 146, 0.6);
+  --text-inverse: #f4f7fb;
+  --text-link: var(--nord-frost-0);
+  --text-link-hover: var(--nord-frost-1);
+
+  /* Borders and icons */
+  --border-default: #d6dfea;
+  --border-light: #e6edf5;
+  --border-focus: var(--nord-frost-0);
+
+  --icon-default: #5a6477;
+  --icon-muted: #94a1b5;
+  --icon-active: var(--nord-frost-0);
+
+  /* Buttons */
+  --btn-primary-bg: var(--nord-frost-0);
+  --btn-primary-bg-hover: var(--nord-frost-1);
+  --btn-primary-text: #f4f7fb;
+
+  --btn-secondary-bg: #eff3f9;
+  --btn-secondary-bg-hover: rgba(129, 161, 193, 0.15);
+  --btn-secondary-text: #3e4555;
+  --btn-secondary-border: #d6dfea;
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(129, 161, 193, 0.15);
+  --btn-ghost-text: #3e4555;
+
+  --btn-danger-bg: var(--nord-aurora-red);
+  --btn-danger-bg-hover: #d8747c;
+  --btn-danger-text: #f4f7fb;
+
+  /* Topbar and sidebar */
+  --topbar-bg: #f6f9fc;
+  --topbar-border: #d6dfea;
+
+  --sidebar-bg: #f1f4f9;
+  --sidebar-border: #d6dfea;
+  --sidebar-header-bg: #e6edf5;
+
+  /* Editor */
+  --editor-bg: #ffffff;
+  --editor-header-bg: #f1f4f9;
+  --editor-gutter-bg: #edf2f8;
+  --editor-gutter-color: #94a1b5;
+  --editor-active-line-bg: rgba(129, 161, 193, 0.18);
+  --editor-active-gutter-bg: rgba(129, 161, 193, 0.25);
+  --editor-selection-bg: rgba(136, 192, 208, 0.3);
+  --editor-cursor: var(--nord-frost-0);
+
+  /* Calendar */
+  --calendar-bg: #ffffff;
+  --calendar-header-bg: #f1f4f9;
+  --calendar-border: #e6edf5;
+  --calendar-today-bg: rgba(136, 192, 208, 0.2);
+  --calendar-selected-bg: var(--nord-frost-0);
+  --calendar-selected-text: #f4f7fb;
+  --calendar-other-month-text: rgba(94, 103, 123, 0.6);
+  --calendar-weekend-bg: #edf2f8;
+
+  /* Modal */
+  --modal-backdrop-bg: rgba(31, 37, 47, 0.35);
+  --modal-bg: #ffffff;
+  --modal-header-bg: #f1f4f9;
+  --modal-border: #d6dfea;
+
+  /* Form controls and panels */
+  --input-bg: #ffffff;
+  --input-border: #d6dfea;
+  --input-border-focus: var(--nord-frost-0);
+  --input-text: #1f252f;
+  --input-placeholder: rgba(94, 103, 123, 0.7);
+
+  --panel-bg: #ffffff;
+  --panel-header-bg: #f1f4f9;
+  --panel-border: #d6dfea;
+
+  /* Context surfaces */
+  --context-menu-bg: #ffffff;
+  --context-menu-border: #d6dfea;
+  --context-menu-item-hover-bg: rgba(129, 161, 193, 0.15);
+  --context-menu-separator: #e6edf5;
+
+  --tree-item-hover-bg: rgba(129, 161, 193, 0.15);
+  --tree-item-selected-bg: rgba(136, 192, 208, 0.25);
+  --tree-icon-color: #7f8ba1;
+  --tree-folder-icon-color: var(--nord-frost-0);
+  --tree-file-icon-color: #5a6477;
+
+  --autocomplete-bg: #ffffff;
+  --autocomplete-border: #d6dfea;
+  --autocomplete-item-hover-bg: rgba(129, 161, 193, 0.12);
+  --autocomplete-item-selected-bg: rgba(136, 192, 208, 0.25);
+  --autocomplete-item-text: #1f252f;
+  --autocomplete-item-detail: #7f8ba1;
+  --autocomplete-match-text: var(--nord-frost-0);
+
+  /* Markdown */
+  --md-heading-1: var(--nord-frost-0);
+  --md-heading-2: var(--nord-frost-1);
+  --md-heading-3: var(--nord-frost-2);
+  --md-heading-4: var(--nord-frost-3);
+  --md-heading-5: var(--nord-aurora-yellow);
+  --md-heading-6: var(--nord-aurora-purple);
+
+  --md-link: var(--nord-frost-0);
+  --md-link-url: rgba(94, 129, 172, 0.7);
+  --md-wiki-link: var(--nord-aurora-purple);
+
+  --md-code-text: var(--nord-aurora-purple);
+  --md-code-bg: rgba(180, 142, 173, 0.15);
+
+  --md-code-keyword: var(--nord-aurora-purple);
+  --md-code-string: var(--nord-aurora-green);
+  --md-code-number: var(--nord-aurora-orange);
+  --md-code-comment: rgba(122, 131, 146, 0.6);
+  --md-code-function: var(--nord-frost-0);
+  --md-code-variable: var(--nord-aurora-yellow);
+  --md-code-operator: var(--nord-aurora-red);
+  --md-code-punctuation: #3e4555;
+  --md-code-bracket: #3e4555;
+  --md-code-class: var(--nord-frost-1);
+  --md-code-property: var(--nord-frost-2);
+  --md-code-boolean: var(--nord-aurora-orange);
+  --md-code-null: var(--nord-aurora-purple);
+
+  --md-list-marker: var(--nord-frost-0);
+  --md-blockquote: rgba(94, 103, 123, 0.8);
+  --md-blockquote-border: rgba(129, 161, 193, 0.5);
+
+  --md-table-border: #d6dfea;
+  --md-table-header-bg: rgba(129, 161, 193, 0.18);
+  --md-table-alt-bg: #edf2f8;
+
+  --md-syntax-marker: #7f8ba1;
+
+  /* Block colors */
+  --block-text: #1f252f;
+  --block-color-blue: var(--nord-frost-2);
+  --block-color-sapphire: var(--nord-frost-0);
+  --block-color-sky: var(--nord-frost-3);
+  --block-color-teal: var(--nord-frost-2);
+  --block-color-green: var(--nord-aurora-green);
+  --block-color-yellow: var(--nord-aurora-yellow);
+  --block-color-peach: var(--nord-aurora-orange);
+  --block-color-maroon: var(--nord-aurora-purple);
+  --block-color-red: var(--nord-aurora-red);
+  --block-color-mauve: var(--nord-aurora-purple);
+  --block-color-pink: #f6d3e1;
+  --block-color-flamingo: #f2bac9;
+  --block-color-rosewater: #ffe3eb;
+  --block-color-lavender: #d8e2ff;
+}

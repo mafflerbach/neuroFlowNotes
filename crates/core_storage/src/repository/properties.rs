@@ -427,19 +427,68 @@ impl VaultRepository {
     }
 
     /// Get all distinct values for a property key.
+    /// For list-type properties, automatically expands comma-separated values.
     pub async fn get_property_values(&self, key: &str) -> Result<Vec<String>> {
-        let values = sqlx::query_scalar::<_, String>(
+        // First check if this is a list-type property
+        let is_list_type = sqlx::query_scalar::<_, String>(
+            "SELECT type FROM properties WHERE key = ? AND type IS NOT NULL LIMIT 1"
+        )
+        .bind(key)
+        .fetch_optional(&self.pool)
+        .await?
+        .map(|t| t == "list")
+        .unwrap_or(false);
+
+        if is_list_type {
+            // For list properties, expand comma-separated values
+            self.get_list_property_values(key).await
+        } else {
+            // For non-list properties, return distinct values
+            let values = sqlx::query_scalar::<_, String>(
+                r#"
+                SELECT DISTINCT value
+                FROM properties
+                WHERE key = ? AND value IS NOT NULL AND value != ''
+                ORDER BY value
+                "#,
+            )
+            .bind(key)
+            .fetch_all(&self.pool)
+            .await?;
+
+            Ok(values)
+        }
+    }
+
+    /// Get all distinct individual values for a list-type property.
+    /// Splits comma-separated values and returns unique items.
+    pub async fn get_list_property_values(&self, key: &str) -> Result<Vec<String>> {
+        // First get all raw values
+        let raw_values = sqlx::query_scalar::<_, String>(
             r#"
-            SELECT DISTINCT value
+            SELECT value
             FROM properties
             WHERE key = ? AND value IS NOT NULL AND value != ''
-            ORDER BY value
             "#,
         )
         .bind(key)
         .fetch_all(&self.pool)
         .await?;
 
+        // Split by comma and collect unique values
+        let mut unique_values: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for raw in raw_values {
+            for part in raw.split(',') {
+                let trimmed = part.trim();
+                if !trimmed.is_empty() {
+                    unique_values.insert(trimmed.to_string());
+                }
+            }
+        }
+
+        // Convert to sorted vec
+        let mut values: Vec<String> = unique_values.into_iter().collect();
+        values.sort();
         Ok(values)
     }
 }

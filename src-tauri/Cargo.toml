@@ -27,6 +27,7 @@ base64 = "0.22"
 chrono = "0.4"
 urlencoding = "2.1"
 serde_yaml = "0.9"
+reqwest = { version = "0.12", features = ["json"] }
 
 [features]
 default = ["custom-protocol"]

@@ -44,7 +44,7 @@
       );
     }
 
-    return filtered.slice(0, 20);
+    return filtered.slice(0, 100);
   });
 
   function addValue(val: string) {

@@ -8,10 +8,19 @@
 // Import all theme CSS files
 import "./light.css";
 import "./dark.css";
-import "./darkmuu.css";
 import "./pastel.css";
 import "./rose.css";
 import "./amethyst.css";
 import "./halloween.css";
 import "./almond.css";
 import "./blackberry.css";
+import "./midnight.css";
+import "./tidal.css";
+import "./blossom.css";
+import "./meadow.css";
+import "./nebula.css";
+import "./dracula.css";
+import "./nord-dark.css";
+import "./nord-light.css";
+import "./rosepine.css";
+import "./rosepine-dawn.css";

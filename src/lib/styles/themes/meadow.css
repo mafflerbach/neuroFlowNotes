@@ -1,0 +1,217 @@
+/**
+ * Meadow Theme (Light)
+ * Fresh greens with warm sunlight accents
+ */
+
+:root[data-theme="meadow"] {
+  /* Base palette */
+  --meadow-dew: #f5fbf8;
+  --meadow-mint: #d1f1e3;
+  --meadow-fern: #9fd5b3;
+  --meadow-grass: #6bbf8f;
+  --meadow-leaf: #3f9f6b;
+  --meadow-pine: #1f6b4a;
+  --meadow-sage: #4f6f61;
+  --meadow-sun: #ffd66b;
+  --meadow-gold: #fcbf49;
+  --meadow-clover: #2f855a;
+
+  /* Gray scale */
+  --color-gray-50: #fbfdfb;
+  --color-gray-100: #f0f5f2;
+  --color-gray-200: #dfe6e1;
+  --color-gray-300: #c4cfc8;
+  --color-gray-400: #a1b1a7;
+  --color-gray-500: #7f9287;
+  --color-gray-600: #607269;
+  --color-gray-700: #45534d;
+  --color-gray-800: #2d3531;
+  --color-gray-900: #171b19;
+
+  /* Primary colors */
+  --color-primary: var(--meadow-leaf);
+  --color-primary-hover: var(--meadow-grass);
+  --color-primary-light: rgba(63, 159, 107, 0.18);
+  --color-primary-dark: var(--meadow-pine);
+
+  /* Semantic colors */
+  --color-success: var(--meadow-clover);
+  --color-success-light: rgba(47, 133, 90, 0.1);
+  --color-success-hover: rgba(47, 133, 90, 0.2);
+
+  --color-error: #e66a6a;
+  --color-error-light: rgba(230, 106, 106, 0.12);
+  --color-error-hover: rgba(230, 106, 106, 0.2);
+
+  --color-warning: var(--meadow-gold);
+  --color-warning-light: rgba(252, 191, 73, 0.2);
+
+  --color-info: #4aadcf;
+  --color-info-light: rgba(74, 173, 207, 0.18);
+
+  /* Backgrounds */
+  --bg-app: var(--meadow-dew);
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #f8fbf8;
+  --bg-surface-sunken: #eef5f0;
+  --bg-hover: rgba(159, 213, 179, 0.18);
+  --bg-active: rgba(63, 159, 107, 0.2);
+  --bg-selected: rgba(255, 214, 107, 0.25);
+
+  /* Text */
+  --text-primary: #1c2a21;
+  --text-secondary: #415347;
+  --text-muted: #5e6f63;
+  --text-disabled: rgba(96, 114, 105, 0.6);
+  --text-inverse: #ffffff;
+  --text-link: var(--meadow-leaf);
+  --text-link-hover: var(--meadow-clover);
+
+  /* Borders and icons */
+  --border-default: #d0e1d7;
+  --border-light: #e3efe7;
+  --border-focus: var(--meadow-leaf);
+
+  --icon-default: #5e6f63;
+  --icon-muted: #9fb4a6;
+  --icon-active: var(--meadow-clover);
+
+  /* Buttons */
+  --btn-primary-bg: var(--meadow-leaf);
+  --btn-primary-bg-hover: var(--meadow-grass);
+  --btn-primary-text: #ffffff;
+
+  --btn-secondary-bg: #f8fbf8;
+  --btn-secondary-bg-hover: rgba(159, 213, 179, 0.25);
+  --btn-secondary-text: #415347;
+  --btn-secondary-border: #d0e1d7;
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(63, 159, 107, 0.12);
+  --btn-ghost-text: #415347;
+
+  --btn-danger-bg: #e66a6a;
+  --btn-danger-bg-hover: #d24f4f;
+  --btn-danger-text: #ffffff;
+
+  /* Topbar and sidebar */
+  --topbar-bg: #ffffff;
+  --topbar-border: #d0e1d7;
+
+  --sidebar-bg: #f7fbf6;
+  --sidebar-border: #d0e1d7;
+  --sidebar-header-bg: #eef5f0;
+
+  /* Editor */
+  --editor-bg: #ffffff;
+  --editor-header-bg: #f8fbf8;
+  --editor-gutter-bg: #f0f6ef;
+  --editor-gutter-color: #a1b1a7;
+  --editor-active-line-bg: rgba(159, 213, 179, 0.18);
+  --editor-active-gutter-bg: rgba(159, 213, 179, 0.25);
+  --editor-selection-bg: rgba(255, 214, 107, 0.3);
+  --editor-cursor: var(--meadow-leaf);
+
+  /* Calendar */
+  --calendar-bg: #ffffff;
+  --calendar-header-bg: #f8fbf8;
+  --calendar-border: #e3efe7;
+  --calendar-today-bg: rgba(63, 159, 107, 0.15);
+  --calendar-selected-bg: var(--meadow-sun);
+  --calendar-selected-text: #1c2a21;
+  --calendar-other-month-text: rgba(96, 114, 105, 0.7);
+  --calendar-weekend-bg: #eef5f0;
+
+  /* Modal */
+  --modal-backdrop-bg: rgba(28, 42, 33, 0.35);
+  --modal-bg: #ffffff;
+  --modal-header-bg: #f8fbf8;
+  --modal-border: #d0e1d7;
+
+  /* Form controls and panels */
+  --input-bg: #ffffff;
+  --input-border: #d0e1d7;
+  --input-border-focus: var(--meadow-leaf);
+  --input-text: #1c2a21;
+  --input-placeholder: rgba(65, 83, 71, 0.6);
+
+  --panel-bg: #ffffff;
+  --panel-header-bg: #f8fbf8;
+  --panel-border: #d0e1d7;
+
+  /* Context surfaces */
+  --context-menu-bg: #ffffff;
+  --context-menu-border: #d0e1d7;
+  --context-menu-item-hover-bg: rgba(159, 213, 179, 0.2);
+  --context-menu-separator: #e3efe7;
+
+  --tree-item-hover-bg: rgba(159, 213, 179, 0.2);
+  --tree-item-selected-bg: rgba(252, 191, 73, 0.25);
+  --tree-icon-color: #7f9287;
+  --tree-folder-icon-color: var(--meadow-leaf);
+  --tree-file-icon-color: #5e6f63;
+
+  --autocomplete-bg: #ffffff;
+  --autocomplete-border: #d0e1d7;
+  --autocomplete-item-hover-bg: rgba(159, 213, 179, 0.2);
+  --autocomplete-item-selected-bg: rgba(252, 191, 73, 0.25);
+  --autocomplete-item-text: #1c2a21;
+  --autocomplete-item-detail: #607269;
+  --autocomplete-match-text: var(--meadow-leaf);
+
+  /* Markdown */
+  --md-heading-1: #1f6b4a;
+  --md-heading-2: #3f9f6b;
+  --md-heading-3: #6bbf8f;
+  --md-heading-4: #4aadcf;
+  --md-heading-5: #fcbf49;
+  --md-heading-6: #607269;
+
+  --md-link: var(--meadow-leaf);
+  --md-link-url: rgba(63, 159, 107, 0.65);
+  --md-wiki-link: #2f855a;
+
+  --md-code-text: #2f855a;
+  --md-code-bg: rgba(159, 213, 179, 0.2);
+
+  --md-code-keyword: #2f855a;
+  --md-code-string: #d97706;
+  --md-code-number: #0f766e;
+  --md-code-comment: rgba(96, 114, 105, 0.6);
+  --md-code-function: #2563eb;
+  --md-code-variable: #b45309;
+  --md-code-operator: #65a30d;
+  --md-code-punctuation: #374151;
+  --md-code-bracket: #374151;
+  --md-code-class: #9333ea;
+  --md-code-property: #0891b2;
+  --md-code-boolean: #d97706;
+  --md-code-null: #475467;
+
+  --md-list-marker: var(--meadow-leaf);
+  --md-blockquote: #607269;
+  --md-blockquote-border: var(--meadow-fern);
+
+  --md-table-border: #d0e1d7;
+  --md-table-header-bg: rgba(159, 213, 179, 0.18);
+  --md-table-alt-bg: #eef5f0;
+
+  --md-syntax-marker: #607269;
+
+  /* Block colors */
+  --block-text: #1c2a21;
+  --block-color-blue: #3b82f6;
+  --block-color-sapphire: #0ea5e9;
+  --block-color-sky: #38bdf8;
+  --block-color-teal: #2dd4bf;
+  --block-color-green: #22c55e;
+  --block-color-yellow: #facc15;
+  --block-color-peach: #fdba74;
+  --block-color-maroon: #f472b6;
+  --block-color-red: #ef4444;
+  --block-color-mauve: #c084fc;
+  --block-color-pink: #fb7185;
+  --block-color-flamingo: #fbcfe8;
+  --block-color-rosewater: #ffe4e6;
+  --block-color-lavender: #c4b5fd;
+}

@@ -1,0 +1,222 @@
+/**
+ * Rosé Pine Dawn Theme (Light)
+ * Palette reference: https://rosepinetheme.com/palette/
+ */
+
+:root[data-theme="rosepine-dawn"] {
+  /* Base palette */
+  --rosepine-dawn-base: #faf4ed;
+  --rosepine-dawn-surface: #fffaf3;
+  --rosepine-dawn-overlay: #f2e9e1;
+  --rosepine-dawn-muted: #9893a5;
+  --rosepine-dawn-subtle: #797593;
+  --rosepine-dawn-text: #575279;
+  --rosepine-dawn-love: #b4637a;
+  --rosepine-dawn-gold: #ea9d34;
+  --rosepine-dawn-rose: #d7827e;
+  --rosepine-dawn-pine: #286983;
+  --rosepine-dawn-foam: #56949f;
+  --rosepine-dawn-iris: #907aa9;
+  --rosepine-dawn-highlight-low: #f4ede8;
+  --rosepine-dawn-highlight-med: #dfdad4;
+  --rosepine-dawn-highlight-high: #cec2b6;
+
+  /* Gray scale */
+  --color-gray-50: var(--rosepine-dawn-surface);
+  --color-gray-100: var(--rosepine-dawn-overlay);
+  --color-gray-200: var(--rosepine-dawn-highlight-low);
+  --color-gray-300: var(--rosepine-dawn-highlight-med);
+  --color-gray-400: var(--rosepine-dawn-highlight-high);
+  --color-gray-500: #b8ac9e;
+  --color-gray-600: #9b8f82;
+  --color-gray-700: #7a6f62;
+  --color-gray-800: #544a3f;
+  --color-gray-900: #2e2721;
+
+  /* Primary colors */
+  --color-primary: var(--rosepine-dawn-iris);
+  --color-primary-hover: #7b6594;
+  --color-primary-light: rgba(144, 122, 169, 0.18);
+  --color-primary-dark: #614a7b;
+
+  /* Semantic colors */
+  --color-success: var(--rosepine-dawn-foam);
+  --color-success-light: rgba(86, 148, 159, 0.18);
+  --color-success-hover: rgba(86, 148, 159, 0.25);
+
+  --color-error: var(--rosepine-dawn-love);
+  --color-error-light: rgba(180, 99, 122, 0.18);
+  --color-error-hover: rgba(180, 99, 122, 0.28);
+
+  --color-warning: var(--rosepine-dawn-gold);
+  --color-warning-light: rgba(234, 157, 52, 0.2);
+
+  --color-info: var(--rosepine-dawn-pine);
+  --color-info-light: rgba(40, 105, 131, 0.2);
+
+  /* Backgrounds */
+  --bg-app: var(--rosepine-dawn-base);
+  --bg-surface: var(--rosepine-dawn-surface);
+  --bg-surface-raised: var(--rosepine-dawn-overlay);
+  --bg-surface-sunken: #f1e7de;
+  --bg-hover: rgba(144, 122, 169, 0.12);
+  --bg-active: rgba(144, 122, 169, 0.2);
+  --bg-selected: rgba(214, 130, 126, 0.2);
+
+  /* Text */
+  --text-primary: var(--rosepine-dawn-text);
+  --text-secondary: var(--rosepine-dawn-subtle);
+  --text-muted: var(--rosepine-dawn-muted);
+  --text-disabled: rgba(152, 147, 165, 0.55);
+  --text-inverse: var(--rosepine-dawn-surface);
+  --text-link: var(--rosepine-dawn-pine);
+  --text-link-hover: var(--rosepine-dawn-foam);
+
+  /* Borders and icons */
+  --border-default: #e6dcd2;
+  --border-light: #f2e9e1;
+  --border-focus: var(--rosepine-dawn-iris);
+
+  --icon-default: var(--rosepine-dawn-muted);
+  --icon-muted: #c3bbaf;
+  --icon-active: var(--rosepine-dawn-iris);
+
+  /* Buttons */
+  --btn-primary-bg: var(--rosepine-dawn-iris);
+  --btn-primary-bg-hover: #7b6594;
+  --btn-primary-text: var(--rosepine-dawn-surface);
+
+  --btn-secondary-bg: var(--rosepine-dawn-overlay);
+  --btn-secondary-bg-hover: rgba(144, 122, 169, 0.15);
+  --btn-secondary-text: var(--rosepine-dawn-text);
+  --btn-secondary-border: #e6dcd2;
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(144, 122, 169, 0.15);
+  --btn-ghost-text: var(--rosepine-dawn-text);
+
+  --btn-danger-bg: var(--rosepine-dawn-love);
+  --btn-danger-bg-hover: #c9778f;
+  --btn-danger-text: var(--rosepine-dawn-surface);
+
+  /* Topbar and sidebar */
+  --topbar-bg: var(--rosepine-dawn-surface);
+  --topbar-border: #e6dcd2;
+
+  --sidebar-bg: var(--rosepine-dawn-overlay);
+  --sidebar-border: #e6dcd2;
+  --sidebar-header-bg: #f4ede8;
+
+  /* Editor */
+  --editor-bg: var(--rosepine-dawn-surface);
+  --editor-header-bg: var(--rosepine-dawn-overlay);
+  --editor-gutter-bg: #f4ede8;
+  --editor-gutter-color: var(--rosepine-dawn-muted);
+  --editor-active-line-bg: rgba(144, 122, 169, 0.15);
+  --editor-active-gutter-bg: rgba(144, 122, 169, 0.2);
+  --editor-selection-bg: rgba(235, 188, 186, 0.25);
+  --editor-cursor: var(--rosepine-dawn-pine);
+
+  /* Calendar */
+  --calendar-bg: var(--rosepine-dawn-surface);
+  --calendar-header-bg: var(--rosepine-dawn-overlay);
+  --calendar-border: #e6dcd2;
+  --calendar-today-bg: rgba(214, 130, 126, 0.2);
+  --calendar-selected-bg: var(--rosepine-dawn-iris);
+  --calendar-selected-text: var(--rosepine-dawn-surface);
+  --calendar-other-month-text: rgba(152, 147, 165, 0.7);
+  --calendar-weekend-bg: #f4ede8;
+
+  /* Modal */
+  --modal-backdrop-bg: rgba(87, 82, 121, 0.25);
+  --modal-bg: var(--rosepine-dawn-surface);
+  --modal-header-bg: var(--rosepine-dawn-overlay);
+  --modal-border: #e6dcd2;
+
+  /* Form controls and panels */
+  --input-bg: var(--rosepine-dawn-surface);
+  --input-border: #e6dcd2;
+  --input-border-focus: var(--rosepine-dawn-iris);
+  --input-text: var(--rosepine-dawn-text);
+  --input-placeholder: rgba(121, 117, 147, 0.7);
+
+  --panel-bg: var(--rosepine-dawn-surface);
+  --panel-header-bg: var(--rosepine-dawn-overlay);
+  --panel-border: #e6dcd2;
+
+  /* Context surfaces */
+  --context-menu-bg: var(--rosepine-dawn-surface);
+  --context-menu-border: #e6dcd2;
+  --context-menu-item-hover-bg: rgba(144, 122, 169, 0.15);
+  --context-menu-separator: #f2e9e1;
+
+  --tree-item-hover-bg: rgba(144, 122, 169, 0.15);
+  --tree-item-selected-bg: rgba(214, 130, 126, 0.2);
+  --tree-icon-color: var(--rosepine-dawn-muted);
+  --tree-folder-icon-color: var(--rosepine-dawn-iris);
+  --tree-file-icon-color: var(--rosepine-dawn-gold);
+
+  --autocomplete-bg: var(--rosepine-dawn-surface);
+  --autocomplete-border: #e6dcd2;
+  --autocomplete-item-hover-bg: rgba(144, 122, 169, 0.12);
+  --autocomplete-item-selected-bg: rgba(214, 130, 126, 0.2);
+  --autocomplete-item-text: var(--rosepine-dawn-text);
+  --autocomplete-item-detail: rgba(121, 117, 147, 0.8);
+  --autocomplete-match-text: var(--rosepine-dawn-pine);
+
+  /* Markdown */
+  --md-heading-1: var(--rosepine-dawn-pine);
+  --md-heading-2: var(--rosepine-dawn-foam);
+  --md-heading-3: var(--rosepine-dawn-gold);
+  --md-heading-4: var(--rosepine-dawn-iris);
+  --md-heading-5: var(--rosepine-dawn-love);
+  --md-heading-6: var(--rosepine-dawn-muted);
+
+  --md-link: var(--rosepine-dawn-pine);
+  --md-link-url: rgba(40, 105, 131, 0.75);
+  --md-wiki-link: var(--rosepine-dawn-iris);
+
+  --md-code-text: var(--rosepine-dawn-gold);
+  --md-code-bg: rgba(234, 157, 52, 0.15);
+
+  --md-code-keyword: var(--rosepine-dawn-love);
+  --md-code-string: var(--rosepine-dawn-rose);
+  --md-code-number: var(--rosepine-dawn-gold);
+  --md-code-comment: rgba(152, 147, 165, 0.7);
+  --md-code-function: var(--rosepine-dawn-iris);
+  --md-code-variable: var(--rosepine-dawn-foam);
+  --md-code-operator: var(--rosepine-dawn-love);
+  --md-code-punctuation: var(--rosepine-dawn-text);
+  --md-code-bracket: rgba(87, 82, 121, 0.9);
+  --md-code-class: var(--rosepine-dawn-pine);
+  --md-code-property: var(--rosepine-dawn-rose);
+  --md-code-boolean: var(--rosepine-dawn-gold);
+  --md-code-null: var(--rosepine-dawn-iris);
+
+  --md-list-marker: var(--rosepine-dawn-iris);
+  --md-blockquote: rgba(121, 117, 147, 0.8);
+  --md-blockquote-border: rgba(144, 122, 169, 0.4);
+
+  --md-table-border: #e6dcd2;
+  --md-table-header-bg: rgba(144, 122, 169, 0.15);
+  --md-table-alt-bg: #f2e9e1;
+
+  --md-syntax-marker: rgba(121, 117, 147, 0.8);
+
+  /* Block colors */
+  --block-text: var(--rosepine-dawn-text);
+  --block-color-blue: var(--rosepine-dawn-foam);
+  --block-color-sapphire: var(--rosepine-dawn-pine);
+  --block-color-sky: #6fbac4;
+  --block-color-teal: var(--rosepine-dawn-foam);
+  --block-color-green: #7fbf92;
+  --block-color-yellow: var(--rosepine-dawn-gold);
+  --block-color-peach: #f0b080;
+  --block-color-maroon: var(--rosepine-dawn-love);
+  --block-color-red: #d97786;
+  --block-color-mauve: var(--rosepine-dawn-iris);
+  --block-color-pink: #f2b8c4;
+  --block-color-flamingo: #f4cacd;
+  --block-color-rosewater: var(--rosepine-dawn-rose);
+  --block-color-lavender: #dccfea;
+}

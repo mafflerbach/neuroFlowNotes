@@ -1,0 +1,222 @@
+/**
+ * Rosé Pine Theme (Dark)
+ * Palette reference: https://rosepinetheme.com/palette/
+ */
+
+:root[data-theme="rosepine"] {
+  /* Base palette */
+  --rosepine-base: #191724;
+  --rosepine-surface: #1f1d2e;
+  --rosepine-overlay: #26233a;
+  --rosepine-muted: #6e6a86;
+  --rosepine-subtle: #908caa;
+  --rosepine-text: #e0def4;
+  --rosepine-love: #eb6f92;
+  --rosepine-gold: #f6c177;
+  --rosepine-rose: #ebbcba;
+  --rosepine-pine: #31748f;
+  --rosepine-foam: #9ccfd8;
+  --rosepine-iris: #c4a7e7;
+  --rosepine-highlight-low: #21202e;
+  --rosepine-highlight-med: #403d52;
+  --rosepine-highlight-high: #524f67;
+
+  /* Gray scale */
+  --color-gray-50: #14121c;
+  --color-gray-100: var(--rosepine-base);
+  --color-gray-200: var(--rosepine-surface);
+  --color-gray-300: var(--rosepine-overlay);
+  --color-gray-400: var(--rosepine-highlight-med);
+  --color-gray-500: var(--rosepine-highlight-high);
+  --color-gray-600: #7a768f;
+  --color-gray-700: #a29eb8;
+  --color-gray-800: #cbc7df;
+  --color-gray-900: var(--rosepine-text);
+
+  /* Primary colors */
+  --color-primary: var(--rosepine-iris);
+  --color-primary-hover: #b495e5;
+  --color-primary-light: rgba(196, 167, 231, 0.25);
+  --color-primary-dark: #a078d5;
+
+  /* Semantic colors */
+  --color-success: var(--rosepine-foam);
+  --color-success-light: rgba(156, 207, 216, 0.18);
+  --color-success-hover: rgba(156, 207, 216, 0.28);
+
+  --color-error: var(--rosepine-love);
+  --color-error-light: rgba(235, 111, 146, 0.2);
+  --color-error-hover: rgba(235, 111, 146, 0.3);
+
+  --color-warning: var(--rosepine-gold);
+  --color-warning-light: rgba(246, 193, 119, 0.2);
+
+  --color-info: var(--rosepine-pine);
+  --color-info-light: rgba(49, 116, 143, 0.2);
+
+  /* Backgrounds */
+  --bg-app: var(--rosepine-base);
+  --bg-surface: var(--rosepine-surface);
+  --bg-surface-raised: rgba(38, 35, 58, 0.9);
+  --bg-surface-sunken: #120f1c;
+  --bg-hover: rgba(83, 79, 103, 0.25);
+  --bg-active: rgba(196, 167, 231, 0.2);
+  --bg-selected: rgba(235, 188, 186, 0.25);
+
+  /* Text */
+  --text-primary: var(--rosepine-text);
+  --text-secondary: var(--rosepine-subtle);
+  --text-muted: var(--rosepine-muted);
+  --text-disabled: rgba(146, 140, 170, 0.5);
+  --text-inverse: var(--rosepine-base);
+  --text-link: var(--rosepine-foam);
+  --text-link-hover: var(--rosepine-iris);
+
+  /* Borders and icons */
+  --border-default: rgba(83, 79, 103, 0.6);
+  --border-light: rgba(38, 35, 58, 0.7);
+  --border-focus: var(--rosepine-iris);
+
+  --icon-default: var(--rosepine-text);
+  --icon-muted: var(--rosepine-subtle);
+  --icon-active: var(--rosepine-iris);
+
+  /* Buttons */
+  --btn-primary-bg: var(--rosepine-iris);
+  --btn-primary-bg-hover: #b495e5;
+  --btn-primary-text: var(--rosepine-base);
+
+  --btn-secondary-bg: rgba(82, 79, 103, 0.4);
+  --btn-secondary-bg-hover: rgba(196, 167, 231, 0.2);
+  --btn-secondary-text: var(--rosepine-text);
+  --btn-secondary-border: rgba(82, 79, 103, 0.6);
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(82, 79, 103, 0.25);
+  --btn-ghost-text: var(--rosepine-text);
+
+  --btn-danger-bg: var(--rosepine-love);
+  --btn-danger-bg-hover: #f08ba9;
+  --btn-danger-text: var(--rosepine-base);
+
+  /* Topbar and sidebar */
+  --topbar-bg: rgba(31, 29, 46, 0.95);
+  --topbar-border: rgba(82, 79, 103, 0.6);
+
+  --sidebar-bg: rgba(24, 22, 38, 0.95);
+  --sidebar-border: rgba(82, 79, 103, 0.6);
+  --sidebar-header-bg: rgba(38, 35, 58, 0.9);
+
+  /* Editor */
+  --editor-bg: rgba(31, 29, 46, 0.95);
+  --editor-header-bg: rgba(38, 35, 58, 0.85);
+  --editor-gutter-bg: rgba(25, 23, 36, 0.95);
+  --editor-gutter-color: var(--rosepine-muted);
+  --editor-active-line-bg: rgba(82, 79, 103, 0.35);
+  --editor-active-gutter-bg: rgba(82, 79, 103, 0.45);
+  --editor-selection-bg: rgba(196, 167, 231, 0.25);
+  --editor-cursor: var(--rosepine-foam);
+
+  /* Calendar */
+  --calendar-bg: rgba(31, 29, 46, 0.95);
+  --calendar-header-bg: rgba(38, 35, 58, 0.9);
+  --calendar-border: rgba(82, 79, 103, 0.5);
+  --calendar-today-bg: rgba(235, 188, 186, 0.25);
+  --calendar-selected-bg: var(--rosepine-iris);
+  --calendar-selected-text: var(--rosepine-base);
+  --calendar-other-month-text: rgba(146, 140, 170, 0.7);
+  --calendar-weekend-bg: rgba(25, 23, 36, 0.9);
+
+  /* Modal */
+  --modal-backdrop-bg: rgba(10, 9, 14, 0.85);
+  --modal-bg: rgba(31, 29, 46, 0.97);
+  --modal-header-bg: rgba(38, 35, 58, 0.9);
+  --modal-border: rgba(82, 79, 103, 0.6);
+
+  /* Form controls and panels */
+  --input-bg: rgba(20, 18, 29, 0.95);
+  --input-border: rgba(82, 79, 103, 0.55);
+  --input-border-focus: var(--rosepine-iris);
+  --input-text: var(--rosepine-text);
+  --input-placeholder: rgba(146, 140, 170, 0.7);
+
+  --panel-bg: rgba(31, 29, 46, 0.95);
+  --panel-header-bg: rgba(38, 35, 58, 0.85);
+  --panel-border: rgba(82, 79, 103, 0.45);
+
+  /* Context surfaces */
+  --context-menu-bg: rgba(25, 23, 36, 0.97);
+  --context-menu-border: rgba(82, 79, 103, 0.5);
+  --context-menu-item-hover-bg: rgba(82, 79, 103, 0.25);
+  --context-menu-separator: rgba(82, 79, 103, 0.6);
+
+  --tree-item-hover-bg: rgba(82, 79, 103, 0.25);
+  --tree-item-selected-bg: rgba(235, 188, 186, 0.25);
+  --tree-icon-color: var(--rosepine-subtle);
+  --tree-folder-icon-color: var(--rosepine-iris);
+  --tree-file-icon-color: var(--rosepine-gold);
+
+  --autocomplete-bg: rgba(25, 23, 36, 0.97);
+  --autocomplete-border: rgba(82, 79, 103, 0.5);
+  --autocomplete-item-hover-bg: rgba(82, 79, 103, 0.3);
+  --autocomplete-item-selected-bg: rgba(196, 167, 231, 0.25);
+  --autocomplete-item-text: var(--rosepine-text);
+  --autocomplete-item-detail: rgba(156, 207, 216, 0.8);
+  --autocomplete-match-text: var(--rosepine-iris);
+
+  /* Markdown */
+  --md-heading-1: var(--rosepine-iris);
+  --md-heading-2: var(--rosepine-foam);
+  --md-heading-3: var(--rosepine-gold);
+  --md-heading-4: var(--rosepine-pine);
+  --md-heading-5: var(--rosepine-love);
+  --md-heading-6: var(--rosepine-subtle);
+
+  --md-link: var(--rosepine-foam);
+  --md-link-url: rgba(156, 207, 216, 0.8);
+  --md-wiki-link: var(--rosepine-iris);
+
+  --md-code-text: var(--rosepine-gold);
+  --md-code-bg: rgba(246, 193, 119, 0.15);
+
+  --md-code-keyword: var(--rosepine-love);
+  --md-code-string: var(--rosepine-rose);
+  --md-code-number: var(--rosepine-gold);
+  --md-code-comment: rgba(146, 140, 170, 0.7);
+  --md-code-function: var(--rosepine-iris);
+  --md-code-variable: var(--rosepine-foam);
+  --md-code-operator: var(--rosepine-love);
+  --md-code-punctuation: var(--rosepine-text);
+  --md-code-bracket: rgba(224, 222, 244, 0.8);
+  --md-code-class: var(--rosepine-pine);
+  --md-code-property: var(--rosepine-rose);
+  --md-code-boolean: var(--rosepine-gold);
+  --md-code-null: var(--rosepine-iris);
+
+  --md-list-marker: var(--rosepine-iris);
+  --md-blockquote: rgba(156, 207, 216, 0.8);
+  --md-blockquote-border: rgba(196, 167, 231, 0.45);
+
+  --md-table-border: rgba(82, 79, 103, 0.7);
+  --md-table-header-bg: rgba(82, 79, 103, 0.5);
+  --md-table-alt-bg: rgba(31, 29, 46, 0.8);
+
+  --md-syntax-marker: rgba(146, 140, 170, 0.8);
+
+  /* Block colors */
+  --block-text: var(--rosepine-text);
+  --block-color-blue: var(--rosepine-foam);
+  --block-color-sapphire: var(--rosepine-pine);
+  --block-color-sky: #86e1f3;
+  --block-color-teal: var(--rosepine-pine);
+  --block-color-green: #8be9c1;
+  --block-color-yellow: var(--rosepine-gold);
+  --block-color-peach: #f8a88b;
+  --block-color-maroon: var(--rosepine-love);
+  --block-color-red: var(--rosepine-love);
+  --block-color-mauve: var(--rosepine-iris);
+  --block-color-pink: #f2b6d0;
+  --block-color-flamingo: #f6c2ce;
+  --block-color-rosewater: var(--rosepine-rose);
+  --block-color-lavender: #d5c3f2;
+}

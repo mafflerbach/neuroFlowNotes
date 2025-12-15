@@ -1,0 +1,223 @@
+/**
+ * Nord Dark Theme
+ * Based on https://www.nordtheme.com/docs/colors-and-palettes
+ */
+
+:root[data-theme="nord-dark"] {
+  /* Base palette */
+  --nord-polar-night-0: #2e3440;
+  --nord-polar-night-1: #3b4252;
+  --nord-polar-night-2: #434c5e;
+  --nord-polar-night-3: #4c566a;
+  --nord-snow-storm-0: #d8dee9;
+  --nord-snow-storm-1: #e5e9f0;
+  --nord-snow-storm-2: #eceff4;
+  --nord-frost-0: #8fbcbb;
+  --nord-frost-1: #88c0d0;
+  --nord-frost-2: #81a1c1;
+  --nord-frost-3: #5e81ac;
+  --nord-aurora-red: #bf616a;
+  --nord-aurora-orange: #d08770;
+  --nord-aurora-yellow: #ebcb8b;
+  --nord-aurora-green: #a3be8c;
+  --nord-aurora-purple: #b48ead;
+
+  /* Gray scale */
+  --color-gray-50: #1d222d;
+  --color-gray-100: var(--nord-polar-night-0);
+  --color-gray-200: var(--nord-polar-night-1);
+  --color-gray-300: var(--nord-polar-night-2);
+  --color-gray-400: var(--nord-polar-night-3);
+  --color-gray-500: #5e6b81;
+  --color-gray-600: #7a869e;
+  --color-gray-700: #a1adbf;
+  --color-gray-800: #cfd5e1;
+  --color-gray-900: var(--nord-snow-storm-2);
+
+  /* Primary colors */
+  --color-primary: var(--nord-frost-1);
+  --color-primary-hover: var(--nord-frost-0);
+  --color-primary-light: rgba(136, 192, 208, 0.25);
+  --color-primary-dark: var(--nord-frost-3);
+
+  /* Semantic colors */
+  --color-success: var(--nord-aurora-green);
+  --color-success-light: rgba(163, 190, 140, 0.15);
+  --color-success-hover: rgba(163, 190, 140, 0.25);
+
+  --color-error: var(--nord-aurora-red);
+  --color-error-light: rgba(191, 97, 106, 0.2);
+  --color-error-hover: rgba(191, 97, 106, 0.3);
+
+  --color-warning: var(--nord-aurora-yellow);
+  --color-warning-light: rgba(235, 203, 139, 0.25);
+
+  --color-info: var(--nord-frost-2);
+  --color-info-light: rgba(129, 161, 193, 0.2);
+
+  /* Backgrounds */
+  --bg-app: var(--nord-polar-night-0);
+  --bg-surface: var(--nord-polar-night-1);
+  --bg-surface-raised: rgba(67, 76, 94, 0.9);
+  --bg-surface-sunken: #242933;
+  --bg-hover: rgba(94, 107, 129, 0.2);
+  --bg-active: rgba(136, 192, 208, 0.25);
+  --bg-selected: rgba(94, 129, 172, 0.3);
+
+  /* Text */
+  --text-primary: var(--nord-snow-storm-2);
+  --text-secondary: var(--nord-snow-storm-1);
+  --text-muted: var(--nord-polar-night-3);
+  --text-disabled: rgba(94, 107, 129, 0.6);
+  --text-inverse: var(--nord-polar-night-0);
+  --text-link: var(--nord-frost-1);
+  --text-link-hover: var(--nord-frost-0);
+
+  /* Borders and icons */
+  --border-default: rgba(94, 107, 129, 0.5);
+  --border-light: rgba(43, 50, 62, 0.7);
+  --border-focus: var(--nord-frost-1);
+
+  --icon-default: var(--nord-snow-storm-0);
+  --icon-muted: var(--nord-frost-3);
+  --icon-active: var(--nord-frost-1);
+
+  /* Buttons */
+  --btn-primary-bg: var(--nord-frost-1);
+  --btn-primary-bg-hover: var(--nord-frost-0);
+  --btn-primary-text: var(--nord-polar-night-0);
+
+  --btn-secondary-bg: rgba(67, 76, 94, 0.8);
+  --btn-secondary-bg-hover: rgba(136, 192, 208, 0.25);
+  --btn-secondary-text: var(--nord-snow-storm-2);
+  --btn-secondary-border: rgba(94, 107, 129, 0.6);
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(129, 161, 193, 0.2);
+  --btn-ghost-text: var(--nord-snow-storm-2);
+
+  --btn-danger-bg: var(--nord-aurora-red);
+  --btn-danger-bg-hover: #d77780;
+  --btn-danger-text: var(--nord-polar-night-0);
+
+  /* Topbar and sidebar */
+  --topbar-bg: rgba(46, 52, 64, 0.98);
+  --topbar-border: rgba(94, 107, 129, 0.5);
+
+  --sidebar-bg: rgba(43, 50, 62, 0.95);
+  --sidebar-border: rgba(94, 107, 129, 0.5);
+  --sidebar-header-bg: rgba(46, 52, 64, 0.9);
+
+  /* Editor */
+  --editor-bg: rgba(46, 52, 64, 0.98);
+  --editor-header-bg: rgba(43, 50, 62, 0.9);
+  --editor-gutter-bg: rgba(37, 42, 54, 0.95);
+  --editor-gutter-color: #7c8aa5;
+  --editor-active-line-bg: rgba(76, 86, 106, 0.5);
+  --editor-active-gutter-bg: rgba(76, 86, 106, 0.65);
+  --editor-selection-bg: rgba(94, 129, 172, 0.35);
+  --editor-cursor: var(--nord-frost-0);
+
+  /* Calendar */
+  --calendar-bg: rgba(46, 52, 64, 0.98);
+  --calendar-header-bg: rgba(43, 50, 62, 0.95);
+  --calendar-border: rgba(76, 86, 106, 0.6);
+  --calendar-today-bg: rgba(136, 192, 208, 0.2);
+  --calendar-selected-bg: var(--nord-frost-3);
+  --calendar-selected-text: var(--nord-snow-storm-2);
+  --calendar-other-month-text: rgba(163, 177, 198, 0.7);
+  --calendar-weekend-bg: rgba(34, 39, 51, 0.9);
+
+  /* Modal */
+  --modal-backdrop-bg: rgba(15, 18, 24, 0.8);
+  --modal-bg: rgba(43, 50, 62, 0.97);
+  --modal-header-bg: rgba(43, 50, 62, 0.9);
+  --modal-border: rgba(76, 86, 106, 0.5);
+
+  /* Form controls and panels */
+  --input-bg: rgba(31, 36, 46, 0.95);
+  --input-border: rgba(76, 86, 106, 0.5);
+  --input-border-focus: var(--nord-frost-1);
+  --input-text: var(--nord-snow-storm-2);
+  --input-placeholder: rgba(163, 177, 198, 0.7);
+
+  --panel-bg: rgba(46, 52, 64, 0.98);
+  --panel-header-bg: rgba(43, 50, 62, 0.9);
+  --panel-border: rgba(76, 86, 106, 0.4);
+
+  /* Context surfaces */
+  --context-menu-bg: rgba(34, 39, 51, 0.98);
+  --context-menu-border: rgba(76, 86, 106, 0.5);
+  --context-menu-item-hover-bg: rgba(94, 129, 172, 0.3);
+  --context-menu-separator: rgba(76, 86, 106, 0.6);
+
+  --tree-item-hover-bg: rgba(67, 76, 94, 0.4);
+  --tree-item-selected-bg: rgba(94, 129, 172, 0.35);
+  --tree-icon-color: #a1adbf;
+  --tree-folder-icon-color: var(--nord-frost-1);
+  --tree-file-icon-color: var(--nord-aurora-yellow);
+
+  --autocomplete-bg: rgba(34, 39, 51, 0.98);
+  --autocomplete-border: rgba(76, 86, 106, 0.5);
+  --autocomplete-item-hover-bg: rgba(94, 129, 172, 0.3);
+  --autocomplete-item-selected-bg: rgba(136, 192, 208, 0.25);
+  --autocomplete-item-text: var(--nord-snow-storm-1);
+  --autocomplete-item-detail: rgba(163, 177, 198, 0.7);
+  --autocomplete-match-text: var(--nord-frost-1);
+
+  /* Markdown */
+  --md-heading-1: var(--nord-frost-1);
+  --md-heading-2: var(--nord-frost-0);
+  --md-heading-3: var(--nord-frost-2);
+  --md-heading-4: var(--nord-frost-3);
+  --md-heading-5: var(--nord-aurora-yellow);
+  --md-heading-6: var(--nord-aurora-purple);
+
+  --md-link: var(--nord-frost-1);
+  --md-link-url: rgba(136, 192, 208, 0.85);
+  --md-wiki-link: var(--nord-aurora-purple);
+
+  --md-code-text: var(--nord-aurora-yellow);
+  --md-code-bg: rgba(235, 203, 139, 0.12);
+
+  --md-code-keyword: var(--nord-aurora-purple);
+  --md-code-string: var(--nord-aurora-green);
+  --md-code-number: var(--nord-aurora-orange);
+  --md-code-comment: rgba(163, 177, 198, 0.7);
+  --md-code-function: var(--nord-frost-2);
+  --md-code-variable: var(--nord-aurora-yellow);
+  --md-code-operator: var(--nord-aurora-red);
+  --md-code-punctuation: var(--nord-snow-storm-2);
+  --md-code-bracket: rgba(236, 239, 244, 0.8);
+  --md-code-class: var(--nord-frost-1);
+  --md-code-property: var(--nord-frost-0);
+  --md-code-boolean: var(--nord-aurora-orange);
+  --md-code-null: var(--nord-aurora-purple);
+
+  --md-list-marker: var(--nord-frost-3);
+  --md-blockquote: rgba(163, 177, 198, 0.8);
+  --md-blockquote-border: rgba(94, 129, 172, 0.5);
+
+  --md-table-border: rgba(67, 76, 94, 0.8);
+  --md-table-header-bg: rgba(76, 86, 106, 0.6);
+  --md-table-alt-bg: rgba(46, 52, 64, 0.8);
+
+  --md-syntax-marker: rgba(163, 177, 198, 0.75);
+
+  /* Block colors */
+  --block-text: var(--nord-snow-storm-2);
+  --block-color-blue: var(--nord-frost-2);
+  --block-color-sapphire: var(--nord-frost-3);
+  --block-color-sky: var(--nord-frost-1);
+  --block-color-teal: var(--nord-frost-0);
+  --block-color-green: var(--nord-aurora-green);
+  --block-color-yellow: var(--nord-aurora-yellow);
+  --block-color-peach: var(--nord-aurora-orange);
+  --block-color-maroon: var(--nord-aurora-purple);
+  --block-color-red: var(--nord-aurora-red);
+  --block-color-mauve: var(--nord-aurora-purple);
+  --block-color-pink: #f6c1d8;
+  --block-color-flamingo: #f2b8c6;
+  --block-color-rosewater: #f1dfe8;
+  --block-color-lavender: #d0d8f4;
+}

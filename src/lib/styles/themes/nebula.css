@@ -1,0 +1,217 @@
+/**
+ * Nebula Theme (Dark)
+ * Cosmic purples with neon teal highlights
+ */
+
+:root[data-theme="nebula"] {
+  /* Base palette */
+  --nebula-cosmos: #0d0b1f;
+  --nebula-midnight: #151132;
+  --nebula-void: #1f1a4a;
+  --nebula-orbit: #2b2564;
+  --nebula-haze: #3c377d;
+  --nebula-aether: #5d55a5;
+  --nebula-neon: #39f5d0;
+  --nebula-plasma: #ff8bd4;
+  --nebula-star: #f4e87c;
+  --nebula-comet: #8be9fd;
+
+  /* Gray scale */
+  --color-gray-50: #0a091a;
+  --color-gray-100: #15122a;
+  --color-gray-200: #1f1a3c;
+  --color-gray-300: #2d2651;
+  --color-gray-400: #3f3770;
+  --color-gray-500: #564d8c;
+  --color-gray-600: #7269a8;
+  --color-gray-700: #9f96c7;
+  --color-gray-800: #cfc5e6;
+  --color-gray-900: #f4f1ff;
+
+  /* Primary colors */
+  --color-primary: var(--nebula-neon);
+  --color-primary-hover: #67ffe0;
+  --color-primary-light: rgba(57, 245, 208, 0.2);
+  --color-primary-dark: #20c0a0;
+
+  /* Semantic colors */
+  --color-success: #7ef2d3;
+  --color-success-light: rgba(126, 242, 211, 0.15);
+  --color-success-hover: rgba(126, 242, 211, 0.25);
+
+  --color-error: #ff7aa2;
+  --color-error-light: rgba(255, 122, 162, 0.2);
+  --color-error-hover: rgba(255, 122, 162, 0.3);
+
+  --color-warning: var(--nebula-star);
+  --color-warning-light: rgba(244, 232, 124, 0.25);
+
+  --color-info: var(--nebula-comet);
+  --color-info-light: rgba(139, 233, 253, 0.18);
+
+  /* Backgrounds */
+  --bg-app: var(--nebula-cosmos);
+  --bg-surface: var(--nebula-midnight);
+  --bg-surface-raised: rgba(31, 26, 74, 0.9);
+  --bg-surface-sunken: #080714;
+  --bg-hover: rgba(92, 85, 165, 0.16);
+  --bg-active: rgba(57, 245, 208, 0.2);
+  --bg-selected: rgba(255, 139, 212, 0.2);
+
+  /* Text */
+  --text-primary: #f4f1ff;
+  --text-secondary: #cfc5e6;
+  --text-muted: #a99ed0;
+  --text-disabled: rgba(169, 158, 208, 0.5);
+  --text-inverse: #15122a;
+  --text-link: var(--nebula-neon);
+  --text-link-hover: #8effe3;
+
+  /* Borders and icons */
+  --border-default: rgba(92, 85, 165, 0.5);
+  --border-light: rgba(47, 39, 102, 0.6);
+  --border-focus: var(--nebula-plasma);
+
+  --icon-default: #cfc5e6;
+  --icon-muted: #9f96c7;
+  --icon-active: var(--nebula-neon);
+
+  /* Buttons */
+  --btn-primary-bg: var(--nebula-neon);
+  --btn-primary-bg-hover: #6affdf;
+  --btn-primary-text: #15122a;
+
+  --btn-secondary-bg: rgba(92, 85, 165, 0.35);
+  --btn-secondary-bg-hover: rgba(138, 128, 197, 0.45);
+  --btn-secondary-text: #f4f1ff;
+  --btn-secondary-border: rgba(92, 85, 165, 0.55);
+
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: rgba(92, 85, 165, 0.25);
+  --btn-ghost-text: #cfc5e6;
+
+  --btn-danger-bg: #ff7aa2;
+  --btn-danger-bg-hover: #ff5c90;
+  --btn-danger-text: #15122a;
+
+  /* Topbar and sidebar */
+  --topbar-bg: rgba(21, 17, 50, 0.95);
+  --topbar-border: rgba(92, 85, 165, 0.45);
+
+  --sidebar-bg: rgba(15, 12, 44, 0.95);
+  --sidebar-border: rgba(92, 85, 165, 0.45);
+  --sidebar-header-bg: rgba(31, 26, 74, 0.8);
+
+  /* Editor */
+  --editor-bg: rgba(21, 17, 50, 0.95);
+  --editor-header-bg: rgba(31, 26, 74, 0.85);
+  --editor-gutter-bg: rgba(13, 11, 31, 0.9);
+  --editor-gutter-color: #7269a8;
+  --editor-active-line-bg: rgba(92, 85, 165, 0.25);
+  --editor-active-gutter-bg: rgba(92, 85, 165, 0.35);
+  --editor-selection-bg: rgba(255, 139, 212, 0.2);
+  --editor-cursor: var(--nebula-neon);
+
+  /* Calendar */
+  --calendar-bg: rgba(21, 17, 50, 0.95);
+  --calendar-header-bg: rgba(31, 26, 74, 0.9);
+  --calendar-border: rgba(92, 85, 165, 0.4);
+  --calendar-today-bg: rgba(57, 245, 208, 0.18);
+  --calendar-selected-bg: var(--nebula-plasma);
+  --calendar-selected-text: #15122a;
+  --calendar-other-month-text: rgba(159, 150, 199, 0.6);
+  --calendar-weekend-bg: rgba(13, 11, 31, 0.9);
+
+  /* Modal */
+  --modal-backdrop-bg: rgba(5, 4, 15, 0.8);
+  --modal-bg: rgba(21, 17, 50, 0.97);
+  --modal-header-bg: rgba(31, 26, 74, 0.85);
+  --modal-border: rgba(92, 85, 165, 0.5);
+
+  /* Form controls and panels */
+  --input-bg: rgba(8, 7, 20, 0.95);
+  --input-border: rgba(92, 85, 165, 0.5);
+  --input-border-focus: var(--nebula-neon);
+  --input-text: #f4f1ff;
+  --input-placeholder: rgba(159, 150, 199, 0.7);
+
+  --panel-bg: rgba(21, 17, 50, 0.95);
+  --panel-header-bg: rgba(31, 26, 74, 0.8);
+  --panel-border: rgba(92, 85, 165, 0.4);
+
+  /* Context surfaces */
+  --context-menu-bg: rgba(13, 11, 31, 0.97);
+  --context-menu-border: rgba(92, 85, 165, 0.45);
+  --context-menu-item-hover-bg: rgba(92, 85, 165, 0.3);
+  --context-menu-separator: rgba(92, 85, 165, 0.35);
+
+  --tree-item-hover-bg: rgba(92, 85, 165, 0.25);
+  --tree-item-selected-bg: rgba(57, 245, 208, 0.22);
+  --tree-icon-color: #cfc5e6;
+  --tree-folder-icon-color: var(--nebula-plasma);
+  --tree-file-icon-color: #9f96c7;
+
+  --autocomplete-bg: rgba(13, 11, 31, 0.97);
+  --autocomplete-border: rgba(92, 85, 165, 0.45);
+  --autocomplete-item-hover-bg: rgba(92, 85, 165, 0.3);
+  --autocomplete-item-selected-bg: rgba(255, 139, 212, 0.22);
+  --autocomplete-item-text: #f4f1ff;
+  --autocomplete-item-detail: rgba(159, 150, 199, 0.8);
+  --autocomplete-match-text: var(--nebula-neon);
+
+  /* Markdown */
+  --md-heading-1: #8be9fd;
+  --md-heading-2: #a5b4fc;
+  --md-heading-3: #c084fc;
+  --md-heading-4: #f472b6;
+  --md-heading-5: #facc15;
+  --md-heading-6: #cfc5e6;
+
+  --md-link: var(--nebula-neon);
+  --md-link-url: rgba(139, 233, 253, 0.8);
+  --md-wiki-link: #ff8bd4;
+
+  --md-code-text: #8be9fd;
+  --md-code-bg: rgba(0, 255, 213, 0.08);
+
+  --md-code-keyword: #8be9fd;
+  --md-code-string: #a3e635;
+  --md-code-number: #f9a8d4;
+  --md-code-comment: rgba(151, 154, 191, 0.7);
+  --md-code-function: #c084fc;
+  --md-code-variable: #fcd34d;
+  --md-code-operator: #ff8bd4;
+  --md-code-punctuation: #ede9fe;
+  --md-code-bracket: #dcd3ff;
+  --md-code-class: #f472b6;
+  --md-code-property: #8be9fd;
+  --md-code-boolean: #facc15;
+  --md-code-null: #9f96c7;
+
+  --md-list-marker: var(--nebula-plasma);
+  --md-blockquote: #cfc5e6;
+  --md-blockquote-border: rgba(255, 139, 212, 0.5);
+
+  --md-table-border: rgba(92, 85, 165, 0.5);
+  --md-table-header-bg: rgba(92, 85, 165, 0.2);
+  --md-table-alt-bg: rgba(21, 17, 50, 0.8);
+
+  --md-syntax-marker: rgba(159, 150, 199, 0.7);
+
+  /* Block colors */
+  --block-text: #15122a;
+  --block-color-blue: #60a5fa;
+  --block-color-sapphire: #38bdf8;
+  --block-color-sky: #8be9fd;
+  --block-color-teal: #2dd4bf;
+  --block-color-green: #86efac;
+  --block-color-yellow: #facc15;
+  --block-color-peach: #fb923c;
+  --block-color-maroon: #f472b6;
+  --block-color-red: #fb7185;
+  --block-color-mauve: #c084fc;
+  --block-color-pink: #ff8bd4;
+  --block-color-flamingo: #fecdd3;
+  --block-color-rosewater: #fce7f3;
+  --block-color-lavender: #d8b4fe;
+}
