@@ -201,6 +201,10 @@
               bind:value={label}
               placeholder="Meeting, Focus time, etc."
               required
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
             />
           </div>
 
@@ -212,6 +216,10 @@
               type="text"
               bind:value={context}
               placeholder="Additional details..."
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
             />
           </div>
 

@@ -214,6 +214,10 @@
           class="text-input"
           placeholder="e.g., imported/obsidian"
           bind:value={targetSubfolder}
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
         />
         <p class="form-hint">Leave empty to import at the vault root</p>
       </div>

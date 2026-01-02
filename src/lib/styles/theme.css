@@ -387,6 +387,15 @@
  * ============================================================================ */
 
 /* ============================================================================
+ * CodeMirror Tooltip Base Styles
+ * ============================================================================ */
+
+/* Ensure all CodeMirror tooltips appear above other UI elements */
+.cm-tooltip {
+  z-index: var(--z-tooltip) !important;
+}
+
+/* ============================================================================
  * CodeMirror Autocomplete Styles
  * ============================================================================ */
 
@@ -396,6 +405,7 @@
   border-radius: var(--radius-md) !important;
   box-shadow: var(--autocomplete-shadow) !important;
   overflow: hidden;
+  z-index: var(--z-tooltip) !important;
 }
 
 .cm-tooltip-autocomplete > ul {

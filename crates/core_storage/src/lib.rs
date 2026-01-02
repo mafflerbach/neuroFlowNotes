@@ -5,11 +5,14 @@
 //! - Note CRUD operations
 //! - Todo, tag, and backlink persistence
 //! - Full-text search
+//! - Vector embedding storage and similarity search
 
 pub mod schema;
 pub mod repository;
 
 pub use repository::VaultRepository;
+pub use repository::VectorSearchResult;
+pub use repository::extract_content_preview;
 pub use schema::init_database;
 
 use thiserror::Error;

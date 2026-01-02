@@ -338,6 +338,10 @@
                     class="edit-input"
                     bind:value={editKeyValue}
                     onkeydown={(e) => handleKeydown(e, "key")}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                   />
                   <div class="item-actions">
                     <button class="btn btn-icon" onclick={saveEditKey} title="Save">&#10003;</button>
@@ -412,6 +416,10 @@
                     class="edit-input"
                     bind:value={editValueValue}
                     onkeydown={(e) => handleKeydown(e, "value")}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                   />
                   <div class="item-actions">
                     <button class="btn btn-icon" onclick={saveEditValue} title="Save">&#10003;</button>

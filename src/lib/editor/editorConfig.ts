@@ -35,6 +35,8 @@ import { pasteHandlerExtension } from "./pasteHandler";
 import { vimExtension } from "./vimExtension";
 import { calloutExtension } from "./calloutExtension";
 import { queryEmbedExtension } from "./queryEmbedExtension";
+import { habitTrackerExtension } from "./habitTrackerExtension";
+import { frontmatterConversionExtension } from "./frontmatterConversion";
 
 /**
  * Shared editor theme using CSS variables for theming support
@@ -163,6 +165,12 @@ export function createEditorExtensions(
 
     // Query embeds (```query``` blocks with live results)
     queryEmbedExtension(),
+
+    // Habit tracker embeds (```habit-tracker``` blocks with interactive tables)
+    habitTrackerExtension(),
+
+    // Frontmatter detection and conversion to DB properties
+    frontmatterConversionExtension(),
   ];
 
   // Add readonly extension if needed

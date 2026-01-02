@@ -13,8 +13,12 @@
 //! - embeds: Embed resolution and image handling
 //! - queries: Query builder operations
 //! - import: Vault import operations
+//! - habits: Habit tracker operations
+//! - templates: Daily note creation and template settings
+//! - summarizers: External script execution for content summarization
 
 mod backlinks;
+mod habits;
 mod embeds;
 mod folder_tree;
 mod import;
@@ -24,7 +28,9 @@ mod properties;
 mod queries;
 mod schedule;
 mod search;
+mod summarizers;
 mod tags;
+mod templates;
 mod todos;
 mod vault;
 
@@ -57,6 +63,7 @@ pub type Result<T> = std::result::Result<T, CommandError>;
 
 // Re-export all commands for use in main.rs
 pub use backlinks::*;
+pub use habits::*;
 pub use embeds::*;
 pub use folder_tree::*;
 pub use import::*;
@@ -66,6 +73,8 @@ pub use properties::*;
 pub use queries::*;
 pub use schedule::*;
 pub use search::*;
+pub use summarizers::*;
 pub use tags::*;
+pub use templates::*;
 pub use todos::*;
 pub use vault::*;

@@ -410,6 +410,10 @@
         bind:value={renameValue}
         onkeydown={handleRenameKeydown}
         onblur={confirmRename}
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
       />
     </div>
   {:else}
@@ -477,6 +481,10 @@
           bind:value={newItemName}
           onkeydown={handleNewItemKeydown}
           onblur={confirmCreate}
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
         />
       </div>
     {/if}

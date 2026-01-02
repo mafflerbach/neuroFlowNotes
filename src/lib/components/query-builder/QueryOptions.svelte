@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { X } from "lucide-svelte";
   import type { QueryResultType, QueryViewType, PropertyKeyInfo } from "../../types";
 
   interface Props {
@@ -7,12 +8,16 @@
     viewType: QueryViewType;
     kanbanGroupBy: string;
     kanbanCardFields: string[];
+    cardCoverProperty: string | null;
+    cardDisplayFields: string[];
     propertyKeys: PropertyKeyInfo[];
     onUpdateResultType: (type: QueryResultType) => void;
     onUpdateIncludeCompleted: (include: boolean) => void;
     onUpdateViewType: (type: QueryViewType) => void;
     onUpdateKanbanGroupBy: (groupBy: string) => void;
     onUpdateKanbanCardFields: (fields: string[]) => void;
+    onUpdateCardCoverProperty: (prop: string | null) => void;
+    onUpdateCardDisplayFields: (fields: string[]) => void;
   }
 
   let {
@@ -21,21 +26,54 @@
     viewType,
     kanbanGroupBy,
     kanbanCardFields,
+    cardCoverProperty,
+    cardDisplayFields,
     propertyKeys,
     onUpdateResultType,
     onUpdateIncludeCompleted,
     onUpdateViewType,
     onUpdateKanbanGroupBy,
     onUpdateKanbanCardFields,
+    onUpdateCardCoverProperty,
+    onUpdateCardDisplayFields,
   }: Props = $props();
 
-  function toggleCardField(field: string, checked: boolean) {
+  function toggleKanbanCardField(field: string, checked: boolean) {
     if (checked) {
       onUpdateKanbanCardFields([...kanbanCardFields, field]);
     } else {
       onUpdateKanbanCardFields(kanbanCardFields.filter((f) => f !== field));
     }
   }
+
+  function addCardDisplayField(field: string) {
+    if (field && !cardDisplayFields.includes(field)) {
+      onUpdateCardDisplayFields([...cardDisplayFields, field]);
+    }
+  }
+
+  function removeCardDisplayField(field: string) {
+    onUpdateCardDisplayFields(cardDisplayFields.filter((f) => f !== field));
+  }
+
+  // Properties that could be images (common image property names)
+  const imagePropertyKeys = $derived(
+    propertyKeys.filter((p) =>
+      ["cover", "image", "thumbnail", "banner", "poster", "photo", "picture", "img"].some(
+        (term) => p.key.toLowerCase().includes(term)
+      )
+    )
+  );
+
+  // Built-in fields available for cards
+  const builtInFields = ["description", "priority", "context", "due_date", "heading_path"];
+
+  // All available fields for the add dropdown (excluding already selected)
+  const availableFieldsToAdd = $derived(() => {
+    const allFields = [...builtInFields, ...propertyKeys.map((p) => p.key)];
+    const uniqueFields = [...new Set(allFields)];
+    return uniqueFields.filter((f) => !cardDisplayFields.includes(f));
+  });
 </script>
 
 <div class="options-section">
@@ -112,6 +150,16 @@
       <input
         type="radio"
         name="viewType"
+        value="Card"
+        checked={viewType === "Card"}
+        onchange={() => onUpdateViewType("Card")}
+      />
+      Card
+    </label>
+    <label>
+      <input
+        type="radio"
+        name="viewType"
         value="Kanban"
         checked={viewType === "Kanban"}
         onchange={() => onUpdateViewType("Kanban")}
@@ -119,6 +167,74 @@
       Kanban
     </label>
   </div>
+
+  {#if viewType === "Card"}
+    <div class="card-options">
+      <div class="card-option">
+        <label class="option-label">Cover image:</label>
+        <select
+          class="option-select"
+          value={cardCoverProperty ?? ""}
+          onchange={(e) => onUpdateCardCoverProperty(e.currentTarget.value || null)}
+        >
+          <option value="">None</option>
+          {#if imagePropertyKeys.length > 0}
+            <optgroup label="Suggested">
+              {#each imagePropertyKeys as propKey}
+                <option value={propKey.key}>{propKey.key}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          <optgroup label="All Properties">
+            {#each propertyKeys as propKey}
+              <option value={propKey.key}>{propKey.key}</option>
+            {/each}
+          </optgroup>
+        </select>
+      </div>
+      <div class="card-option display-fields-option">
+        <label class="option-label">Display fields:</label>
+        <div class="display-fields-list">
+          {#each cardDisplayFields as field, index (field)}
+            <div class="display-field-item">
+              <span class="field-name">{field}</span>
+              <button
+                type="button"
+                class="remove-field-btn"
+                onclick={() => removeCardDisplayField(field)}
+                title="Remove field"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          {/each}
+          {#if availableFieldsToAdd().length > 0}
+            <select
+              class="add-field-select"
+              onchange={(e) => {
+                addCardDisplayField(e.currentTarget.value);
+                e.currentTarget.value = "";
+              }}
+            >
+              <option value="">+ Add field</option>
+              <optgroup label="Built-in">
+                {#each builtInFields.filter((f) => !cardDisplayFields.includes(f)) as field}
+                  <option value={field}>{field}</option>
+                {/each}
+              </optgroup>
+              {#if propertyKeys.length > 0}
+                <optgroup label="Properties">
+                  {#each propertyKeys.filter((p) => !cardDisplayFields.includes(p.key)) as propKey}
+                    <option value={propKey.key}>{propKey.key}</option>
+                  {/each}
+                </optgroup>
+              {/if}
+            </select>
+          {/if}
+        </div>
+      </div>
+    </div>
+  {/if}
 
   {#if viewType === "Kanban"}
     <div class="kanban-options">
@@ -151,7 +267,7 @@
             <input
               type="checkbox"
               checked={kanbanCardFields.includes("priority")}
-              onchange={(e) => toggleCardField("priority", e.currentTarget.checked)}
+              onchange={(e) => toggleKanbanCardField("priority", e.currentTarget.checked)}
             />
             Priority
           </label>
@@ -159,7 +275,7 @@
             <input
               type="checkbox"
               checked={kanbanCardFields.includes("context")}
-              onchange={(e) => toggleCardField("context", e.currentTarget.checked)}
+              onchange={(e) => toggleKanbanCardField("context", e.currentTarget.checked)}
             />
             Context
           </label>
@@ -167,7 +283,7 @@
             <input
               type="checkbox"
               checked={kanbanCardFields.includes("due_date")}
-              onchange={(e) => toggleCardField("due_date", e.currentTarget.checked)}
+              onchange={(e) => toggleKanbanCardField("due_date", e.currentTarget.checked)}
             />
             Due Date
           </label>
@@ -249,7 +365,8 @@
     height: 14px;
   }
 
-  .kanban-options {
+  .kanban-options,
+  .card-options {
     display: flex;
     gap: var(--spacing-4);
     margin-top: var(--spacing-3);
@@ -259,7 +376,8 @@
     flex-wrap: wrap;
   }
 
-  .kanban-option {
+  .kanban-option,
+  .card-option {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-1);
@@ -301,5 +419,76 @@
     accent-color: var(--color-primary);
     width: 14px;
     height: 14px;
+  }
+
+  /* Display fields list styles */
+  .display-fields-option {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .display-fields-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-1);
+    align-items: center;
+  }
+
+  .display-field-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    padding: var(--spacing-1) var(--spacing-2);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    color: var(--text-primary);
+  }
+
+  .display-field-item .field-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .remove-field-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    transition: color var(--transition-normal), background var(--transition-normal);
+  }
+
+  .remove-field-btn:hover {
+    color: var(--color-error);
+    background: var(--bg-hover);
+  }
+
+  .add-field-select {
+    padding: var(--spacing-1) var(--spacing-2);
+    border: 1px dashed var(--border-default);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    transition: border-color var(--transition-normal), color var(--transition-normal);
+  }
+
+  .add-field-select:hover {
+    border-color: var(--color-primary);
+    color: var(--text-primary);
+  }
+
+  .add-field-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
   }
 </style>

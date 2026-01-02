@@ -16,6 +16,8 @@ pub enum QueryViewType {
     List,
     /// Display as a Kanban board grouped by a property.
     Kanban,
+    /// Display as cards in a grid layout.
+    Card,
 }
 
 /// Sort direction for query results.
@@ -65,11 +67,40 @@ impl Default for KanbanConfig {
     }
 }
 
+/// Card-specific configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct CardConfig {
+    /// Property to use as cover image (expects a URL or path to an image).
+    #[serde(default)]
+    pub cover_property: Option<String>,
+    /// Fields to display on each card.
+    #[serde(default)]
+    pub display_fields: Vec<String>,
+    /// Number of columns in the grid (0 = auto).
+    #[serde(default = "default_card_columns")]
+    pub columns: u8,
+}
+
+fn default_card_columns() -> u8 {
+    0 // Auto
+}
+
+impl Default for CardConfig {
+    fn default() -> Self {
+        Self {
+            cover_property: None,
+            display_fields: vec!["description".to_string()],
+            columns: 0,
+        }
+    }
+}
+
 /// View configuration for query embed.
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct QueryViewConfig {
-    /// View type (table, list, or kanban).
+    /// View type (table, list, kanban, or card).
     #[serde(default)]
     pub view_type: QueryViewType,
     /// Columns to display (for table view). If empty, use defaults.
@@ -79,6 +110,8 @@ pub struct QueryViewConfig {
     pub sort: Option<QuerySort>,
     /// Kanban-specific configuration (only used when view_type is "Kanban").
     pub kanban: Option<KanbanConfig>,
+    /// Card-specific configuration (only used when view_type is "Card").
+    pub card: Option<CardConfig>,
 }
 
 impl Default for QueryViewConfig {
@@ -88,6 +121,7 @@ impl Default for QueryViewConfig {
             columns: vec![],
             sort: None,
             kanban: None,
+            card: None,
         }
     }
 }

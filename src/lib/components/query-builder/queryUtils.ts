@@ -166,6 +166,8 @@ export interface YamlGeneratorOptions {
   viewType: QueryViewType;
   kanbanGroupBy?: string;
   kanbanCardFields?: string[];
+  cardCoverProperty?: string | null;
+  cardDisplayFields?: string[];
 }
 
 /** Generate YAML code for the current query. */
@@ -178,6 +180,8 @@ export function generateYamlCode(options: YamlGeneratorOptions): string {
     viewType,
     kanbanGroupBy = "priority",
     kanbanCardFields = ["context", "due_date"],
+    cardCoverProperty = null,
+    cardDisplayFields = ["description"],
   } = options;
 
   const validFilters = filters.filter((f) => f.key);
@@ -221,6 +225,15 @@ export function generateYamlCode(options: YamlGeneratorOptions): string {
       yaml += `      - ${field}\n`;
     }
     yaml += "    show_uncategorized: true\n";
+  } else if (viewType === "Card") {
+    yaml += "  card:\n";
+    if (cardCoverProperty) {
+      yaml += `    cover_property: ${cardCoverProperty}\n`;
+    }
+    yaml += "    display_fields:\n";
+    for (const field of cardDisplayFields) {
+      yaml += `      - ${field}\n`;
+    }
   } else if (viewType === "Table") {
     if (resultType === "Notes") {
       yaml += "  columns:\n";

@@ -154,6 +154,18 @@ pub async fn init_database(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     // Migration: Create folder_properties table
     migrate_folder_properties(pool).await?;
 
+    // Migration: Create aliases table for note aliases
+    migrate_aliases(pool).await?;
+
+    // Migration: Create vault_settings table
+    migrate_vault_settings(pool).await?;
+
+    // Migration: Create habit tracking tables
+    migrate_habit_tables(pool).await?;
+
+    // Migration: Create embedding storage table
+    migrate_embeddings(pool).await?;
+
     info!("Database schema initialized");
     Ok(())
 }
@@ -479,6 +491,159 @@ async fn migrate_folder_properties(pool: &SqlitePool) -> Result<(), sqlx::Error>
         .await?;
 
     debug!("folder_properties table created/verified");
+
+    Ok(())
+}
+
+/// Create aliases table for storing note aliases (alternative names).
+/// Aliases allow notes to be found/linked by names other than their filename.
+async fn migrate_aliases(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS aliases (
+            id INTEGER PRIMARY KEY,
+            note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+            alias TEXT NOT NULL
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Index on alias for fast lookups when resolving links
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_aliases_alias ON aliases(alias)")
+        .execute(pool)
+        .await?;
+
+    // Index on note_id for getting all aliases for a note
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_aliases_note_id ON aliases(note_id)")
+        .execute(pool)
+        .await?;
+
+    debug!("aliases table created/verified");
+
+    Ok(())
+}
+
+/// Create vault_settings table for storing vault-level configuration.
+async fn migrate_vault_settings(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS vault_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    debug!("vault_settings table created/verified");
+
+    Ok(())
+}
+
+/// Create habit tracking tables.
+async fn migrate_habit_tables(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    // Create habits table for habit definitions
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS habits (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            habit_type TEXT NOT NULL DEFAULT 'boolean',
+            unit TEXT,
+            color TEXT,
+            target_value REAL,
+            archived INTEGER DEFAULT 0,
+            created_at TEXT,
+            sort_order INTEGER DEFAULT 0
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_habits_name ON habits(name)")
+        .execute(pool)
+        .await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_habits_archived ON habits(archived)")
+        .execute(pool)
+        .await?;
+
+    // Create habit_entries table for tracking completions
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS habit_entries (
+            id INTEGER PRIMARY KEY,
+            habit_id INTEGER NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+            date TEXT NOT NULL,
+            time TEXT,
+            value TEXT,
+            notes TEXT,
+            created_at TEXT
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_habit_entries_habit_id ON habit_entries(habit_id)")
+        .execute(pool)
+        .await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_habit_entries_date ON habit_entries(date)")
+        .execute(pool)
+        .await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_habit_entries_habit_date ON habit_entries(habit_id, date)")
+        .execute(pool)
+        .await?;
+
+    debug!("habit tables created/verified");
+
+    Ok(())
+}
+
+/// Create embedding storage table for semantic search.
+async fn migrate_embeddings(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    // Create the embeddings table with BLOB storage for vectors
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS note_embeddings (
+            note_id INTEGER PRIMARY KEY REFERENCES notes(id) ON DELETE CASCADE,
+            embedding BLOB NOT NULL,
+            content_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Index on content_hash for quick hash lookups
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_note_embeddings_hash ON note_embeddings(content_hash)")
+        .execute(pool)
+        .await?;
+
+    // Add content_preview column for search result snippets
+    let columns: Vec<(i64, String, String, i64, Option<String>, i64)> = sqlx::query_as(
+        "SELECT cid, name, type, `notnull`, dflt_value, pk FROM pragma_table_info('note_embeddings')"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let has_preview = columns.iter().any(|(_, name, _, _, _, _)| name == "content_preview");
+    if !has_preview {
+        info!("Migrating note_embeddings table: adding content_preview column");
+        sqlx::query("ALTER TABLE note_embeddings ADD COLUMN content_preview TEXT")
+            .execute(pool)
+            .await?;
+    }
+
+    debug!("note_embeddings table created/verified");
 
     Ok(())
 }

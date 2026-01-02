@@ -16,6 +16,7 @@ import type {
   FolderPropertyDto,
   SetFolderPropertyRequest,
   PropertyWithInheritance,
+  ConvertFrontmatterResponse,
 } from "../../types";
 
 export async function getProperties(noteId: number): Promise<PropertyDto[]> {
@@ -114,4 +115,20 @@ export async function getPropertiesWithInheritance(
 /** Get all folders that have properties defined. */
 export async function getFoldersWithProperties(): Promise<string[]> {
   return invoke<string[]>("get_folders_with_properties");
+}
+
+// ============================================================================
+// Frontmatter Conversion
+// ============================================================================
+
+/**
+ * Convert frontmatter in content to DB properties.
+ * Parses YAML frontmatter, stores properties in DB, and returns
+ * the content without frontmatter. Tags are converted to inline format.
+ */
+export async function convertFrontmatterToDb(
+  noteId: number,
+  content: string
+): Promise<ConvertFrontmatterResponse> {
+  return invoke<ConvertFrontmatterResponse>("convert_frontmatter_to_db", { noteId, content });
 }

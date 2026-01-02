@@ -177,6 +177,10 @@
                         stopEditing();
                       }
                     }}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                   />
                 {:else}
                   <button
@@ -209,6 +213,10 @@
                   placeholder="Key"
                   bind:value={newKey}
                   onkeydown={handleKeyDown}
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
                 />
                 <input
                   type="text"
@@ -216,6 +224,10 @@
                   placeholder="Value"
                   bind:value={newValue}
                   onkeydown={handleKeyDown}
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
                 />
                 <button
                   class="cancel-add-btn"

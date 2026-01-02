@@ -1,14 +1,16 @@
 //! Property commands - CRUD, management, and folder properties.
-
-use std::path::Path;
+//!
+//! Properties are stored in the database only (not in file frontmatter).
+//! If users type frontmatter in the editor, it will be converted to DB
+//! properties and removed from the file.
 
 use crate::state::AppState;
-use core_index::{delete_frontmatter_property, set_frontmatter_property};
+use core_index::{parse_frontmatter, PropertyValue};
 use shared_types::{
-    DeletePropertyKeyRequest, FolderPropertyDto, MergePropertyKeysRequest, NoteWithPropertyValue,
-    PropertyDto, PropertyOperationResult, PropertyValueInfo, PropertyWithInheritance,
-    RenamePropertyKeyRequest, RenamePropertyValueRequest, SetFolderPropertyRequest,
-    SetPropertyRequest,
+    ConvertFrontmatterResponse, DeletePropertyKeyRequest, FolderPropertyDto,
+    MergePropertyKeysRequest, NoteWithPropertyValue, PropertyDto, PropertyOperationResult,
+    PropertyValueInfo, PropertyWithInheritance, RenamePropertyKeyRequest,
+    RenamePropertyValueRequest, SetFolderPropertyRequest, SetPropertyRequest,
 };
 use tauri::State;
 use tracing::{debug, instrument};
@@ -32,46 +34,13 @@ pub async fn get_properties(state: State<'_, AppState>, note_id: i64) -> Result<
         .map_err(|e| CommandError::Vault(e.to_string()))
 }
 
-/// Set a property for a note - updates both the YAML frontmatter and database.
+/// Set a property for a note (DB-only, no file modification).
 #[tauri::command]
 #[instrument(skip(state))]
 pub async fn set_property(state: State<'_, AppState>, request: SetPropertyRequest) -> Result<i64> {
     let vault_guard = state.vault.read().await;
     let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
 
-    // Get the note to find its path
-    let note = vault
-        .repo()
-        .get_note(request.note_id)
-        .await
-        .map_err(|e| CommandError::Vault(e.to_string()))?;
-
-    // Read the current file content
-    let path = Path::new(&note.path);
-    let content = vault
-        .fs()
-        .read_file(path)
-        .await
-        .map_err(|e| CommandError::Vault(e.to_string()))?;
-
-    // Update the frontmatter
-    let new_content = set_frontmatter_property(
-        &content,
-        &request.key,
-        request.value.as_deref(),
-        request.property_type.as_deref(),
-    );
-
-    // Write the updated content back to the file
-    vault
-        .fs()
-        .write_file(path, &new_content)
-        .await
-        .map_err(|e| CommandError::Vault(e.to_string()))?;
-
-    debug!("Updated frontmatter property '{}' in {}", request.key, note.path);
-
-    // Update the database as well (for immediate query availability)
     vault
         .repo()
         .set_property(
@@ -84,41 +53,13 @@ pub async fn set_property(state: State<'_, AppState>, request: SetPropertyReques
         .map_err(|e| CommandError::Vault(e.to_string()))
 }
 
-/// Delete a property from a note - removes from both YAML frontmatter and database.
+/// Delete a property from a note (DB-only, no file modification).
 #[tauri::command]
 #[instrument(skip(state))]
 pub async fn delete_property(state: State<'_, AppState>, note_id: i64, key: String) -> Result<()> {
     let vault_guard = state.vault.read().await;
     let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
 
-    // Get the note to find its path
-    let note = vault
-        .repo()
-        .get_note(note_id)
-        .await
-        .map_err(|e| CommandError::Vault(e.to_string()))?;
-
-    // Read the current file content
-    let path = Path::new(&note.path);
-    let content = vault
-        .fs()
-        .read_file(path)
-        .await
-        .map_err(|e| CommandError::Vault(e.to_string()))?;
-
-    // Remove from frontmatter
-    let new_content = delete_frontmatter_property(&content, &key);
-
-    // Write the updated content back to the file
-    vault
-        .fs()
-        .write_file(path, &new_content)
-        .await
-        .map_err(|e| CommandError::Vault(e.to_string()))?;
-
-    debug!("Deleted frontmatter property '{}' from {}", key, note.path);
-
-    // Delete from database as well
     vault
         .repo()
         .delete_property(note_id, &key)
@@ -361,4 +302,108 @@ pub async fn get_folders_with_properties(state: State<'_, AppState>) -> Result<V
         .get_folders_with_properties()
         .await
         .map_err(|e| CommandError::Vault(e.to_string()))
+}
+
+// ============================================================================
+// Frontmatter Conversion Commands
+// ============================================================================
+
+/// Convert frontmatter in content to DB properties.
+///
+/// Parses YAML frontmatter, stores properties in DB, and returns
+/// the content without frontmatter. Tags are converted to inline format.
+#[tauri::command]
+#[instrument(skip(state, content))]
+pub async fn convert_frontmatter_to_db(
+    state: State<'_, AppState>,
+    note_id: i64,
+    content: String,
+) -> Result<ConvertFrontmatterResponse> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    let (frontmatter, body) = parse_frontmatter(&content);
+
+    // If no frontmatter, return content as-is
+    if frontmatter.content_start == 0 {
+        return Ok(ConvertFrontmatterResponse {
+            content,
+            properties_converted: 0,
+            tags_converted: vec![],
+        });
+    }
+
+    let mut properties_converted = 0;
+
+    // Store properties in DB (skip special keys like tags, aliases)
+    for (key, value) in &frontmatter.properties {
+        let key_lower = key.to_lowercase();
+
+        // Skip tags and aliases - handled separately
+        if key_lower == "tags" || key_lower == "tag" || key_lower == "aliases" || key_lower == "alias" {
+            continue;
+        }
+
+        // Determine property type
+        let prop_type = match value {
+            PropertyValue::String(_) => Some("text"),
+            PropertyValue::Number(_) => Some("number"),
+            PropertyValue::Bool(_) => Some("boolean"),
+            PropertyValue::List(_) => Some("list"),
+            PropertyValue::Null => None,
+        };
+
+        let string_value = value.to_string_value();
+
+        vault
+            .repo()
+            .set_property(note_id, key, string_value.as_deref(), prop_type)
+            .await
+            .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+        properties_converted += 1;
+    }
+
+    // Store aliases in DB
+    if !frontmatter.aliases.is_empty() {
+        vault
+            .repo()
+            .replace_aliases(note_id, &frontmatter.aliases)
+            .await
+            .map_err(|e| CommandError::Vault(e.to_string()))?;
+    }
+
+    // Convert frontmatter tags to inline format
+    let tags_converted = frontmatter.tags.clone();
+
+    // Build new content: inline tags + body
+    let new_content = if !tags_converted.is_empty() {
+        let inline_tags: String = tags_converted
+            .iter()
+            .map(|t| format!("#{}", t))
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        // Prepend inline tags to body
+        let body_trimmed = body.trim_start();
+        if body_trimmed.is_empty() {
+            inline_tags
+        } else {
+            format!("{}\n\n{}", inline_tags, body_trimmed)
+        }
+    } else {
+        body.to_string()
+    };
+
+    debug!(
+        "Converted frontmatter: {} properties, {} tags",
+        properties_converted,
+        tags_converted.len()
+    );
+
+    Ok(ConvertFrontmatterResponse {
+        content: new_content,
+        properties_converted,
+        tags_converted,
+    })
 }

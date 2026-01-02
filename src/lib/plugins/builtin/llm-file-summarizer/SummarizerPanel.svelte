@@ -8,6 +8,7 @@
   import type { LLMSummarizerSettings } from "./types";
   import type { HttpResponse, NoteListItem, NoteContent } from "../../types";
   import { FileText, Sparkles, Copy, Check, Loader2, Search, X } from "lucide-svelte";
+  import { TextInput } from "$lib/components/shared";
 
   // Get plugin settings and backend hooks (lazy access)
   const plugin = $derived(pluginRegistry.get<LLMSummarizerSettings>("llm-file-summarizer"));
@@ -229,8 +230,7 @@
         </div>
       {:else}
         <div class="file-picker">
-          <input
-            type="text"
+          <TextInput
             class="search-input"
             placeholder="Search for a file..."
             bind:value={searchQuery}

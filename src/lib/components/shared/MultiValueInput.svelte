@@ -145,6 +145,10 @@
       onfocus={handleInputFocus}
       onblur={handleInputBlur}
       onkeydown={handleKeydown}
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
     />
   </div>
 

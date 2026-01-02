@@ -14,3 +14,5 @@ export * from "./calendar";
 export * from "./embeds";
 export * from "./query";
 export * from "./import";
+export * from "./habits";
+export * from "./templates";

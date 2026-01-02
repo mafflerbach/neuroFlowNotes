@@ -110,7 +110,7 @@ export const VALUELESS_OPERATORS: PropertyOperator[] = ["Exists", "NotExists"];
 // ============================================================================
 
 /** View type for displaying query results. */
-export type QueryViewType = "Table" | "List" | "Kanban";
+export type QueryViewType = "Table" | "List" | "Kanban" | "Card";
 
 /** Sort direction for query results. */
 export type SortDirection = "Asc" | "Desc";
@@ -133,9 +133,19 @@ export interface KanbanConfig {
   show_uncategorized: boolean;
 }
 
+/** Card-specific configuration. */
+export interface CardConfig {
+  /** Property to use as cover image (expects a URL or path to an image). */
+  cover_property: string | null;
+  /** Fields to display on each card. */
+  display_fields: string[];
+  /** Number of columns in the grid (0 = auto). */
+  columns: number;
+}
+
 /** View configuration for query embed. */
 export interface QueryViewConfig {
-  /** View type (table, list, or kanban). */
+  /** View type (table, list, kanban, or card). */
   view_type: QueryViewType;
   /** Columns to display (for table view). If empty, use defaults. */
   columns: string[];
@@ -143,6 +153,8 @@ export interface QueryViewConfig {
   sort: QuerySort | null;
   /** Kanban-specific configuration (only used when view_type is "Kanban"). */
   kanban: KanbanConfig | null;
+  /** Card-specific configuration (only used when view_type is "Card"). */
+  card: CardConfig | null;
 }
 
 /** A single query tab definition. */

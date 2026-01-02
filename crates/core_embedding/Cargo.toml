@@ -1,0 +1,30 @@
+[package]
+name = "core_embedding"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Shared types
+shared_types = { path = "../shared_types" }
+
+# Storage
+core_storage = { path = "../core_storage" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }

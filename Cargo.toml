@@ -5,6 +5,7 @@ members = [
     "crates/core_fs",
     "crates/core_index",
     "crates/core_storage",
+    "crates/core_embedding",
     "crates/core_domain",
     "src-tauri",
 ]

@@ -74,11 +74,25 @@ pub fn parse_frontmatter(content: &str) -> (Frontmatter, &str) {
 
     // Extract YAML content (skip the opening newline if present)
     let yaml_start = if after_opening.starts_with('\n') { 1 } else { 0 };
+
+    // Handle empty frontmatter (e.g., "---\n---")
+    if yaml_start >= closing_pos {
+        // No YAML content, just skip the frontmatter block
+        let content_start = 3 + closing_pos + 4;
+        let content_start = if content.len() > content_start && content.as_bytes().get(content_start) == Some(&b'\n') {
+            content_start + 1
+        } else {
+            content_start
+        };
+        frontmatter.content_start = content_start;
+        return (frontmatter, &content[content_start.min(content.len())..]);
+    }
+
     let yaml_content = &after_opening[yaml_start..closing_pos];
 
     // Calculate content start (after closing --- and newline)
     let content_start = 3 + closing_pos + 4; // opening --- + yaml + \n---
-    let content_start = if content.len() > content_start && content.as_bytes()[content_start] == b'\n' {
+    let content_start = if content.as_bytes().get(content_start) == Some(&b'\n') {
         content_start + 1
     } else {
         content_start

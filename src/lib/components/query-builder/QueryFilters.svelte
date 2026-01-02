@@ -215,6 +215,10 @@
                 placeholder={isMultiValue ? "Values (comma-separated)..." : "Value..."}
                 value={filter.value ?? ""}
                 oninput={(e) => updateFilterValue(index, e.currentTarget.value)}
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
               />
             {/if}
           {/if}

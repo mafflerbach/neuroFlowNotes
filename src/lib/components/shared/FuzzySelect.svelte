@@ -163,6 +163,10 @@
           bind:value={query}
           onkeydown={handleKeydown}
           placeholder="Search..."
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
         />
       </div>
       <div class="dropdown-list">

@@ -169,6 +169,11 @@ impl VaultRepository {
     }
 
     /// Index a single note (upsert + update related tables).
+    ///
+    /// Note: Properties are NOT synced from frontmatter during indexing.
+    /// Properties are stored in the database only and managed via the
+    /// PropertiesPanel. If users type frontmatter in the editor, it will
+    /// be converted to DB properties via the frontmatter conversion extension.
     #[instrument(skip(self, content, analysis))]
     pub async fn index_note(
         &self,
@@ -182,7 +187,7 @@ impl VaultRepository {
         self.replace_tags(note_id, &analysis.tags).await?;
         self.replace_todos(note_id, &analysis.todos).await?;
         self.replace_backlinks(note_id, &analysis.links).await?;
-        self.replace_properties(note_id, &analysis.properties).await?;
+        // Properties are DB-only, not synced from frontmatter
         self.update_fts(note_id, content).await?;
 
         debug!("Indexed note {} (id={})", path, note_id);

@@ -12,7 +12,8 @@
 //! - `tag` - Tag types
 //! - `backlink` - Backlink types
 //! - `vault` - Vault info types
-//! - `search` - Search types
+//! - `search` - Search types (FTS5 and hybrid search)
+//! - `embedding` - Embedding settings for semantic search
 //! - `folder` - Folder tree types
 //! - `property` - Property types (note, folder, bulk operations)
 //! - `event` - Tauri event payloads

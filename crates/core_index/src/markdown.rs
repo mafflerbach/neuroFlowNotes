@@ -189,7 +189,8 @@ pub fn parse(content: &str) -> NoteAnalysis {
         level: u8,
         text: String,
         line_number: usize,
-        heading_end_offset: usize,
+        heading_start_offset: usize,  // byte offset where the heading line starts (## chars)
+        heading_end_offset: usize,    // byte offset after the heading line (after newline)
     }
     let mut temp_headings: Vec<TempHeading> = Vec::new();
 
@@ -244,6 +245,7 @@ pub fn parse(content: &str) -> NoteAnalysis {
                         level,
                         text,
                         line_number,
+                        heading_start_offset: current_heading_start,
                         heading_end_offset,
                     });
                 }
@@ -314,22 +316,11 @@ pub fn parse(content: &str) -> NoteAnalysis {
         // content_end is the byte offset where the next heading of same or higher level starts,
         // or EOF if no such heading exists.
         // For nested headings (e.g., H3 under H2), the H2's content_end includes all H3 content.
+        // content_end is where the next heading of same or higher level starts
         let content_end = temp_headings[i + 1..]
             .iter()
             .find(|next| next.level <= th.level)
-            .map(|next| {
-                // Find the start of the next heading's line by looking for the # character
-                // The heading_end_offset is after the heading, so we need to go back
-                let heading_text_approx = &content_to_parse[..next.heading_end_offset];
-                // Find the last occurrence of a line starting with #
-                heading_text_approx
-                    .rfind('\n')
-                    .and_then(|nl| {
-                        // Go back one more newline to find line start
-                        content_to_parse[..nl].rfind('\n').map(|p| p + 1).or(Some(0))
-                    })
-                    .unwrap_or(0)
-            })
+            .map(|next| next.heading_start_offset)
             .unwrap_or(content_len);
 
         analysis.headings.push(ParsedHeading {
@@ -540,25 +531,33 @@ pub fn slugify(text: &str) -> String {
 /// Returns the content from the heading to the next heading of same or higher level,
 /// or to EOF if no such heading exists.
 pub fn extract_section(content: &str, section_slug: &str) -> Option<String> {
+    // Parse frontmatter to get the body offset
+    let (frontmatter, body) = parse_frontmatter(content);
     let analysis = parse(content);
 
     // Find the heading with matching slug
     let heading_idx = analysis.headings.iter().position(|h| h.slug == section_slug)?;
     let heading = &analysis.headings[heading_idx];
 
-    // Extract content from content_start to content_end
-    let section_content = &content[heading.content_start..heading.content_end];
+    // Heading offsets are relative to body (after frontmatter), so slice from body
+    let content_to_slice = if frontmatter.content_start > 0 { body } else { content };
+    let section_content = &content_to_slice[heading.content_start..heading.content_end];
 
     Some(section_content.to_string())
 }
 
 /// Extract section content including the heading itself.
 pub fn extract_section_with_heading(content: &str, section_slug: &str) -> Option<String> {
+    // Parse frontmatter to get the body offset
+    let (frontmatter, body) = parse_frontmatter(content);
     let analysis = parse(content);
 
     // Find the heading with matching slug
     let heading_idx = analysis.headings.iter().position(|h| h.slug == section_slug)?;
     let heading = &analysis.headings[heading_idx];
+
+    // Heading offsets and line numbers are relative to body (after frontmatter)
+    let content_to_slice = if frontmatter.content_start > 0 { body } else { content };
 
     // Find the start of the heading line
     // content_start points to the line after the heading
@@ -569,7 +568,7 @@ pub fn extract_section_with_heading(content: &str, section_slug: &str) -> Option
         // Find the nth newline to get to the start of line_number
         let mut newline_count = 0;
         let mut pos = 0;
-        for (i, c) in content.char_indices() {
+        for (i, c) in content_to_slice.char_indices() {
             if c == '\n' {
                 newline_count += 1;
                 if newline_count == heading.line_number - 1 {
@@ -582,7 +581,7 @@ pub fn extract_section_with_heading(content: &str, section_slug: &str) -> Option
     };
 
     // Extract from heading start to content end
-    let section_content = &content[heading_line_start..heading.content_end];
+    let section_content = &content_to_slice[heading_line_start..heading.content_end];
 
     Some(section_content.to_string())
 }
@@ -898,5 +897,27 @@ mod tests {
 
         let monday = resolve_relative_date("monday");
         assert!(monday.len() == 10);
+    }
+
+    #[test]
+    fn test_extract_section_with_frontmatter() {
+        let content = "---\ntitle: Test Note\ntags: [test]\n---\n\n# Title\n\nIntro text.\n\n## Section One\n\nSection one content.\n\n## Section Two\n\nSection two content.\n";
+
+        // Test extract_section_with_heading with frontmatter
+        let section = extract_section_with_heading(content, "section-one");
+        assert!(section.is_some());
+        let section_text = section.unwrap();
+        assert!(section_text.contains("## Section One"), "Should contain heading: {}", section_text);
+        assert!(section_text.contains("Section one content"), "Should contain content: {}", section_text);
+        assert!(!section_text.contains("## Section Two"), "Should not contain next section: {}", section_text);
+        assert!(!section_text.contains("title: Test Note"), "Should not contain frontmatter: {}", section_text);
+
+        // Test extract_section (without heading) with frontmatter
+        let section = extract_section(content, "section-one");
+        assert!(section.is_some());
+        let section_text = section.unwrap();
+        assert!(section_text.contains("Section one content"), "Should contain content: {}", section_text);
+        assert!(!section_text.contains("## Section One"), "Should not contain heading: {}", section_text);
+        assert!(!section_text.contains("Section two content"), "Should not contain next section: {}", section_text);
     }
 }

@@ -416,6 +416,10 @@
                       stopEditing();
                     }
                   }}
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
                 />
               {/if}
             {:else}
@@ -454,6 +458,10 @@
                 bind:this={keyInputRef}
                 bind:value={newKey}
                 onkeydown={handleKeyDown}
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
               />
             </div>
             <div class="property-type-select">
@@ -502,6 +510,10 @@
                   placeholder="comma, separated, values"
                   bind:value={newValue}
                   onkeydown={handleKeyDown}
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
                 />
               {:else}
                 <input
@@ -510,6 +522,10 @@
                   placeholder="Value"
                   bind:value={newValue}
                   onkeydown={handleKeyDown}
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
                 />
               {/if}
             </div>

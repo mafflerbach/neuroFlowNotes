@@ -39,11 +39,26 @@ class PluginRegistry {
   /** Initialize the registry with backend hooks */
   async initialize(hooks: BackendHooks): Promise<void> {
     this.backendHooks = hooks;
+    await this.loadAllConfigs();
+    this.initialized = true;
+  }
 
-    // Load configs for all registered plugins
+  /** Reload all plugin configs from the vault (call when vault changes) */
+  async reloadConfigs(): Promise<void> {
+    if (!this.backendHooks) {
+      console.warn("Cannot reload configs: backend hooks not available");
+      return;
+    }
+    await this.loadAllConfigs();
+  }
+
+  /** Internal: Load configs for all registered plugins */
+  private async loadAllConfigs(): Promise<void> {
+    if (!this.backendHooks) return;
+
     for (const [pluginId, registered] of this.plugins) {
       try {
-        const savedConfig = await hooks.readPluginConfig<PluginConfig>(pluginId);
+        const savedConfig = await this.backendHooks.readPluginConfig<PluginConfig>(pluginId);
         if (savedConfig) {
           registered.config = {
             ...registered.config,
@@ -52,6 +67,12 @@ class PluginRegistry {
               ...registered.plugin.defaultSettings,
               ...savedConfig.settings,
             },
+          };
+        } else {
+          // No saved config - reset to defaults
+          registered.config = {
+            enabled: false,
+            settings: { ...registered.plugin.defaultSettings },
           };
         }
 
@@ -63,8 +84,6 @@ class PluginRegistry {
         console.error(`Failed to load config for plugin ${pluginId}:`, e);
       }
     }
-
-    this.initialized = true;
   }
 
   /** Register a plugin */

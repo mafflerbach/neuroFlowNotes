@@ -11,6 +11,8 @@
 //! - `properties` - Property management
 //! - `queries` - Query builder and search
 //! - `dates` - Notes by date operations
+//! - `aliases` - Note alias management
+//! - `embeddings` - Vector embedding storage and search
 
 mod notes;
 mod tags;
@@ -21,6 +23,12 @@ mod properties;
 mod folder_properties;
 mod queries;
 mod dates;
+mod aliases;
+mod habits;
+mod embeddings;
+
+pub use embeddings::VectorSearchResult;
+pub use embeddings::extract_content_preview;
 
 use sqlx::SqlitePool;
 

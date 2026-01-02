@@ -198,6 +198,10 @@
               bind:value={newItemName}
               onkeydown={handleNewItemKeydown}
               onblur={confirmCreate}
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
             />
           </div>
         {/if}
@@ -228,9 +232,7 @@
   .sidebar {
     display: flex;
     flex-direction: column;
-    width: var(--sidebar-width);
-    min-width: 200px;
-    max-width: 400px;
+    width: 100%;
     height: 100%;
     background: var(--sidebar-bg);
     border-right: 1px solid var(--sidebar-border);

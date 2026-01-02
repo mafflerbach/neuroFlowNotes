@@ -55,6 +55,10 @@
   {placeholder}
   onkeydown={handleKeydown}
   onblur={handleBlur}
+  autocomplete="off"
+  autocorrect="off"
+  autocapitalize="off"
+  spellcheck="false"
 />
 
 <style>

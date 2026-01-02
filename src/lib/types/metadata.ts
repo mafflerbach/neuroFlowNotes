@@ -153,3 +153,17 @@ export interface PropertyWithInheritance {
   /** The folder path this property is inherited from (if inherited). */
   inherited_from: string | null;
 }
+
+// ============================================================================
+// Frontmatter Conversion Types
+// ============================================================================
+
+/** Response from converting frontmatter to DB properties. */
+export interface ConvertFrontmatterResponse {
+  /** The new content without frontmatter (to replace in editor). */
+  content: string;
+  /** Number of properties converted to DB. */
+  properties_converted: number;
+  /** Tags that were converted to inline format. */
+  tags_converted: string[];
+}

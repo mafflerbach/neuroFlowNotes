@@ -166,6 +166,9 @@ impl VaultRepository {
     }
 
     /// Update a schedule block.
+    ///
+    /// Note: `note_id` is always updated (can be set to None to clear the link).
+    /// Other fields like `date`, `start_time`, `end_time` are only updated if Some.
     #[allow(clippy::too_many_arguments)]
     pub async fn update_schedule_block(
         &self,
@@ -180,8 +183,8 @@ impl VaultRepository {
         rrule: Option<&str>,
     ) -> Result<()> {
         // Build dynamic update query
-        let mut updates = vec![];
-        if note_id.is_some() { updates.push("note_id = ?"); }
+        // note_id is always included (can be set to NULL to clear the link)
+        let mut updates = vec!["note_id = ?"];
         if date.is_some() { updates.push("date = ?"); }
         if start_time.is_some() { updates.push("start_time = ?"); }
         if end_time.is_some() { updates.push("end_time = ?"); }
@@ -196,7 +199,7 @@ impl VaultRepository {
         );
 
         let mut q = sqlx::query(&query);
-        if let Some(v) = note_id { q = q.bind(v); }
+        q = q.bind(note_id);  // Always bind note_id (can be None/NULL)
         if let Some(v) = date { q = q.bind(v); }
         if let Some(v) = start_time { q = q.bind(v); }
         if let Some(v) = end_time { q = q.bind(v); }

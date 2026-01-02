@@ -5,3 +5,5 @@ export { default as PanelHeader } from "./PanelHeader.svelte";
 export { default as InlineInput } from "./InlineInput.svelte";
 export { default as FuzzySelect } from "./FuzzySelect.svelte";
 export { default as MultiValueInput } from "./MultiValueInput.svelte";
+export { default as ResizeHandle } from "./ResizeHandle.svelte";
+export { default as TextInput } from "./TextInput.svelte";

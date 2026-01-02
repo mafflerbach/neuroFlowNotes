@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Folder, List, Plus, Settings, Calendar, Search, Sparkles, FileText } from "lucide-svelte";
+  import { Folder, List, Plus, Settings, Calendar, Search, Sparkles, FileText, CheckCircle, Link, Video } from "lucide-svelte";
   import { workspaceStore } from "../stores/workspace.svelte";
   import { vaultStore } from "../stores/vault.svelte";
   import * as api from "../services/api";
@@ -87,6 +87,33 @@
       disabled={!vaultStore.isOpen}
     >
       <FileText size={18} />
+    </button>
+    <button
+      class="icon-btn"
+      class:active={workspaceStore.isPluginPanelActive("habit-tracker")}
+      onclick={() => workspaceStore.togglePluginPanel("habit-tracker")}
+      title="Habit Tracker"
+      disabled={!vaultStore.isOpen}
+    >
+      <CheckCircle size={18} />
+    </button>
+    <button
+      class="icon-btn"
+      class:active={workspaceStore.isPluginPanelActive("link-summarizer")}
+      onclick={() => workspaceStore.togglePluginPanel("link-summarizer")}
+      title="Link Summarizer"
+      disabled={!vaultStore.isOpen}
+    >
+      <Link size={18} />
+    </button>
+    <button
+      class="icon-btn"
+      class:active={workspaceStore.isPluginPanelActive("transcript-summarizer")}
+      onclick={() => workspaceStore.togglePluginPanel("transcript-summarizer")}
+      title="Transcript Summarizer"
+      disabled={!vaultStore.isOpen}
+    >
+      <Video size={18} />
     </button>
   </div>
 

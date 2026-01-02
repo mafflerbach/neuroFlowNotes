@@ -51,6 +51,11 @@ fn main() {
             commands::get_backlinks,
             // Search
             commands::search_notes,
+            commands::hybrid_search_notes,
+            commands::get_embedding_status,
+            commands::test_embedding_connection,
+            commands::generate_note_embedding,
+            commands::get_notes_needing_embeddings,
             // Folder Tree
             commands::get_folder_tree,
             // Properties
@@ -93,6 +98,8 @@ fn main() {
             commands::delete_folder_property,
             commands::get_properties_with_inheritance,
             commands::get_folders_with_properties,
+            // Frontmatter Conversion
+            commands::convert_frontmatter_to_db,
             // Import
             commands::import_obsidian_vault,
             // Plugins
@@ -100,6 +107,29 @@ fn main() {
             commands::write_plugin_config,
             commands::list_plugin_configs,
             commands::plugin_http_request,
+            // Habits
+            commands::create_habit,
+            commands::list_habits,
+            commands::get_habit,
+            commands::update_habit,
+            commands::delete_habit,
+            commands::archive_habit,
+            commands::log_habit_entry,
+            commands::get_habit_entries,
+            commands::update_habit_entry,
+            commands::delete_habit_entry,
+            commands::toggle_habit,
+            commands::execute_habit_tracker_embed,
+            // Templates
+            commands::get_template_settings,
+            commands::save_template_settings,
+            commands::list_templates,
+            commands::create_daily_note,
+            commands::preview_daily_note_path,
+            // Summarizers
+            commands::run_link_summarizer,
+            commands::run_transcript_summarizer,
+            commands::count_pending_transcripts,
         ])
         .setup(|_app| {
             info!("Tauri app setup complete");

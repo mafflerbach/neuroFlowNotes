@@ -162,3 +162,19 @@ pub struct PropertyWithInheritance {
     /// The folder path this property is inherited from (if inherited).
     pub inherited_from: Option<String>,
 }
+
+// ============================================================================
+// Frontmatter Conversion Types
+// ============================================================================
+
+/// Response from converting frontmatter to DB properties.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ConvertFrontmatterResponse {
+    /// The new content without frontmatter (to replace in editor).
+    pub content: String,
+    /// Number of properties converted to DB.
+    pub properties_converted: i32,
+    /// Tags that were converted to inline format.
+    pub tags_converted: Vec<String>,
+}

@@ -34,6 +34,8 @@
   let viewType = $state<QueryViewType>("Table");
   let kanbanGroupBy = $state("priority");
   let kanbanCardFields = $state(["context", "due_date"]);
+  let cardCoverProperty = $state<string | null>(null);
+  let cardDisplayFields = $state(["description"]);
 
   // Persistence key
   const STORAGE_KEY = "queryBuilderState";
@@ -218,6 +220,8 @@
       viewType,
       kanbanGroupBy,
       kanbanCardFields,
+      cardCoverProperty,
+      cardDisplayFields,
     });
   }
 
@@ -275,12 +279,16 @@
     {viewType}
     {kanbanGroupBy}
     {kanbanCardFields}
+    {cardCoverProperty}
+    {cardDisplayFields}
     {propertyKeys}
     onUpdateResultType={(t) => (resultType = t)}
     onUpdateIncludeCompleted={(c) => (includeCompleted = c)}
     onUpdateViewType={(t) => (viewType = t)}
     onUpdateKanbanGroupBy={(g) => (kanbanGroupBy = g)}
     onUpdateKanbanCardFields={(f) => (kanbanCardFields = f)}
+    onUpdateCardCoverProperty={(p) => (cardCoverProperty = p)}
+    onUpdateCardDisplayFields={(f) => (cardDisplayFields = f)}
   />
 
   <QueryResults
@@ -288,6 +296,9 @@
     {totalCount}
     {loading}
     {filters}
+    {viewType}
+    {cardCoverProperty}
+    {cardDisplayFields}
     onOpenNote={openNote}
   />
 </div>

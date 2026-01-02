@@ -139,6 +139,10 @@
                             value={getStringValue(value, field.default)}
                             placeholder={field.placeholder}
                             onchange={(e) => handleSettingChange(plugin.meta.id, field.key, e.currentTarget.value)}
+                            autocomplete="off"
+                            autocorrect="off"
+                            autocapitalize="off"
+                            spellcheck="false"
                           />
                         {:else if field.type === "password"}
                           <input
@@ -147,6 +151,10 @@
                             value={getStringValue(value, field.default)}
                             placeholder={field.placeholder}
                             onchange={(e) => handleSettingChange(plugin.meta.id, field.key, e.currentTarget.value)}
+                            autocomplete="off"
+                            autocorrect="off"
+                            autocapitalize="off"
+                            spellcheck="false"
                           />
                         {:else if field.type === "number"}
                           <input

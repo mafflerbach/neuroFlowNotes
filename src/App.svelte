@@ -17,10 +17,12 @@
     SettingsModal,
     PropertiesPanel,
     ScheduleBlockModal,
+    SearchModal,
     MediaViewer,
     QueryBuilder,
     Toast,
   } from "./lib/components";
+  import { ResizeHandle } from "./lib/components/shared";
   import { vaultStore, editorStore, workspaceStore } from "./lib/stores";
   import {
     onNotesUpdated,
@@ -37,9 +39,11 @@
     createScheduleBlock,
     updateScheduleBlock,
     deleteScheduleBlock,
+    createDailyNote,
   } from "./lib/services";
   import type { UnlistenFn } from "@tauri-apps/api/event";
-  import type { NoteListItem, ScheduleBlockDto, NoteForDate } from "./lib/types";
+  import type { NoteListItem, ScheduleBlockDto, NoteForDate, EmbeddingSettings } from "./lib/types";
+  import { DEFAULT_EMBEDDING_SETTINGS } from "./lib/types";
   import { formatDateKey, getWeekRange, getMonthRange } from "./lib/utils/dateUtils";
   import {
     separateAndDeduplicateNotes,
@@ -54,6 +58,31 @@
 
   let unlisteners: UnlistenFn[] = [];
   let settingsOpen = $state(false);
+  let searchOpen = $state(false);
+
+  // Embedding settings (persisted in localStorage)
+  let embeddingSettings = $state<EmbeddingSettings>(loadEmbeddingSettings());
+
+  function loadEmbeddingSettings(): EmbeddingSettings {
+    try {
+      const stored = localStorage.getItem("neuroflow:embeddingSettings");
+      if (stored) {
+        return { ...DEFAULT_EMBEDDING_SETTINGS, ...JSON.parse(stored) };
+      }
+    } catch (e) {
+      console.error("Failed to load embedding settings:", e);
+    }
+    return { ...DEFAULT_EMBEDDING_SETTINGS };
+  }
+
+  function saveEmbeddingSettings(settings: EmbeddingSettings) {
+    embeddingSettings = settings;
+    try {
+      localStorage.setItem("neuroflow:embeddingSettings", JSON.stringify(settings));
+    } catch (e) {
+      console.error("Failed to save embedding settings:", e);
+    }
+  }
 
   // Schedule block modal state
   let blockModalOpen = $state(false);
@@ -100,6 +129,41 @@
   // DocList data for selected day
   let scheduledDocs = $state<DocWithSource[]>([]);
   let journalDocs = $state<DocWithSource[]>([]);
+
+  // Resizable panel widths (in pixels)
+  let sidebarWidth = $state(250);
+  let docListWidth = $state(220);
+  let queryPanelWidth = $state(400);
+  let pluginPanelWidth = $state(320);
+
+  // Panel size constraints
+  const SIDEBAR_MIN = 180;
+  const SIDEBAR_MAX = 400;
+  const DOCLIST_MIN = 150;
+  const DOCLIST_MAX = 350;
+  const QUERY_MIN = 300;
+  const QUERY_MAX = 600;
+  const PLUGIN_MIN = 250;
+  const PLUGIN_MAX = 500;
+
+  // Resize handlers
+  function handleSidebarResize(delta: number) {
+    sidebarWidth = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, sidebarWidth + delta));
+  }
+
+  function handleDocListResize(delta: number) {
+    docListWidth = Math.max(DOCLIST_MIN, Math.min(DOCLIST_MAX, docListWidth + delta));
+  }
+
+  function handleQueryPanelResize(delta: number) {
+    // Query panel is on the right, so resize from the left edge (invert delta)
+    queryPanelWidth = Math.max(QUERY_MIN, Math.min(QUERY_MAX, queryPanelWidth - delta));
+  }
+
+  function handlePluginPanelResize(delta: number) {
+    // Plugin panel is on the right, so resize from the left edge (invert delta)
+    pluginPanelWidth = Math.max(PLUGIN_MIN, Math.min(PLUGIN_MAX, pluginPanelWidth - delta));
+  }
   let createdDocs = $state<DocWithSource[]>([]);
 
   // Fetch data for the current view
@@ -177,6 +241,32 @@
     }
   });
 
+  // Track vault path to detect vault changes
+  let lastVaultPath = $state<string | null>(null);
+
+  // Reinitialize plugin system when vault opens/changes
+  // Plugin configs are stored inside the vault, so we need to reload them
+  $effect(() => {
+    const currentPath = vaultStore.info?.path ?? null;
+
+    if (vaultStore.isOpen && currentPath !== lastVaultPath) {
+      lastVaultPath = currentPath;
+
+      if (!pluginRegistry.isInitialized) {
+        // First time initialization
+        const backendHooks = createBackendHooks();
+        pluginRegistry.initialize(backendHooks).catch((e) => {
+          console.error("Failed to initialize plugin registry:", e);
+        });
+      } else {
+        // Vault changed - reload configs
+        pluginRegistry.reloadConfigs().catch((e) => {
+          console.error("Failed to reload plugin configs:", e);
+        });
+      }
+    }
+  });
+
   // Load note content when activeDoc changes
   $effect(() => {
     const doc = activeDoc;
@@ -210,59 +300,9 @@
         console.error("Failed to open note for block:", e);
       }
     } else {
-      // No note linked - check if a note with this path already exists, otherwise create one
-      try {
-        const dateStr = block.date;
-        const timeStr = block.start_time.slice(0, 5);
-        const title = block.label || `Note for ${timeStr}`;
-        const path = titleToFilename(title);
-
-        let noteId: number;
-
-        // Try to get existing note first
-        try {
-          const existing = await getNoteContent(path);
-          noteId = existing.id;
-        } catch {
-          // Note doesn't exist, create it
-          const content = generateNoteContent(title);
-          noteId = await saveNote(path, content);
-
-          // Store metadata as properties in the database
-          await setProperty({ note_id: noteId, key: "date", value: dateStr, property_type: "date" });
-          await setProperty({ note_id: noteId, key: "time", value: timeStr, property_type: "time" });
-          if (block.label) {
-            await setProperty({ note_id: noteId, key: "title", value: block.label, property_type: "text" });
-          }
-
-          // Refresh folder tree to show the new file
-          await vaultStore.refreshFolderTree();
-        }
-
-        // Update the block to link to this note (preserve existing fields)
-        await updateScheduleBlock({
-          id: block.id,
-          note_id: noteId,
-          date: null,
-          start_time: null,
-          end_time: null,
-          label: block.label,
-          color: block.color,
-          context: block.context,
-          rrule: block.rrule,
-        });
-
-        // Refresh calendar data
-        await fetchCalendarData();
-
-        workspaceStore.openDoc({
-          path,
-          id: noteId,
-          title,
-        });
-      } catch (e) {
-        console.error("[App] Failed to create note for block:", e);
-      }
+      // No note linked - open the block for editing instead of auto-creating a note
+      // This allows users to have blocks without notes, or to link an existing note
+      handleBlockEdit(block);
     }
   }
 
@@ -440,9 +480,30 @@
     }
   }
 
-  function handleDayClick(date: Date) {
+  async function handleDayClick(date: Date) {
     workspaceStore.selectDate(date);
-    // Optionally switch to daily view
+
+    // Create or open the daily note for this date
+    if (vaultStore.isOpen) {
+      try {
+        const dateStr = date.toISOString().split("T")[0];
+        const result = await createDailyNote(dateStr);
+
+        // Open the note in the editor
+        workspaceStore.openDoc({
+          path: result.path,
+          id: result.id,
+          title: result.title,
+        });
+
+        // Refresh folder tree if note was newly created
+        if (result.created) {
+          await vaultStore.refreshFolderTree();
+        }
+      } catch (e) {
+        console.error("[App] Failed to create daily note:", e);
+      }
+    }
   }
 
   function handleQueryResultClick(noteId: number, notePath: string, noteTitle: string | null) {
@@ -454,15 +515,20 @@
     });
   }
 
+  function handleGlobalKeydown(e: KeyboardEvent) {
+    // Cmd+K / Ctrl+K to open search
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      searchOpen = true;
+    }
+  }
+
   onMount(async () => {
     // Initialize theme from settings
     workspaceStore.initTheme();
 
-    // Initialize plugin system
-    const backendHooks = createBackendHooks();
-    await pluginRegistry.initialize(backendHooks);
-
     // Try to open the last used vault
+    // Plugin initialization happens automatically via $effect when vault opens
     await vaultStore.openLastVault();
 
     // Register callback for when editor updates schedule blocks
@@ -502,6 +568,14 @@
   });
 </script>
 
+<svelte:window onkeydown={handleGlobalKeydown} />
+
+<SearchModal
+  bind:open={searchOpen}
+  onclose={() => (searchOpen = false)}
+  embeddingSettings={embeddingSettings}
+/>
+
 <div class="app">
   <!-- Global Topbar -->
   <Topbar onOpenSettings={handleOpenSettings} />
@@ -509,17 +583,29 @@
   <div class="app-body">
     <!-- Sidebar (toggleable) -->
     {#if folderViewVisible}
-      <Sidebar />
+      <div class="sidebar-wrapper" style:width="{sidebarWidth}px">
+        <Sidebar />
+        <ResizeHandle
+          direction="horizontal"
+          position="right"
+          onResize={handleSidebarResize}
+        />
+      </div>
     {/if}
 
     <!-- DocList panel (between sidebar and calendar) -->
     {#if docListVisible && (workspaceState === "calendar-only" || workspaceState === "calendar-with-doc")}
-      <div class="doc-list-panel">
+      <div class="doc-list-panel" style:width="{docListWidth}px">
         <DocList
           {scheduledDocs}
           {journalDocs}
           {createdDocs}
           onDocClick={handleNoteClick}
+        />
+        <ResizeHandle
+          direction="horizontal"
+          position="right"
+          onResize={handleDocListResize}
         />
       </div>
     {/if}
@@ -633,18 +719,33 @@
 
     <!-- Query Builder Panel (slides in from right) -->
     {#if queryViewVisible}
-      <div class="query-panel">
+      <div class="query-panel" style:width="{queryPanelWidth}px">
+        <ResizeHandle
+          direction="horizontal"
+          position="left"
+          onResize={handleQueryPanelResize}
+        />
         <QueryBuilder onResultClick={handleQueryResultClick} />
       </div>
     {/if}
 
     <!-- Plugin Panel (slides in from right) -->
     {#if pluginPanelVisible && activePluginPanel}
-      <div class="plugin-panel">
+      <div class="plugin-panel" style:width="{pluginPanelWidth}px">
+        <ResizeHandle
+          direction="horizontal"
+          position="left"
+          onResize={handlePluginPanelResize}
+        />
         <activePluginPanel.component />
       </div>
     {:else if pluginPanelVisible && !activePluginPanel}
-      <div class="plugin-panel empty-plugin-panel">
+      <div class="plugin-panel empty-plugin-panel" style:width="{pluginPanelWidth}px">
+        <ResizeHandle
+          direction="horizontal"
+          position="left"
+          onResize={handlePluginPanelResize}
+        />
         <p>Plugin not available.</p>
         <p class="hint">Enable this plugin in Settings → Plugins.</p>
       </div>
@@ -652,7 +753,12 @@
   </div>
 
   <!-- Settings Modal -->
-  <SettingsModal open={settingsOpen} onClose={handleCloseSettings} />
+  <SettingsModal
+    open={settingsOpen}
+    onClose={handleCloseSettings}
+    embeddingSettings={embeddingSettings}
+    onEmbeddingSettingsChange={saveEmbeddingSettings}
+  />
 
   <!-- Schedule Block Modal -->
   <ScheduleBlockModal
@@ -689,10 +795,16 @@
     overflow: hidden;
   }
 
+  /* Sidebar wrapper for resizing */
+  .sidebar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    overflow: hidden;
+  }
+
   .doc-list-panel {
-    width: 220px;
-    min-width: 180px;
-    max-width: 280px;
+    position: relative;
     flex-shrink: 0;
     overflow: hidden;
     display: flex;
@@ -803,9 +915,7 @@
 
   /* Query Builder Panel */
   .query-panel {
-    width: 400px;
-    min-width: 320px;
-    max-width: 500px;
+    position: relative;
     flex-shrink: 0;
     border-left: 1px solid var(--border-default);
     background: var(--bg-surface);
@@ -816,9 +926,7 @@
 
   /* Plugin Panel */
   .plugin-panel {
-    width: 320px;
-    min-width: 280px;
-    max-width: 400px;
+    position: relative;
     flex-shrink: 0;
     border-left: 1px solid var(--border-default);
     background: var(--bg-surface);

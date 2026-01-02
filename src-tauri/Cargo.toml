@@ -12,6 +12,7 @@ shared_types = { path = "../crates/shared_types" }
 core_fs = { path = "../crates/core_fs" }
 core_index = { path = "../crates/core_index" }
 core_storage = { path = "../crates/core_storage" }
+core_embedding = { path = "../crates/core_embedding" }
 core_domain = { path = "../crates/core_domain" }
 tauri = { workspace = true, features = ["protocol-asset"] }
 tauri-plugin-dialog = "2"
@@ -28,6 +29,7 @@ chrono = "0.4"
 urlencoding = "2.1"
 serde_yaml = "0.9"
 reqwest = { version = "0.12", features = ["json"] }
+dirs = "5"
 
 [features]
 default = ["custom-protocol"]

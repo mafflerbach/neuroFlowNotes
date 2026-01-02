@@ -36,6 +36,13 @@ export { createBackendHooks, readPluginConfig, writePluginConfig, pluginHttpRequ
 // Built-in plugins
 import { llmFileSummarizerPlugin } from "./builtin/llm-file-summarizer";
 import { llmDailySummarizerPlugin } from "./builtin/llm-daily-summarizer";
+import { habitTrackerPlugin } from "./builtin/habit-tracker";
+import { linkSummarizerPlugin } from "./builtin/link-summarizer";
+import { transcriptSummarizerPlugin } from "./builtin/transcript-summarizer";
+
 // Register built-in plugins
 pluginRegistry.register(llmFileSummarizerPlugin);
 pluginRegistry.register(llmDailySummarizerPlugin);
+pluginRegistry.register(habitTrackerPlugin);
+pluginRegistry.register(linkSummarizerPlugin);
+pluginRegistry.register(transcriptSummarizerPlugin);

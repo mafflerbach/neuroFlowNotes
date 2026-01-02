@@ -107,7 +107,7 @@ async function getQueryResults(yamlContent: string): Promise<QueryEmbedResponse>
         result_type: "Tasks",
         include_completed: false,
         limit: 50,
-        view: { view_type: "Table", columns: [], sort: null, kanban: null },
+        view: { view_type: "Table", columns: [], sort: null, kanban: null, card: null },
         tabs: [],
       },
       results: [],
