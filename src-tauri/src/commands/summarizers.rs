@@ -254,8 +254,16 @@ pub async fn run_transcript_summarizer(
 
     if let Some(t) = asset_template {
         if !t.is_empty() {
+            // Resolve asset template path relative to vault root
+            // This ensures thumbnails are saved in the vault, not src-tauri/
+            let resolved_template = resolve_path(&t, vault_root);
+            info!(
+                "Asset template resolved: {} -> {}",
+                t,
+                resolved_template.display()
+            );
             args.push("--asset-template".to_string());
-            args.push(t);
+            args.push(resolved_template.to_string_lossy().to_string());
         }
     }
 

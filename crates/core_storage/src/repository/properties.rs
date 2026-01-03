@@ -394,7 +394,7 @@ impl VaultRepository {
                 ) as most_common_type
             FROM properties
             GROUP BY key
-            ORDER BY usage_count DESC, key
+            ORDER BY LOWER(key) ASC
             "#,
         )
         .fetch_all(&self.pool)

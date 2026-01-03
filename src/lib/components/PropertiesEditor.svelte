@@ -489,7 +489,8 @@
     flex-direction: column;
     gap: var(--spacing-3);
     min-height: 400px;
-    height: 450px;
+    height: 60vh;
+    max-height: 700px;
   }
 
   .columns {
@@ -510,15 +511,15 @@
   }
 
   .keys-column {
-    flex: 0.8;
+    flex: 1;
   }
 
   .values-column {
-    flex: 0.8;
+    flex: 1;
   }
 
   .notes-column {
-    flex: 1.4;
+    flex: 1.5;
   }
 
   .column-header {

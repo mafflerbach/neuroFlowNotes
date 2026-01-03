@@ -211,7 +211,7 @@
   }
 </script>
 
-<Modal {open} title="Settings" onClose={handleCancel} maxWidth={activeSection === "properties" ? "800px" : "580px"}>
+<Modal {open} title="Settings" onClose={handleCancel} maxWidth={activeSection === "properties" ? "80vw" : "580px"}>
   <div class="settings-layout">
     <!-- Vertical Navigation -->
     <nav class="settings-nav">

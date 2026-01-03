@@ -25,7 +25,7 @@ function emit(type, data) {
 class LinkSummarizerAgent {
     constructor(options = {}) {
         this.lmStudioEndpoint = options.lmStudioEndpoint || 'http://localhost:1234/v1/chat/completions';
-        this.model = options.model || 'openai/gpt-oss-20b';
+        this.model = options.model || 'qwen2.5-7b-instruct-1m';
         this.outputDir = options.outputDir; // Required
         this.browser = null;
         this.maxContentLength = options.maxContentLength || 25000;

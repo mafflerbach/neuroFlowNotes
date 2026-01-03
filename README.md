@@ -2,22 +2,40 @@
 
 A modern, privacy-focused note-taking application with calendar integration, task management, and powerful query capabilities. Built with Tauri, Rust, and Svelte 5.
 
+**Current Version:** v0.1.0
+
+> **Status:** Active development. Core features are stable and functional. See [Roadmap](TODO.md) for planned features.
+
+## What Makes NeuroFlow Different?
+
+- **Calendar-First Design** - Unlike traditional note apps, NeuroFlow integrates scheduling directly into your workflow with daily, weekly, and monthly views
+- **Schedule Blocks** - Time-based entries that link to notes, perfect for meetings, tasks, and time-blocking
+- **Live Query Embeds** - Embed dynamic, filterable views of your notes and tasks directly in your documents
+- **Obsidian-Compatible** - Full support for Obsidian's markdown syntax, wiki-links, frontmatter, and file structure
+- **Plugin System** - Built-in LLM integration for summarization, habit tracking, and extensibility
+- **Privacy-First** - All data stays local, optional LLM integration uses local models (LM Studio compatible)
+- **Fast & Lightweight** - Rust backend with Svelte 5 frontend for blazing-fast performance
+
 ## Features
 
 ### Note Editor
 - **Markdown-first editing** with CodeMirror 6
 - **Live preview** - syntax hides on inactive lines, revealing formatted content
-- **Wiki-style links** (`[[note]]`) with autocomplete
-- **Tags** support (`#tag`) with inline highlighting
-- **Full-text search** across all notes
+- **Wiki-style links** (`[[note]]`) with autocomplete and hover preview
+- **Tags** support (`#tag`) with inline highlighting and autocomplete
+- **Full-text search** across all notes (SQLite FTS5)
 - **Code blocks** with syntax highlighting
+- **Callouts** - Obsidian-style callout blocks (note, warning, info, etc.)
+- **Custom embeds** - Embed notes, images, videos, and query results
+- **Paste handling** - Auto-save pasted images to assets folder
 
-### Properties
-- **YAML frontmatter** support for note metadata (importable from Obsidian)
+### Properties & Metadata
+- **YAML frontmatter** support for note metadata (fully Obsidian-compatible)
+- **Two-way sync** - frontmatter is source of truth, synced to SQLite index
 - **Properties panel** - view and edit note properties in the sidebar
-- **Auto-sync from frontmatter** - properties defined in YAML frontmatter are automatically indexed and displayed
+- **Auto-parsing** - properties defined in YAML frontmatter are automatically indexed and displayed
 - **Property types** - text, number, date, boolean, list with type-aware inputs
-- **Folder properties** - set default properties inherited by all notes in a folder
+- **Optional conversion** - convert frontmatter to database properties (removes YAML, converts tags to inline #tags)
 - **Bulk property management** - rename, merge, or delete properties across your entire vault
 - **Usage tracking** - see which notes use each property value
 
@@ -50,18 +68,37 @@ A modern, privacy-focused note-taking application with calendar integration, tas
 - **Inline renaming** - rename syncs H1 title, filename, and linked schedule blocks
 - **Media support** - images, audio, and video with inline preview
 - **Asset management** - paste images directly, auto-saved to assets folder
+- **File type detection** - automatic MIME type detection for media files
+- **Breadcrumb navigation** - visual path navigation in the editor
 
 ### Settings & Customization
 - **Theme selection** - Light, Dark, or System auto-detection
-- **Color schemes** - Catppuccin Latte, Frappe, Macchiato, Mocha
+- **Color schemes** - 19+ Catppuccin variants (Latte, Frappe, Macchiato, Mocha, etc.)
 - **Block colors** - customize calendar block colors per-type
 - **Properties Editor** - bulk manage property keys and values across your vault
+- **Plugin settings** - configure built-in plugins from the settings panel
+- **Vault settings** - customize daily note templates, default folders, and more
 
 ### Vault System
 - **Local-first** - all data stored in plain Markdown files on your disk
 - **SQLite index** for fast searching and metadata queries
 - **Backlinks** tracking between notes
+- **File watcher** - automatic re-indexing when files change externally
+- **Semantic search** - vector embeddings for AI-powered note discovery (experimental)
 - **No cloud required** - your data stays on your machine
+
+### Plugin System
+- **Built-in plugins** - extensible architecture with 5+ built-in plugins
+  - **LLM File Summarizer** - Summarize notes using local LLMs (LM Studio compatible)
+  - **LLM Daily Summarizer** - Create day summaries from schedule blocks and notes
+  - **Habit Tracker** - Track daily habits with embeddable interactive tables
+  - **Link Summarizer** - Summarize web links and save to notes
+  - **Transcript Summarizer** - Process and summarize transcripts
+- **Sidebar integration** - plugins can add custom panels to the sidebar
+- **Calendar hooks** - plugins can add toolbar actions and context menus
+- **Settings UI** - auto-generated settings interface from schema
+- **Lifecycle hooks** - onEnable, onDisable, onSettingsChange
+- **Backend access** - plugins can access notes, schedule blocks, and make HTTP requests
 
 ## Screenshots
 
@@ -110,6 +147,18 @@ Download the latest release for your platform from the [Releases](https://github
 
    The built application will be in `src-tauri/target/release/bundle/`.
 
+## Quick Start
+
+1. **Launch NeuroFlow Notes** and select or create a vault folder
+2. **Create your first note** - Click the calendar or right-click in the folder tree
+3. **Try these features:**
+   - Link notes with `[[note name]]`
+   - Add tags with `#tag`
+   - Create tasks with `- [ ] Task description`
+   - Add schedule blocks by clicking a time slot in the calendar
+4. **Explore the sidebar** - Properties, backlinks, and plugin panels
+5. **Customize** - Settings > Themes to change appearance
+
 ## Usage
 
 ### Getting Started
@@ -119,6 +168,7 @@ Download the latest release for your platform from the [Releases](https://github
 3. **Link notes** - Use `[[note name]]` syntax to create links between notes
 4. **Add properties** - Add YAML frontmatter or use the properties panel
 5. **Schedule** - Click on the calendar to create schedule blocks for time-based planning
+6. **Install plugins** - Settings > Plugins to enable built-in extensions
 
 ### Wiki Links
 
@@ -143,12 +193,30 @@ due: 2025-12-31
 tags:
   - development
   - rust
+aliases:
+  - NeuroFlow App
+  - NFN
 ---
 
 # My Note Content
 ```
 
-Properties from frontmatter are automatically synced and displayed in the sidebar panel where you can view and edit them.
+**Frontmatter Support:**
+- **Full Obsidian compatibility** - Import your Obsidian vaults seamlessly
+- **YAML parsing** - Robust parser handles all standard YAML types
+- **Two-way sync** - Frontmatter is source of truth, synced to SQLite for fast queries
+- **Property types** - Automatically detects strings, numbers, booleans, dates, and lists
+- **Special fields** - `tags` and `aliases` are extracted and indexed separately
+- **Visual editing** - Edit properties in the sidebar panel without touching YAML
+
+**Optional Conversion**: When you complete typing a frontmatter block (closing `---`), NeuroFlow can optionally convert it to database-only properties, removing the YAML block and converting tags to inline `#tags`. This is useful if you prefer a cleaner note appearance while maintaining full property support.
+
+**Bulk Operations** (in Settings):
+- Rename property keys across all notes
+- Rename property values across all notes
+- Merge duplicate property keys
+- Delete properties from all notes
+- View usage statistics for each property
 
 ### Tasks
 
@@ -182,8 +250,10 @@ Recurring patterns supported:
 ## Documentation
 
 - [Query Embeds](docs/QUERY_EMBEDS.md) - Live query syntax and examples
-- [Properties](docs/PROPERTIES.md) - Working with note metadata
+- [Properties](docs/PROPERTIES.md) - Working with note metadata and frontmatter
 - [Settings](docs/SETTINGS.md) - Appearance, themes, and configuration
+- [Agent Guide](AGENTS.md) - For AI coding agents working in this repository
+- [Technical Specs](SPECS.md) - Detailed technical specification and architecture
 
 ## Architecture
 
@@ -194,38 +264,71 @@ neuroflow-notes/
 │   │   ├── components/         # UI components
 │   │   │   ├── calendar/       # Calendar view components
 │   │   │   ├── query-builder/  # Query builder components
+│   │   │   ├── folder-tree/    # File browser components
 │   │   │   └── shared/         # Reusable components
-│   │   ├── stores/             # Svelte stores (state management)
+│   │   ├── plugins/            # Plugin system
+│   │   │   ├── builtin/        # Built-in plugins
+│   │   │   │   ├── llm-file-summarizer/
+│   │   │   │   ├── llm-daily-summarizer/
+│   │   │   │   ├── habit-tracker/
+│   │   │   │   ├── link-summarizer/
+│   │   │   │   └── transcript-summarizer/
+│   │   │   ├── registry.svelte.ts  # Plugin registry
+│   │   │   ├── types.ts            # Plugin type definitions
+│   │   │   └── api.ts              # Backend hooks for plugins
+│   │   ├── stores/             # Svelte 5 stores (state management)
 │   │   ├── services/           # API layer
 │   │   │   ├── api/            # Domain-specific API modules
 │   │   │   └── client.ts       # API wrapper with error handling
-│   │   ├── editor/             # CodeMirror extensions
+│   │   ├── editor/             # CodeMirror 6 extensions
+│   │   │   ├── editorConfig.ts     # Main editor configuration
+│   │   │   ├── linkHandler.ts      # Wiki-link support
+│   │   │   ├── embedExtension.ts   # Query/note embeds
+│   │   │   ├── calloutExtension.ts # Callout blocks
+│   │   │   └── frontmatterConversion.ts # YAML conversion
 │   │   ├── types/              # TypeScript type definitions
+│   │   │   └── bindings/       # Auto-generated from Rust (ts-rs)
 │   │   └── utils/              # Helper functions
 │   └── App.svelte              # Main application
 ├── src-tauri/                  # Tauri/Rust backend
 │   └── src/
-│       └── commands/           # IPC command handlers (modular)
-│           ├── vault.rs        # Vault open/close/info
-│           ├── notes.rs        # Note CRUD
-│           ├── properties.rs   # Property management
-│           ├── schedule.rs     # Calendar/schedule blocks
-│           ├── queries.rs      # Query execution
-│           └── ...             # Other command modules
+│       ├── commands/           # IPC command handlers (modular)
+│       │   ├── vault.rs        # Vault open/close/info
+│       │   ├── notes.rs        # Note CRUD
+│       │   ├── properties.rs   # Property management
+│       │   ├── schedule.rs     # Calendar/schedule blocks
+│       │   ├── queries.rs      # Query execution
+│       │   ├── plugins.rs      # Plugin config I/O
+│       │   └── mod.rs          # Command exports
+│       ├── main.rs             # Tauri app entry point
+│       └── state.rs            # Application state
 └── crates/                     # Rust workspace crates
-    ├── shared_types/           # DTOs (modular types/)
+    ├── shared_types/           # DTOs with ts-rs bindings
+    │   └── types/              # Modular type definitions
     ├── core_fs/                # File system operations
     ├── core_index/             # Markdown parsing & indexing
+    │   ├── frontmatter.rs      # YAML frontmatter parser
+    │   └── markdown.rs         # Markdown AST parser
     ├── core_storage/           # SQLite database layer
-    └── core_domain/            # Business logic (vault operations)
+    │   ├── schema.rs           # Database schema
+    │   └── repository/         # Query repositories
+    ├── core_domain/            # Business logic (vault operations)
+    │   ├── vault.rs            # Vault management
+    │   ├── watcher.rs          # File system watcher
+    │   └── templates.rs        # Template system
+    └── core_embedding/         # Vector embeddings (experimental)
+        ├── client.rs           # Qdrant client
+        └── queue.rs            # Embedding queue
 ```
 
 ## Tech Stack
 
-- **Frontend**: Svelte 5, TypeScript, CodeMirror 6
+- **Frontend**: Svelte 5 (with runes), TypeScript, CodeMirror 6
 - **Backend**: Rust, Tauri 2
-- **Database**: SQLite (via sqlx)
+- **Database**: SQLite (via sqlx) with FTS5 full-text search
+- **Embeddings**: Qdrant vector database (optional, for semantic search)
 - **Styling**: CSS with Catppuccin color schemes
+- **Markdown**: Custom parser with frontmatter support (serde_yaml)
 
 ## Development
 
@@ -243,11 +346,12 @@ npm run check
 
 The project uses a Rust workspace with multiple crates for separation of concerns:
 
-- `shared_types` - Data transfer objects with TypeScript generation
+- `shared_types` - Data transfer objects with TypeScript generation (ts-rs)
 - `core_fs` - Platform-agnostic file operations
-- `core_index` - Markdown parsing, tag/link extraction
-- `core_storage` - Database schema and queries
-- `core_domain` - High-level vault operations
+- `core_index` - Markdown parsing, frontmatter extraction, tag/link extraction
+- `core_storage` - Database schema and queries (SQLite via sqlx)
+- `core_domain` - High-level vault operations, file watcher, template system
+- `core_embedding` - Vector embeddings and semantic search (Qdrant client)
 
 ## Contributing
 
