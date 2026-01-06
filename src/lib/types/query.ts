@@ -141,6 +141,36 @@ export interface CardConfig {
   display_fields: string[];
   /** Number of columns in the grid (0 = auto). */
   columns: number;
+  /** Property to toggle on card click (e.g., "read" for reading lists). */
+  toggle_property?: string;
+  /** Position of toggle button on card. */
+  toggle_position?: "top-right" | "top-left" | "inline";
+  /** Dim card when toggle property is true. */
+  dim_when_true?: boolean;
+}
+
+/** Interactive filter configuration. */
+export interface InteractiveFilter {
+  /** Property key to filter on. */
+  key: string;
+  /** Filter UI style. */
+  style: "chips" | "buttons" | "dropdown";
+  /** Show "All" option to clear filter. */
+  show_all: boolean;
+  /** Allow selecting multiple values. */
+  multi_select: boolean;
+  /** Optional display label for the filter. */
+  label?: string;
+}
+
+/** Stats bar configuration. */
+export interface StatsConfig {
+  /** Whether to show the stats bar. */
+  show: boolean;
+  /** Show total count. */
+  total: boolean;
+  /** Property to group stats by (e.g., "read" to show "5 read, 10 unread"). */
+  group_by?: string;
 }
 
 /** View configuration for query embed. */
@@ -155,6 +185,10 @@ export interface QueryViewConfig {
   kanban: KanbanConfig | null;
   /** Card-specific configuration (only used when view_type is "Card"). */
   card: CardConfig | null;
+  /** Interactive filter configurations. */
+  interactive_filters?: InteractiveFilter[];
+  /** Stats bar configuration. */
+  stats?: StatsConfig;
 }
 
 /** A single query tab definition. */

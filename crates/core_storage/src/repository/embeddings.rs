@@ -188,9 +188,9 @@ impl VaultRepository {
 /// Extract a preview from note content, stripping frontmatter and limiting length.
 pub fn extract_content_preview(content: &str) -> String {
     // Skip YAML frontmatter if present
-    let content = if content.starts_with("---") {
-        if let Some(end_idx) = content[3..].find("---") {
-            let after_frontmatter = &content[3 + end_idx + 3..];
+    let content = if let Some(stripped) = content.strip_prefix("---") {
+        if let Some(end_idx) = stripped.find("---") {
+            let after_frontmatter = &stripped[end_idx + 3..];
             after_frontmatter.trim_start()
         } else {
             content

@@ -33,7 +33,7 @@ impl HabitType {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn from_string(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "number" => HabitType::Number,
             "text" => HabitType::Text,

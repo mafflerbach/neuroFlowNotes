@@ -35,6 +35,21 @@ export async function listTemplates(): Promise<string[]> {
   return invoke<string[]>("list_templates");
 }
 
+/**
+ * Create a new note from a template file.
+ * Template variables ({{date}}, {{week}}, etc.) will be automatically substituted.
+ *
+ * @param targetPath - Path where the note should be created (e.g., "work/tickets/PROJ-123.md")
+ * @param templatePath - Path to template file (e.g., "templates/ticket.md")
+ * @returns The ID of the newly created note
+ */
+export async function createNoteFromTemplate(
+  targetPath: string,
+  templatePath: string
+): Promise<number> {
+  return invoke<number>("create_note_from_template", { targetPath, templatePath });
+}
+
 // ============================================================================
 // Daily Notes
 // ============================================================================

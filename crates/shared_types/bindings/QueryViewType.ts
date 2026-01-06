@@ -3,4 +3,4 @@
 /**
  * View type for displaying query results.
  */
-export type QueryViewType = "Table" | "List" | "Kanban";
+export type QueryViewType = "Table" | "List" | "Kanban" | "Card";

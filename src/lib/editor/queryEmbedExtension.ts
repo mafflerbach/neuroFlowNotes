@@ -30,9 +30,11 @@ import {
 import type { ViewUpdate, DecorationSet } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
 import type { EditorState } from "@codemirror/state";
-import { executeQueryEmbed } from "../services/api";
-import type { QueryEmbedResponse, QueryResultItem, QueryViewConfig, KanbanConfig } from "../types";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { executeQueryEmbed, setProperty } from "../services/api";
+import type { QueryEmbedResponse, QueryResultItem, QueryViewConfig, KanbanConfig, InteractiveFilter, StatsConfig, CardConfig } from "../types";
 import { workspaceStore } from "../stores/workspace.svelte";
+import { vaultStore } from "../stores/vault.svelte";
 import { EditorCache } from "./cache";
 
 // Pattern to match query code block start
@@ -152,6 +154,8 @@ class QueryResultWidget extends WidgetType {
   private loading = true;
   private element: HTMLElement | null = null;
   private activeTabIndex = 0;
+  // Interactive filter state per tab (tab index -> filter key -> selected values)
+  private tabFilterState = new Map<number, Map<string, Set<string>>>();
 
   constructor(private block: QueryBlock) {
     super();
@@ -233,24 +237,43 @@ class QueryResultWidget extends WidgetType {
 
     this.element.appendChild(header);
 
-    // Results
+    // Results container
+    const contentContainer = document.createElement("div");
+    contentContainer.className = "cm-query-content";
+
+    // Apply interactive filters to results
     const results = this.response.results;
-    if (results.length === 0) {
-      const emptyEl = document.createElement("div");
-      emptyEl.className = "cm-query-embed-empty";
-      emptyEl.textContent = "No results found";
-      this.element.appendChild(emptyEl);
-      return;
+    const filteredResults = this.applyInteractiveFilters(results);
+
+    // Render stats bar if configured (using filtered results)
+    if (this.response.query.view.stats?.show) {
+      this.renderStatsBar(contentContainer, filteredResults, this.response.query.view.stats);
     }
 
-    const viewType = this.response.query.view.view_type;
-    if (viewType === "Table") {
-      this.renderTableWithConfig(results, this.response.query.view, this.response.query.result_type);
-    } else if (viewType === "Kanban") {
-      this.renderKanban(results, this.response.query.view);
-    } else {
-      this.renderList(results);
+    // Render interactive filters if configured
+    if (this.response.query.view.interactive_filters && this.response.query.view.interactive_filters.length > 0) {
+      this.renderInteractiveFilters(contentContainer, this.response.query.view.interactive_filters, results);
     }
+
+    if (filteredResults.length === 0) {
+      const emptyEl = document.createElement("div");
+      emptyEl.className = "cm-query-embed-empty";
+      emptyEl.textContent = results.length === 0 ? "No results found" : "No results match selected filters";
+      contentContainer.appendChild(emptyEl);
+    } else {
+      const viewType = this.response.query.view.view_type;
+      if (viewType === "Table") {
+        this.renderTableInContainer(filteredResults, this.response.query.view, contentContainer);
+      } else if (viewType === "Kanban") {
+        this.renderKanbanInContainer(filteredResults, this.response.query.view, contentContainer);
+      } else if (viewType === "Card") {
+        this.renderCardInContainer(filteredResults, this.response.query.view, contentContainer);
+      } else {
+        this.renderListInContainer(filteredResults, contentContainer);
+      }
+    }
+
+    this.element.appendChild(contentContainer);
   }
 
   private renderTabbedView() {
@@ -294,19 +317,34 @@ class QueryResultWidget extends WidgetType {
     const contentContainer = document.createElement("div");
     contentContainer.className = "cm-query-tab-content";
 
-    if (activeTab.results.length === 0) {
+    // Apply interactive filters to results
+    const filteredResults = this.applyInteractiveFilters(activeTab.results);
+
+    // Render stats bar if configured (before filters, using filtered results)
+    if (activeTab.view.stats?.show) {
+      this.renderStatsBar(contentContainer, filteredResults, activeTab.view.stats);
+    }
+
+    // Render interactive filters if configured
+    if (activeTab.view.interactive_filters && activeTab.view.interactive_filters.length > 0) {
+      this.renderInteractiveFilters(contentContainer, activeTab.view.interactive_filters, activeTab.results);
+    }
+
+    if (filteredResults.length === 0) {
       const emptyEl = document.createElement("div");
       emptyEl.className = "cm-query-embed-empty";
-      emptyEl.textContent = "No results found";
+      emptyEl.textContent = activeTab.results.length === 0 ? "No results found" : "No results match selected filters";
       contentContainer.appendChild(emptyEl);
     } else {
       const viewType = activeTab.view.view_type;
       if (viewType === "Table") {
-        this.renderTableInContainer(activeTab.results, activeTab.view, contentContainer);
+        this.renderTableInContainer(filteredResults, activeTab.view, contentContainer);
       } else if (viewType === "Kanban") {
-        this.renderKanbanInContainer(activeTab.results, activeTab.view, contentContainer);
+        this.renderKanbanInContainer(filteredResults, activeTab.view, contentContainer);
+      } else if (viewType === "Card") {
+        this.renderCardInContainer(filteredResults, activeTab.view, contentContainer);
       } else {
-        this.renderListInContainer(activeTab.results, contentContainer);
+        this.renderListInContainer(filteredResults, contentContainer);
       }
     }
 
@@ -479,14 +517,195 @@ class QueryResultWidget extends WidgetType {
     container.appendChild(list);
   }
 
-  private renderTableWithConfig(results: QueryResultItem[], view: QueryViewConfig, _resultType: string) {
-    if (!this.element) return;
-    this.renderTableInContainer(results, view, this.element);
+
+
+  private renderCardInContainer(results: QueryResultItem[], view: QueryViewConfig, container: HTMLElement) {
+    const cardConfig = view.card || {
+      cover_property: null,
+      display_fields: [],
+      columns: 0,
+    };
+
+    const cardGrid = document.createElement("div");
+    cardGrid.className = "cm-query-card-grid";
+
+    for (const item of results) {
+      const card = this.renderCardItem(item, cardConfig);
+      cardGrid.appendChild(card);
+    }
+
+    container.appendChild(cardGrid);
   }
 
-  private renderKanban(results: QueryResultItem[], view: QueryViewConfig) {
-    if (!this.element) return;
-    this.renderKanbanInContainer(results, view, this.element);
+  private renderCardItem(item: QueryResultItem, config: CardConfig): HTMLElement {
+    const card = document.createElement("button");
+    card.className = "cm-query-card";
+    
+    const isCompleted = item.item_type === "task" && item.task?.todo.completed;
+    if (isCompleted) {
+      card.classList.add("completed");
+    }
+
+    // Get cover image
+    const coverImage = this.getCoverImageForCard(item, config.cover_property);
+    if (coverImage) {
+      const coverEl = document.createElement("div");
+      coverEl.className = "cm-query-card-cover";
+      const img = document.createElement("img");
+      img.src = coverImage;
+      img.alt = "";
+      img.loading = "lazy";
+      coverEl.appendChild(img);
+      card.appendChild(coverEl);
+      card.classList.add("has-cover");
+    }
+
+    // Card content
+    const content = document.createElement("div");
+    content.className = "cm-query-card-content";
+
+    // Title
+    const title = document.createElement("div");
+    title.className = "cm-query-card-title";
+    title.textContent = this.getItemTitle(item);
+    content.appendChild(title);
+
+    // Display fields
+    if (config.display_fields && config.display_fields.length > 0) {
+      const fields = document.createElement("div");
+      fields.className = "cm-query-card-fields";
+
+      for (const field of config.display_fields) {
+        const value = this.getFieldValue(item, field);
+        if (value && field !== "description") {
+          const fieldEl = document.createElement("div");
+          fieldEl.className = "cm-query-card-field";
+
+          const label = document.createElement("span");
+          label.className = "cm-query-card-field-label";
+          label.textContent = `${this.formatColumnName(field)}:`;
+          fieldEl.appendChild(label);
+
+          const valueEl = document.createElement("span");
+          valueEl.className = "cm-query-card-field-value";
+          if (field === "priority") {
+            valueEl.classList.add(`priority-${value}`);
+          }
+          valueEl.textContent = value;
+          fieldEl.appendChild(valueEl);
+
+          fields.appendChild(fieldEl);
+        }
+      }
+
+      if (fields.children.length > 0) {
+        content.appendChild(fields);
+      }
+    }
+
+    // Type badge
+    const badge = document.createElement("div");
+    badge.className = `cm-query-card-type-badge ${item.item_type}`;
+    badge.textContent = item.item_type === "task" ? "Task" : "Note";
+    content.appendChild(badge);
+
+    card.appendChild(content);
+
+    // Toggle button (if configured)
+    if (config.toggle_property) {
+      this.addToggleButton(card, item, config);
+    }
+
+    // Click handler
+    card.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const noteId = item.item_type === "task"
+        ? item.task?.todo.note_id
+        : item.note?.id;
+      const notePath = item.item_type === "task"
+        ? item.task?.note_path
+        : item.note?.path;
+      const noteTitle = item.item_type === "task"
+        ? item.task?.note_title
+        : item.note?.title;
+
+      if (noteId && notePath) {
+        workspaceStore.followLink({
+          id: noteId,
+          path: notePath,
+          title: noteTitle ?? notePath.replace(".md", ""),
+        });
+      }
+    };
+
+    return card;
+  }
+
+  private getCoverImageForCard(item: QueryResultItem, coverProperty: string | null): string | null {
+    if (!coverProperty) return null;
+    
+    const value = this.getFieldValue(item, coverProperty);
+    if (!value) return null;
+
+    // If it's already an absolute URL (http/https), return as-is
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+      return value;
+    }
+
+    // Resolve relative path against vault root
+    const vaultPath = vaultStore.info?.path;
+    if (!vaultPath) return null;
+
+    // Handle paths that might start with ./ or just be relative
+    const cleanPath = value.startsWith("./") ? value.slice(2) : value;
+    const fullPath = `${vaultPath}/${cleanPath}`;
+
+    // Convert to Tauri asset URL
+    return convertFileSrc(fullPath);
+  }
+
+  private getItemTitle(item: QueryResultItem): string {
+    if (item.item_type === "task" && item.task) {
+      return item.task.todo.description;
+    }
+    if (item.item_type === "note" && item.note) {
+      return item.note.title || item.note.path.replace(".md", "");
+    }
+    return "Untitled";
+  }
+
+  private getFieldValue(item: QueryResultItem, field: string): string | null {
+    // Check task fields first
+    if (item.item_type === "task" && item.task) {
+      const todo = item.task.todo;
+      switch (field) {
+        case "description":
+          return todo.description;
+        case "priority":
+          return todo.priority;
+        case "context":
+          return todo.context;
+        case "due_date":
+          return todo.due_date;
+        case "heading_path":
+          return todo.heading_path;
+      }
+    }
+
+    // Check note title
+    if (item.item_type === "note" && item.note) {
+      if (field === "title") {
+        return item.note.title;
+      }
+      if (field === "description") {
+        return item.note.title;
+      }
+    }
+
+    // Check properties
+    const prop = item.properties.find((p) => p.key === field);
+    return prop?.value ?? null;
   }
 
   private renderKanbanInContainer(results: QueryResultItem[], view: QueryViewConfig, container: HTMLElement) {
@@ -791,90 +1010,7 @@ class QueryResultWidget extends WidgetType {
     }
   }
 
-  private renderList(results: QueryResultItem[]) {
-    if (!this.element) return;
 
-    const list = document.createElement("ul");
-    list.className = "cm-query-embed-list";
-
-    for (const item of results) {
-      const li = document.createElement("li");
-      li.className = item.item_type === "task" && item.task?.todo.completed
-        ? "cm-query-list-item completed"
-        : "cm-query-list-item";
-
-      if (item.item_type === "task" && item.task) {
-        // Task item
-        const checkbox = document.createElement("span");
-        checkbox.className = "cm-query-checkbox";
-        checkbox.textContent = item.task.todo.completed ? "☑" : "☐";
-        li.appendChild(checkbox);
-
-        const text = document.createElement("span");
-        text.className = "cm-query-text";
-        text.textContent = item.task.todo.description;
-        li.appendChild(text);
-
-        if (item.task.todo.priority) {
-          const badge = document.createElement("span");
-          badge.className = `cm-query-badge priority-${item.task.todo.priority}`;
-          badge.textContent = item.task.todo.priority;
-          li.appendChild(badge);
-        }
-
-        if (item.task.todo.context) {
-          const badge = document.createElement("span");
-          badge.className = "cm-query-badge context";
-          badge.textContent = `@${item.task.todo.context}`;
-          li.appendChild(badge);
-        }
-
-        const noteLink = document.createElement("button");
-        noteLink.className = "cm-query-note-link";
-        noteLink.textContent = item.task.note_title || item.task.note_path.replace(".md", "");
-        noteLink.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          workspaceStore.followLink({
-            id: item.task!.todo.note_id,
-            path: item.task!.note_path,
-            title: item.task!.note_title ?? item.task!.note_path.replace(".md", ""),
-          });
-        };
-        li.appendChild(noteLink);
-      } else if (item.note) {
-        // Note item
-        const noteLink = document.createElement("button");
-        noteLink.className = "cm-query-note-link title";
-        noteLink.textContent = item.note.title || item.note.path.replace(".md", "");
-        noteLink.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          workspaceStore.followLink({
-            id: item.note!.id,
-            path: item.note!.path,
-            title: item.note!.title ?? item.note!.path.replace(".md", ""),
-          });
-        };
-        li.appendChild(noteLink);
-
-        // Show some properties
-        if (item.properties.length > 0) {
-          const props = document.createElement("span");
-          props.className = "cm-query-properties";
-          props.textContent = item.properties
-            .slice(0, 3)
-            .map((p) => `${p.key}: ${p.value}`)
-            .join(", ");
-          li.appendChild(props);
-        }
-      }
-
-      list.appendChild(li);
-    }
-
-    this.element.appendChild(list);
-  }
 
   private formatColumnName(col: string): string {
     return col
@@ -949,6 +1085,281 @@ class QueryResultWidget extends WidgetType {
     // Return true to prevent clicks from moving the cursor into the widget
     // This ensures tab clicks and other interactions don't trigger source view
     return true;
+  }
+
+  /**
+   * Get active filter state for the current tab
+   */
+  private getActiveFilterState(): Map<string, Set<string>> {
+    if (!this.tabFilterState.has(this.activeTabIndex)) {
+      this.tabFilterState.set(this.activeTabIndex, new Map());
+    }
+    return this.tabFilterState.get(this.activeTabIndex)!;
+  }
+
+  /**
+   * Extract unique values for a property from results
+   */
+  private getFilterValues(results: QueryResultItem[], key: string): string[] {
+    const values = new Set<string>();
+    for (const item of results) {
+      const value = this.getFieldValue(item, key);
+      if (value) {
+        // Handle list properties (comma-separated)
+        if (value.includes(',')) {
+          value.split(',').forEach(v => values.add(v.trim()));
+        } else {
+          values.add(value);
+        }
+      }
+    }
+    return Array.from(values).sort();
+  }
+
+  /**
+   * Apply active filters to results
+   */
+  private applyInteractiveFilters(results: QueryResultItem[]): QueryResultItem[] {
+    const activeFilters = this.getActiveFilterState();
+    if (activeFilters.size === 0) return results;
+
+    return results.filter(item => {
+      for (const [key, values] of activeFilters) {
+        const propValue = this.getFieldValue(item, key) ?? '';
+        const propValues = propValue.includes(',')
+          ? propValue.split(',').map(v => v.trim())
+          : [propValue];
+
+        if (!propValues.some(v => values.has(v))) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  /**
+   * Toggle a filter value
+   */
+  private toggleFilter(key: string, value: string, multiSelect: boolean) {
+    const activeFilters = this.getActiveFilterState();
+    
+    if (!activeFilters.has(key)) {
+      activeFilters.set(key, new Set([value]));
+    } else if (multiSelect) {
+      const values = activeFilters.get(key)!;
+      if (values.has(value)) {
+        values.delete(value);
+        if (values.size === 0) {
+          activeFilters.delete(key);
+        }
+      } else {
+        values.add(value);
+      }
+    } else {
+      // Single select: toggle off if already selected, otherwise select
+      const values = activeFilters.get(key)!;
+      if (values.has(value) && values.size === 1) {
+        activeFilters.delete(key);
+      } else {
+        activeFilters.set(key, new Set([value]));
+      }
+    }
+
+    this.updateElement();
+  }
+
+  /**
+   * Clear filter for a key
+   */
+  private clearFilter(key: string) {
+    const activeFilters = this.getActiveFilterState();
+    activeFilters.delete(key);
+    this.updateElement();
+  }
+
+  /**
+   * Create a filter chip element
+   */
+  private createFilterChip(label: string, isActive: boolean): HTMLButtonElement {
+    const chip = document.createElement('button');
+    chip.className = `cm-query-filter-chip ${isActive ? 'active' : ''}`;
+    chip.textContent = label;
+    return chip;
+  }
+
+  /**
+   * Compute stats from results
+   */
+  private computeStats(results: QueryResultItem[], config: StatsConfig): { total: number; groups: Map<string, number> } {
+    const stats = {
+      total: results.length,
+      groups: new Map<string, number>()
+    };
+
+    if (config.group_by) {
+      for (const item of results) {
+        const value = this.getFieldValue(item, config.group_by) ?? 'Uncategorized';
+        stats.groups.set(value, (stats.groups.get(value) ?? 0) + 1);
+      }
+    }
+
+    return stats;
+  }
+
+  /**
+   * Render stats bar
+   */
+  private renderStatsBar(container: HTMLElement, results: QueryResultItem[], config: StatsConfig) {
+    const stats = this.computeStats(results, config);
+    const bar = document.createElement('div');
+    bar.className = 'cm-query-stats-bar';
+
+    if (config.total) {
+      const totalStat = document.createElement('span');
+      totalStat.className = 'cm-query-stat';
+      totalStat.innerHTML = `<span class="cm-query-stat-num">${stats.total}</span> total`;
+      bar.appendChild(totalStat);
+    }
+
+    for (const [value, count] of stats.groups) {
+      const groupStat = document.createElement('span');
+      groupStat.className = 'cm-query-stat';
+      groupStat.innerHTML = `<span class="cm-query-stat-num">${count}</span> ${value}`;
+      bar.appendChild(groupStat);
+    }
+
+    container.appendChild(bar);
+  }
+
+  /**
+   * Render interactive filter chips
+   */
+  private renderInteractiveFilters(
+    container: HTMLElement,
+    filters: InteractiveFilter[],
+    results: QueryResultItem[]
+  ) {
+    const filtersContainer = document.createElement('div');
+    filtersContainer.className = 'cm-query-filters-container';
+
+    for (const filter of filters) {
+      const values = this.getFilterValues(results, filter.key);
+      if (values.length === 0) continue;
+
+      const filterRow = document.createElement('div');
+      filterRow.className = 'cm-query-filter-row';
+
+      // Filter label
+      if (filter.label) {
+        const label = document.createElement('span');
+        label.className = 'cm-query-filter-label';
+        label.textContent = filter.label + ':';
+        filterRow.appendChild(label);
+      }
+
+      const chipsContainer = document.createElement('div');
+      chipsContainer.className = 'cm-query-filter-chips';
+
+      // "All" button
+      if (filter.show_all) {
+        const activeFilters = this.getActiveFilterState();
+        const allBtn = this.createFilterChip('All', !activeFilters.has(filter.key));
+        allBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.clearFilter(filter.key);
+        };
+        chipsContainer.appendChild(allBtn);
+      }
+
+      // Value chips
+      for (const value of values) {
+        const activeFilters = this.getActiveFilterState();
+        const isActive = activeFilters.get(filter.key)?.has(value) ?? false;
+        const chip = this.createFilterChip(value, isActive);
+        chip.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.toggleFilter(filter.key, value, filter.multi_select);
+        };
+        chipsContainer.appendChild(chip);
+      }
+
+      filterRow.appendChild(chipsContainer);
+      filtersContainer.appendChild(filterRow);
+    }
+
+    container.appendChild(filtersContainer);
+  }
+
+  /**
+   * Add toggle button to card
+   */
+  private addToggleButton(card: HTMLElement, item: QueryResultItem, config: CardConfig) {
+    if (!config.toggle_property) return;
+
+    const prop = item.properties.find(p => p.key === config.toggle_property);
+    const isToggled = prop?.value === 'true';
+
+    // Apply dim class if configured
+    if (config.dim_when_true && isToggled) {
+      card.classList.add('dimmed');
+    }
+
+    const btn = document.createElement('button');
+    btn.className = `cm-query-toggle-btn ${isToggled ? 'toggled' : ''}`;
+    btn.innerHTML = '✓';
+    btn.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      await this.toggleProperty(item, config.toggle_property!, !isToggled);
+      
+      // Update UI optimistically
+      btn.classList.toggle('toggled');
+      if (config.dim_when_true) {
+        card.classList.toggle('dimmed');
+      }
+    };
+
+    // Position the button
+    const position = config.toggle_position || 'top-right';
+    btn.style.position = 'absolute';
+    if (position.includes('top')) {
+      btn.style.top = '0.5rem';
+    } else {
+      btn.style.bottom = '0.5rem';
+    }
+    if (position.includes('right')) {
+      btn.style.right = '0.5rem';
+    } else {
+      btn.style.left = '0.5rem';
+    }
+
+    card.appendChild(btn);
+  }
+
+  /**
+   * Toggle a property on an item
+   */
+  private async toggleProperty(item: QueryResultItem, key: string, value: boolean): Promise<void> {
+    const noteId = item.item_type === 'task'
+      ? item.task!.todo.note_id
+      : item.note!.id;
+
+    try {
+      await setProperty({
+        note_id: noteId as any, // Type mismatch: binding says bigint but API accepts number
+        key,
+        value: value.toString(),
+        property_type: 'boolean'
+      });
+
+      // Invalidate query cache to refresh results
+      invalidateQueryCache();
+    } catch (error) {
+      console.error('Failed to toggle property:', error);
+    }
   }
 
   destroy() {
@@ -1501,6 +1912,229 @@ const injectStyles = () => {
 
     .cm-query-kanban-card-note:hover {
       text-decoration: underline;
+    }
+
+    /* Stats Bar Styles */
+    .cm-query-stats-bar {
+      display: flex;
+      gap: 1.5rem;
+      padding: var(--spacing-3) var(--spacing-4);
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .cm-query-stat {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .cm-query-stat-num {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--mauve);
+      margin-right: 0.25rem;
+    }
+
+    /* Interactive Filter Chips Styles */
+    .cm-query-filters-container {
+      padding: var(--spacing-2) var(--spacing-3);
+      background: var(--bg-surface-sunken);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .cm-query-filter-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-2);
+      margin-bottom: var(--spacing-2);
+    }
+
+    .cm-query-filter-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .cm-query-filter-label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--text-secondary);
+      min-width: 80px;
+    }
+
+    .cm-query-filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-1);
+      flex: 1;
+    }
+
+    .cm-query-filter-chip {
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+      color: var(--text-secondary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .cm-query-filter-chip:hover {
+      border-color: var(--color-primary);
+      background: var(--bg-surface-raised);
+    }
+
+    .cm-query-filter-chip.active {
+      background: var(--mauve);
+      color: var(--base);
+      border-color: var(--mauve);
+    }
+
+    /* Card Grid View Styles */
+    .cm-query-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: var(--spacing-3);
+      padding: var(--spacing-3);
+    }
+
+    .cm-query-card {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      text-align: left;
+      padding: 0;
+    }
+
+    .cm-query-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--color-primary);
+    }
+
+    .cm-query-card.completed {
+      opacity: 0.6;
+    }
+
+    .cm-query-card-cover {
+      width: 100%;
+      height: 120px;
+      overflow: hidden;
+      background: var(--bg-surface-sunken);
+    }
+
+    .cm-query-card-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cm-query-card-content {
+      padding: var(--spacing-3);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-2);
+      flex: 1;
+      position: relative;
+    }
+
+    .cm-query-card-title {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--text-primary);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .cm-query-card-fields {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-1);
+    }
+
+    .cm-query-card-field {
+      display: flex;
+      gap: var(--spacing-1);
+      font-size: var(--font-size-xs);
+    }
+
+    .cm-query-card-field-label {
+      color: var(--text-muted);
+      text-transform: capitalize;
+    }
+
+    .cm-query-card-field-value {
+      color: var(--text-secondary);
+    }
+
+    .cm-query-card-field-value.priority-high {
+      color: var(--red);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .cm-query-card-field-value.priority-medium {
+      color: var(--yellow);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .cm-query-card-type-badge {
+      position: absolute;
+      top: var(--spacing-2);
+      right: var(--spacing-2);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .cm-query-card-type-badge.task {
+      background: var(--mauve);
+      color: var(--base);
+    }
+
+    .cm-query-card-type-badge.note {
+      background: var(--teal);
+      color: var(--base);
+    }
+
+    /* Toggle Button Styles */
+    .cm-query-toggle-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--border-default);
+      background: transparent;
+      color: transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .cm-query-toggle-btn:hover {
+      border-color: var(--mauve);
+    }
+
+    .cm-query-toggle-btn.toggled {
+      background: var(--mauve);
+      border-color: var(--mauve);
+      color: var(--base);
+    }
+
+    .cm-query-card.dimmed {
+      opacity: 0.5;
     }
   `;
   document.head.appendChild(style);

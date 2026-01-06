@@ -75,6 +75,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "assert_matches"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b34d609dfbaf33d6889b2b7106d3ca345eacad44200913df5ba02bfd31d2ba9"
+
+[[package]]
 name = "async-broadcast"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -504,8 +510,10 @@ dependencies = [
  "notify-debouncer-mini",
  "shared_types",
  "sqlx",
+ "tempfile",
  "thiserror 2.0.17",
  "tokio",
+ "tokio-test",
  "tracing",
 ]
 
@@ -554,14 +562,17 @@ dependencies = [
 name = "core_storage"
 version = "0.1.0"
 dependencies = [
+ "assert_matches",
  "chrono",
  "chrono-tz",
  "core_index",
  "rrule",
  "shared_types",
  "sqlx",
+ "tempfile",
  "thiserror 2.0.17",
  "tokio",
+ "tokio-test",
  "tracing",
 ]
 
@@ -5198,6 +5209,17 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+]
+
+[[package]]
+name = "tokio-test"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f6d24790a10a7af737693a3e8f1d03faef7e6ca0cc99aae5066f533766de545"
+dependencies = [
+ "futures-core",
+ "tokio",
+ "tokio-stream",
 ]
 
 [[package]]

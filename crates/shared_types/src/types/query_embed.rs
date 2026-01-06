@@ -80,6 +80,15 @@ pub struct CardConfig {
     /// Number of columns in the grid (0 = auto).
     #[serde(default = "default_card_columns")]
     pub columns: u8,
+    /// Property to toggle on card click (e.g., "read" for reading lists).
+    #[serde(default)]
+    pub toggle_property: Option<String>,
+    /// Position of toggle button on card.
+    #[serde(default)]
+    pub toggle_position: Option<String>,
+    /// Dim card when toggle property is true.
+    #[serde(default)]
+    pub dim_when_true: Option<bool>,
 }
 
 fn default_card_columns() -> u8 {
@@ -92,8 +101,41 @@ impl Default for CardConfig {
             cover_property: None,
             display_fields: vec!["description".to_string()],
             columns: 0,
+            toggle_property: None,
+            toggle_position: None,
+            dim_when_true: None,
         }
     }
+}
+
+/// Interactive filter configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct InteractiveFilter {
+    /// Property key to filter on.
+    pub key: String,
+    /// Filter UI style ("chips", "buttons", or "dropdown").
+    pub style: String,
+    /// Show "All" option to clear filter.
+    pub show_all: bool,
+    /// Allow selecting multiple values.
+    pub multi_select: bool,
+    /// Optional display label for the filter.
+    #[serde(default)]
+    pub label: Option<String>,
+}
+
+/// Stats bar configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct StatsConfig {
+    /// Whether to show the stats bar.
+    pub show: bool,
+    /// Show total count.
+    pub total: bool,
+    /// Property to group stats by (e.g., "read" to show "5 read, 10 unread").
+    #[serde(default)]
+    pub group_by: Option<String>,
 }
 
 /// View configuration for query embed.
@@ -112,6 +154,12 @@ pub struct QueryViewConfig {
     pub kanban: Option<KanbanConfig>,
     /// Card-specific configuration (only used when view_type is "Card").
     pub card: Option<CardConfig>,
+    /// Interactive filter configurations.
+    #[serde(default)]
+    pub interactive_filters: Option<Vec<InteractiveFilter>>,
+    /// Stats bar configuration.
+    #[serde(default)]
+    pub stats: Option<StatsConfig>,
 }
 
 impl Default for QueryViewConfig {
@@ -122,6 +170,8 @@ impl Default for QueryViewConfig {
             sort: None,
             kanban: None,
             card: None,
+            interactive_filters: None,
+            stats: None,
         }
     }
 }

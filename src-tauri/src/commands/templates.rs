@@ -220,6 +220,56 @@ pub async fn create_daily_note(
     })
 }
 
+/// Create a new note from a template.
+#[tauri::command]
+pub async fn create_note_from_template(
+    state: State<'_, AppState>,
+    target_path: String,
+    template_path: String,
+) -> Result<i64> {
+    let vault_guard = state.vault.read().await;
+    let vault = vault_guard.as_ref().ok_or(CommandError::NoVaultOpen)?;
+
+    // Check if target already exists
+    if vault.fs().exists(Path::new(&target_path)).await {
+        return Err(CommandError::Vault(format!(
+            "File already exists: {}",
+            target_path
+        )));
+    }
+
+    // Read template file
+    let template_content = vault
+        .fs()
+        .read_file(Path::new(&template_path))
+        .await
+        .map_err(|e| {
+            CommandError::Vault(format!(
+                "Failed to read template '{}': {}",
+                template_path, e
+            ))
+        })?;
+
+    // Create template context with current date
+    let ctx = TemplateContext::default();
+
+    // Render template with variable substitution
+    let rendered_content = render_template(&template_content, &ctx);
+
+    // Write the note
+    let note_id = vault
+        .write_note(&target_path, &rendered_content)
+        .await
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
+
+    info!(
+        "Created note from template '{}': {} (id={})",
+        template_path, target_path, note_id
+    );
+
+    Ok(note_id)
+}
+
 /// Render a preview of the daily note path for a given date (for settings UI).
 #[tauri::command]
 pub async fn preview_daily_note_path(

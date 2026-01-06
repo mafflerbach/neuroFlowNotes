@@ -125,6 +125,7 @@ fn main() {
             commands::save_template_settings,
             commands::list_templates,
             commands::create_daily_note,
+            commands::create_note_from_template,
             commands::preview_daily_note_path,
             // Summarizers
             commands::run_link_summarizer,

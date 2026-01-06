@@ -50,7 +50,7 @@
   import { ChevronRight, Folder, File, Image, FileAudio, FileVideo, FileText } from "lucide-svelte";
   import type { FolderNode } from "../types";
   import { editorStore, workspaceStore, vaultStore, dragStore } from "../stores";
-  import { listNotes, renameNote, deleteNote, deleteFolder, renameFolder, createFolder, saveNote, getNoteContent } from "../services/api";
+  import { listNotes, renameNote, deleteNote, deleteFolder, renameFolder, createFolder, saveNote, getNoteContent, createNoteFromTemplate } from "../services/api";
   import { replaceH1Title } from "../utils/docListUtils";
   import { isImageFile, isAudioFile, isVideoFile, isPdfFile, isMediaFile } from "../utils/fileTypes";
   import { ask } from "@tauri-apps/plugin-dialog";
@@ -83,6 +83,7 @@
   let newItemType = $state<"file" | "folder">("file");
   let newItemName = $state("");
   let newItemInput = $state<HTMLInputElement | null>(null);
+  let selectedTemplate = $state<string | null>(null);
 
   // Folder properties modal state
   let showPropertiesModal = $state(false);
@@ -251,13 +252,14 @@
   }
 
   // Create new file/folder
-  function startCreateFile() {
+  function startCreateFile(template?: string) {
     closeContextMenu();
     if (!node.is_dir) return;
     isExpanded = true;
     isCreatingNew = true;
     newItemType = "file";
     newItemName = "";
+    selectedTemplate = template ?? null;
     setTimeout(() => newItemInput?.focus(), 0);
   }
 
@@ -276,9 +278,15 @@
     showPropertiesModal = true;
   }
 
+  function formatTemplateName(path: string): string {
+    // "templates/ticket.md" → "ticket"
+    return path.replace(/^templates\//, "").replace(/\.md$/, "");
+  }
+
   async function confirmCreate() {
     if (!newItemName.trim()) {
       isCreatingNew = false;
+      selectedTemplate = null;
       return;
     }
 
@@ -290,8 +298,19 @@
         await createFolder(newPath);
       } else {
         const filePath = newItemName.endsWith(".md") ? newPath : `${newPath}.md`;
-        const content = `# ${newItemName.replace(/\.md$/, "")}\n\n`;
-        await saveNote(filePath, content);
+        
+        // Create from template or blank note
+        let noteId: number;
+        if (selectedTemplate) {
+          noteId = await createNoteFromTemplate(filePath, selectedTemplate);
+        } else {
+          const content = `# ${newItemName.replace(/\.md$/, "")}\n\n`;
+          noteId = await saveNote(filePath, content);
+        }
+        
+        // Open the newly created note
+        const title = newItemName.replace(/\.md$/, "");
+        workspaceStore.openDoc({ path: filePath, id: noteId, title });
       }
       await vaultStore.refreshFolderTree();
     } catch (e) {
@@ -299,6 +318,7 @@
     }
 
     isCreatingNew = false;
+    selectedTemplate = null;
   }
 
   function cancelCreate() {
@@ -477,7 +497,7 @@
           bind:this={newItemInput}
           type="text"
           class="rename-input"
-          placeholder={newItemType === "folder" ? "New folder..." : "New note..."}
+          placeholder={newItemType === "folder" ? "New folder..." : selectedTemplate ? `New note from ${formatTemplateName(selectedTemplate)}...` : "New note..."}
           bind:value={newItemName}
           onkeydown={handleNewItemKeydown}
           onblur={confirmCreate}
@@ -486,6 +506,9 @@
           autocapitalize="off"
           spellcheck="false"
         />
+        {#if selectedTemplate}
+          <span class="template-badge">{formatTemplateName(selectedTemplate)}</span>
+        {/if}
       </div>
     {/if}
 
@@ -505,6 +528,7 @@
       x={contextMenuX}
       y={contextMenuY}
       onNewFile={startCreateFile}
+      onNewFromTemplate={startCreateFile}
       onNewFolder={startCreateFolder}
       onRename={startRename}
       onDelete={handleDelete}
@@ -649,5 +673,15 @@
 
   .rename-input:focus {
     box-shadow: var(--shadow-focus);
+  }
+
+  .template-badge {
+    padding: 2px 6px;
+    background: var(--accent-color-alpha, rgba(59, 130, 246, 0.2));
+    color: var(--accent-color, #3b82f6);
+    font-size: 11px;
+    border-radius: 3px;
+    white-space: nowrap;
+    margin-left: 4px;
   }
 </style>
