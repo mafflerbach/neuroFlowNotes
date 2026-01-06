@@ -278,8 +278,9 @@
     showPropertiesModal = true;
   }
 
-  function formatTemplateName(path: string): string {
+  function formatTemplateName(path: string | null): string {
     // "templates/ticket.md" → "ticket"
+    if (!path || typeof path !== 'string') return "";
     return path.replace(/^templates\//, "").replace(/\.md$/, "");
   }
 
@@ -497,7 +498,7 @@
           bind:this={newItemInput}
           type="text"
           class="rename-input"
-          placeholder={newItemType === "folder" ? "New folder..." : selectedTemplate ? `New note from ${formatTemplateName(selectedTemplate)}...` : "New note..."}
+          placeholder={newItemType === "folder" ? "New folder..." : (selectedTemplate ? `New note from ${formatTemplateName(selectedTemplate)}...` : "New note...")}
           bind:value={newItemName}
           onkeydown={handleNewItemKeydown}
           onblur={confirmCreate}
