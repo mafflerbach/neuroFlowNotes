@@ -70,7 +70,7 @@ function detectFrontmatterClose(update: ViewUpdate): boolean {
   // Check each change to see if they added "---" that closes frontmatter
   let addedClosingDelimiter = false;
 
-  update.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
+  update.changes.iterChanges((_fromA, _toA, fromB, _toB, inserted) => {
     const insertedText = inserted.toString();
 
     // Check if this change added a "-" that could complete "---"

@@ -195,7 +195,7 @@
       <div class="card-option display-fields-option">
         <label class="option-label">Display fields:</label>
         <div class="display-fields-list">
-          {#each cardDisplayFields as field, index (field)}
+          {#each cardDisplayFields as field (field)}
             <div class="display-field-item">
               <span class="field-name">{field}</span>
               <button

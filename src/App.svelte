@@ -48,10 +48,8 @@
   import {
     separateAndDeduplicateNotes,
     flattenNotesFromDateMap,
-    generateNoteContent,
     replaceH1Title,
     generatePathFromTitle,
-    titleToFilename,
     type DocWithSource,
   } from "./lib/utils/docListUtils";
   import { pluginRegistry, createBackendHooks } from "./lib/plugins";
