@@ -84,7 +84,7 @@ pub async fn get_embedding_status(
         .repo()
         .count_notes()
         .await
-        .map_err(|e| CommandError::Vault(e.to_string()))? as i64;
+        .map_err(|e| CommandError::Vault(e.to_string()))?;
 
     Ok(EmbeddingStatus {
         connected,

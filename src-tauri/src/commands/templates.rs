@@ -119,7 +119,7 @@ pub async fn list_templates(state: State<'_, AppState>) -> Result<Vec<String>> {
     while let Ok(Some(entry)) = entries.next_entry().await {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) == Some("md") {
-            if let Some(relative) = path.strip_prefix(vault.fs().root()).ok() {
+            if let Ok(relative) = path.strip_prefix(vault.fs().root()) {
                 templates.push(relative.to_string_lossy().to_string());
             }
         }

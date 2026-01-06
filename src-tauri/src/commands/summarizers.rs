@@ -371,9 +371,9 @@ fn resolve_path(path: &str, vault_root: &std::path::Path) -> PathBuf {
     }
 
     // Handle tilde expansion
-    if path.starts_with("~/") {
+    if let Some(stripped) = path.strip_prefix("~/") {
         if let Some(home) = dirs::home_dir() {
-            return home.join(&path[2..]);
+            return home.join(stripped);
         }
     } else if path == "~" {
         if let Some(home) = dirs::home_dir() {
@@ -409,7 +409,7 @@ pub async fn count_pending_transcripts(
             entry
                 .path()
                 .extension()
-                .map_or(false, |ext| ext == "md")
+                .is_some_and(|ext| ext == "md")
         })
         .count();
 
