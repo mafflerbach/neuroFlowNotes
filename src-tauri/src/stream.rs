@@ -36,6 +36,38 @@ fn get_mime_type(path: &str) -> &'static str {
     }
 }
 
+/// Build an HTTP response with graceful error handling.
+/// Falls back to a plain 500 response if the builder fails.
+fn build_response(status: StatusCode, body: Vec<u8>) -> Response<Vec<u8>> {
+    Response::builder()
+        .status(status)
+        .body(body)
+        .unwrap_or_else(|e| {
+            warn!("Failed to build HTTP response: {}", e);
+            // Last resort fallback - return empty response
+            Response::new(b"Internal server error".to_vec())
+        })
+}
+
+/// Build an HTTP response with headers and graceful error handling.
+fn build_response_with_headers(
+    status: StatusCode,
+    body: Vec<u8>,
+    headers: Vec<(&str, &str)>,
+) -> Response<Vec<u8>> {
+    let mut builder = Response::builder().status(status);
+    
+    for (name, value) in headers {
+        builder = builder.header(name, value);
+    }
+    
+    builder.body(body.clone()).unwrap_or_else(|e| {
+        warn!("Failed to build HTTP response with headers: {}", e);
+        // Fallback without headers - use the cloned body
+        Response::new(body)
+    })
+}
+
 /// Parse Range header value like "bytes=0-1023" or "bytes=1024-"
 fn parse_range(range_header: &str, file_size: u64) -> Option<(u64, u64)> {
     let range_str = range_header.strip_prefix("bytes=")?;
@@ -87,10 +119,7 @@ pub fn handle_stream_protocol<R: tauri::Runtime>(
     // Check if file exists
     if !file_path.exists() {
         warn!("Stream file not found: {:?}", file_path);
-        return Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(b"File not found".to_vec())
-            .unwrap();
+        return build_response(StatusCode::NOT_FOUND, b"File not found".to_vec());
     }
 
     // Open the file
@@ -98,10 +127,10 @@ pub fn handle_stream_protocol<R: tauri::Runtime>(
         Ok(f) => f,
         Err(e) => {
             warn!("Failed to open stream file: {}", e);
-            return Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(format!("Failed to open file: {}", e).into_bytes())
-                .unwrap();
+            return build_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to open file: {}", e).into_bytes(),
+            );
         }
     };
 
@@ -110,10 +139,10 @@ pub fn handle_stream_protocol<R: tauri::Runtime>(
         Ok(m) => m.len(),
         Err(e) => {
             warn!("Failed to get file metadata: {}", e);
-            return Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(format!("Failed to get file size: {}", e).into_bytes())
-                .unwrap();
+            return build_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to get file size: {}", e).into_bytes(),
+            );
         }
     };
 
@@ -133,20 +162,20 @@ pub fn handle_stream_protocol<R: tauri::Runtime>(
             // Seek to start position
             if let Err(e) = file.seek(SeekFrom::Start(start)) {
                 warn!("Failed to seek in file: {}", e);
-                return Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(format!("Failed to seek: {}", e).into_bytes())
-                    .unwrap();
+                return build_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to seek: {}", e).into_bytes(),
+                );
             }
 
             // Read the requested range
             let mut buffer = vec![0u8; length as usize];
             if let Err(e) = file.read_exact(&mut buffer) {
                 warn!("Failed to read file range: {}", e);
-                return Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(format!("Failed to read: {}", e).into_bytes())
-                    .unwrap();
+                return build_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to read: {}", e).into_bytes(),
+                );
             }
 
             info!(
@@ -154,18 +183,20 @@ pub fn handle_stream_protocol<R: tauri::Runtime>(
                 start, end, file_size, length
             );
 
-            return Response::builder()
-                .status(StatusCode::PARTIAL_CONTENT)
-                .header(header::CONTENT_TYPE, mime_type)
-                .header(header::CONTENT_LENGTH, length.to_string())
-                .header(
-                    header::CONTENT_RANGE,
-                    format!("bytes {}-{}/{}", start, end, file_size),
-                )
-                .header(header::ACCEPT_RANGES, "bytes")
-                .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-                .body(buffer)
-                .unwrap();
+            return build_response_with_headers(
+                StatusCode::PARTIAL_CONTENT,
+                buffer,
+                vec![
+                    (header::CONTENT_TYPE.as_str(), mime_type),
+                    (header::CONTENT_LENGTH.as_str(), &length.to_string()),
+                    (
+                        header::CONTENT_RANGE.as_str(),
+                        &format!("bytes {}-{}/{}", start, end, file_size),
+                    ),
+                    (header::ACCEPT_RANGES.as_str(), "bytes"),
+                    (header::ACCESS_CONTROL_ALLOW_ORIGIN.as_str(), "*"),
+                ],
+            );
         }
     }
 
@@ -173,20 +204,22 @@ pub fn handle_stream_protocol<R: tauri::Runtime>(
     let mut buffer = Vec::with_capacity(file_size as usize);
     if let Err(e) = file.read_to_end(&mut buffer) {
         warn!("Failed to read file: {}", e);
-        return Response::builder()
-            .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .body(format!("Failed to read file: {}", e).into_bytes())
-            .unwrap();
+        return build_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to read file: {}", e).into_bytes(),
+        );
     }
 
     info!("Stream full response: {} bytes", buffer.len());
 
-    Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, mime_type)
-        .header(header::CONTENT_LENGTH, file_size.to_string())
-        .header(header::ACCEPT_RANGES, "bytes")
-        .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-        .body(buffer)
-        .unwrap()
+    build_response_with_headers(
+        StatusCode::OK,
+        buffer,
+        vec![
+            (header::CONTENT_TYPE.as_str(), mime_type),
+            (header::CONTENT_LENGTH.as_str(), &file_size.to_string()),
+            (header::ACCEPT_RANGES.as_str(), "bytes"),
+            (header::ACCESS_CONTROL_ALLOW_ORIGIN.as_str(), "*"),
+        ],
+    )
 }

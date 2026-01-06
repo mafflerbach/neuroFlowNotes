@@ -141,8 +141,14 @@ pub async fn run_link_summarizer(
         })?;
 
     // Collect output lines
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| CommandError::Vault("Failed to capture stdout from link summarizer process".into()))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| CommandError::Vault("Failed to capture stderr from link summarizer process".into()))?;
 
     let mut stdout_reader = BufReader::new(stdout).lines();
     let mut stderr_reader = BufReader::new(stderr).lines();
@@ -295,8 +301,14 @@ pub async fn run_transcript_summarizer(
         })?;
 
     // Collect output lines
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| CommandError::Vault("Failed to capture stdout from transcript summarizer process".into()))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| CommandError::Vault("Failed to capture stderr from transcript summarizer process".into()))?;
 
     let mut stdout_reader = BufReader::new(stdout).lines();
     let mut stderr_reader = BufReader::new(stderr).lines();
