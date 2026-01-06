@@ -21,6 +21,8 @@ jobs:
     outputs:
       version: ${{ steps.get-version.outputs.version }}
       tag: ${{ steps.get-version.outputs.tag }}
+      release_id: ${{ steps.create-release.outputs.id }}
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - name: Get version from tag or input
         id: get-version
@@ -38,6 +40,38 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "Release version: ${VERSION}"
           echo "Release tag: ${TAG}"
+
+      - name: Create GitHub Release
+        id: create-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create release and capture the output
+          gh release create "${{ steps.get-version.outputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --title "NeuroFlow Notes ${{ steps.get-version.outputs.tag }}" \
+            --notes "See the [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+
+          ## Installation
+
+          ### macOS
+          - **Apple Silicon (M1/M2/M3)**: Download \`NeuroFlow.Notes_*_aarch64.dmg\`
+          - **Intel**: Download \`NeuroFlow.Notes_*_x64.dmg\`
+
+          ### Windows
+          - Download \`NeuroFlow.Notes_*_x64-setup.exe\` or \`NeuroFlow.Notes_*_x64_en-US.msi\`
+
+          ### Linux
+          - **Debian/Ubuntu**: Download \`.deb\` package
+          - **Fedora/RHEL**: Download \`.rpm\` package
+          - **Other**: Download \`.AppImage\`" \
+            --draft \
+            --latest=false
+          
+          # Get release ID for other jobs to use
+          RELEASE_ID=$(gh release view "${{ steps.get-version.outputs.tag }}" --repo "${{ github.repository }}" --json id --jq .id)
+          echo "id=${RELEASE_ID}" >> $GITHUB_OUTPUT
+          echo "Release ID: ${RELEASE_ID}"
 
   build:
     needs: prepare
@@ -94,26 +128,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ needs.prepare.outputs.tag }}
-          releaseName: 'NeuroFlow Notes ${{ needs.prepare.outputs.tag }}'
-          releaseBody: |
-            See the [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
-
-            ## Installation
-
-            ### macOS
-            - **Apple Silicon (M1/M2/M3)**: Download `NeuroFlow.Notes_*_aarch64.dmg`
-            - **Intel**: Download `NeuroFlow.Notes_*_x64.dmg`
-
-            ### Windows
-            - Download `NeuroFlow.Notes_*_x64-setup.exe` or `NeuroFlow.Notes_*_x64_en-US.msi`
-
-            ### Linux
-            - **Debian/Ubuntu**: Download `.deb` package
-            - **Fedora/RHEL**: Download `.rpm` package
-            - **Other**: Download `.AppImage`
-          releaseDraft: true
-          prerelease: false
+          releaseId: ${{ needs.prepare.outputs.release_id }}
           args: ${{ matrix.args }}
 
   # Optional: Create a universal macOS binary
