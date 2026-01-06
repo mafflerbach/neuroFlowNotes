@@ -93,17 +93,20 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build frontend
-        run: npm run build
-
       - name: Build Tauri app
-        run: npm run tauri build
+        run: npm run tauri build -- --verbose
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       
       - name: List build output (debug)
         if: always()
+        shell: bash
         run: |
-          echo "=== Checking bundle directory ==="
-          ls -R src-tauri/target/release/bundle/ || echo "Bundle directory not found"
+          echo "=== Checking target directory structure ==="
+          find src-tauri/target/release -type f -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" -o -name "*.msi" -o -name "*.exe" || echo "No bundle files found"
+          echo "=== Checking if bundle directory exists ==="
+          ls -la src-tauri/target/release/ || echo "Release directory not found"
         
       - name: Upload artifacts (macOS)
         if: matrix.platform == 'macos-latest'
