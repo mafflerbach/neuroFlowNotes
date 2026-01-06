@@ -78,6 +78,8 @@ git push origin main
 - ✅ **Per-release artifacts** - Each tag creates its own release
 - ✅ **Draft releases** - Review before publishing
 - ✅ **Multi-platform builds** - macOS (both architectures), Linux, Windows
+- ✅ **Single release creation** - Release created once in prepare job, all builds upload to it
+- ✅ **No permission conflicts** - Uses gh CLI with proper GITHUB_TOKEN permissions
 
 **Platforms Built:**
 - **macOS** 
@@ -186,9 +188,15 @@ Before releasing, ensure these files have the correct version:
 ┌─────────────────────────────────────────────────────────────┐
 │                     Release Workflow                        │
 │  (Official releases on version tags)                        │
-│  1. Prepare job → Extract version from tag                  │
-│  2. Build job → Create installers for all platforms         │
-│  3. Finalize job → Create GitHub Release with artifacts     │
+│  1. Prepare job                                             │
+│     → Extract version from tag                              │
+│     → Create draft GitHub Release (gh CLI)                  │
+│     → Output release_id for other jobs                      │
+│  2. Build job (matrix: 4 platforms in parallel)             │
+│     → Build Tauri installers                                │
+│     → Upload to existing release using release_id           │
+│  3. Finalize job                                            │
+│     → Summary of release completion                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -204,9 +212,15 @@ Before releasing, ensure these files have the correct version:
 - **Before:** All releases attached to v0.1.0
 - **After:** Each tag (v0.1.0, v0.2.0, etc.) gets its own release
 
+### ✅ Single Release Creation (Permission Fix)
+- **Before:** Each build job tried to create the release → permission errors
+- **After:** Prepare job creates release once, build jobs upload to it
+- **Benefit:** No more "Resource not accessible by integration" errors
+
 ### ✅ Prepare Job
-- **New:** Centralized version extraction logic
-- **Benefit:** Consistent version handling across jobs
+- **New:** Centralized version extraction and release creation
+- **Uses:** GitHub CLI (`gh`) for reliable release creation
+- **Benefit:** Consistent version handling and proper permissions
 
 ### ✅ Rust Caching
 - **Added:** `Swatinem/rust-cache@v2` to speed up builds
@@ -221,15 +235,40 @@ Before releasing, ensure these files have the correct version:
 
 ## Troubleshooting
 
+### "Resource not accessible by integration" error
+This was the main issue with the original workflow - **FIXED** ✅
+
+- **Cause:** Multiple build jobs trying to create the same release simultaneously
+- **Solution:** Prepare job creates release once, build jobs upload to existing release
+- **How it works:**
+  1. Prepare job runs `gh release create` with draft flag
+  2. Release ID is captured and passed to build jobs
+  3. Build jobs use `releaseId` parameter to upload to existing release
+
 ### Release not created
 - **Check:** Did you push the tag? (`git push origin v0.2.0`)
 - **Check:** Is the tag format correct? (must start with `v`)
 - **Check:** View Actions tab for build logs
+- **Check:** Prepare job succeeded and created release
+
+### Tag already exists error
+- **Symptom:** `gh release create` fails with "Release already exists"
+- **Cause:** Tag was pushed again or workflow re-run
+- **Solution:** 
+  ```bash
+  # Delete the draft release from GitHub UI, then re-run workflow
+  # OR delete tag and recreate:
+  git tag -d v0.2.0
+  git push origin :refs/tags/v0.2.0
+  git tag v0.2.0
+  git push origin v0.2.0
+  ```
 
 ### Artifacts missing
 - **Check:** Build completed successfully (no errors in Actions)
 - **Check:** Artifacts are attached to draft release
 - **Note:** Draft releases are not public until published
+- **Check:** All 4 build jobs completed (2 macOS, 1 Linux, 1 Windows)
 
 ### Version mismatch
 - **Check:** Version in `package.json` matches tag
@@ -240,6 +279,11 @@ Before releasing, ensure these files have the correct version:
 - **Check:** CI workflow passes first
 - **Check:** All tests pass locally (`cargo test --workspace`)
 - **Check:** App builds locally (`npm run build`)
+
+### Permission denied errors
+- **Check:** Repository settings → Actions → General → Workflow permissions
+- **Required:** "Read and write permissions" for GITHUB_TOKEN
+- **Path:** Settings → Actions → General → Workflow permissions → Read and write
 
 ---
 
