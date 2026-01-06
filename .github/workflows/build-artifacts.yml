@@ -2,11 +2,20 @@ name: Build Artifacts
 
 on:
   workflow_dispatch:
+    inputs:
+      upload_artifacts:
+        description: 'Upload artifacts'
+        required: false
+        default: true
+        type: boolean
   push:
     branches: [main]
     paths:
       - 'src/**'
       - 'src-tauri/**'
+      - 'crates/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/build-artifacts.yml'
 
 concurrency:
@@ -65,7 +74,7 @@ jobs:
           includeUpdaterJson: false
 
       - name: Upload artifacts (macOS)
-        if: matrix.platform == 'macos-latest'
+        if: matrix.platform == 'macos-latest' && (github.event_name == 'push' || inputs.upload_artifacts)
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ github.sha }}
@@ -73,9 +82,10 @@ jobs:
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/macos/*.app
           retention-days: 30
+          if-no-files-found: warn
           
       - name: Upload artifacts (Linux)
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-22.04' && (github.event_name == 'push' || inputs.upload_artifacts)
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ github.sha }}
@@ -83,9 +93,10 @@ jobs:
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/appimage/*.AppImage
           retention-days: 30
+          if-no-files-found: warn
           
       - name: Upload artifacts (Windows)
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-latest' && (github.event_name == 'push' || inputs.upload_artifacts)
         uses: actions/upload-artifact@v4
         with:
           name: windows-${{ github.sha }}
@@ -93,3 +104,4 @@ jobs:
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
           retention-days: 30
+          if-no-files-found: warn
